@@ -25,32 +25,37 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as {
       name: string;
+      preferredLanguage: "en" | "es";
       businessName: string;
       trade: string;
       yearsExp: string;
+      teamSize: string;
+      serviceArea: string;
+      avgJobValue: string;
       topChallenge: string;
-      preferredLanguage: "en" | "es";
+      currentTools: string;
+      goal: string;
     };
 
-    // ── Build the prompt ────────────────────────────────────────────────────
-    // This is the instruction we send to Gemini.
-    // The model will generate a personalised welcome + first tip.
     const language = body.preferredLanguage === "es" ? "Spanish" : "English";
 
     const prompt = `
 You are Mano, a friendly AI assistant for small contracting businesses.
 
-A contractor just signed up. Here is their profile:
+A contractor just completed onboarding. Here is their full profile:
 - Name: ${body.name}
-- Business name: ${body.businessName}
-- Trade: ${body.trade}
-- Years of experience: ${body.yearsExp}
-- Biggest challenge right now: ${body.topChallenge}
+- Business: ${body.businessName} (${body.trade})
+- Experience: ${body.yearsExp} in business, team of ${body.teamSize}
+- Service area: ${body.serviceArea}
+- Average job value: ${body.avgJobValue}
+- How customers find them: ${body.currentTools || "not specified"}
+- Biggest challenge: ${body.topChallenge}
+- Goal for next 6 months: ${body.goal}
 
-Write a warm, encouraging 2-3 sentence welcome message in ${language}.
-Then give them ONE specific, practical tip for their trade that directly addresses their challenge.
-Keep the total response under 100 words. Be conversational, not corporate.
-Do NOT use bullet points. Just natural sentences.
+Write a warm, personalised 2-3 sentence welcome message in ${language}.
+Then give ONE specific, actionable tip that directly addresses their challenge and helps them reach their goal.
+Keep it under 120 words. Be conversational and encouraging, not corporate.
+No bullet points — just natural sentences.
     `.trim();
 
     // ── Call Gemini ─────────────────────────────────────────────────────────

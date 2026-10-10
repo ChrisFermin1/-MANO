@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Briefcase, Plus } from "lucide-react";
+import { Home, Briefcase, Plus, FileText } from "lucide-react";
 
 interface NavItem {
   href: string;
@@ -15,6 +15,7 @@ const NAV: NavItem[] = [
   { href: "/", icon: Home, label: "Dashboard" },
   { href: "/jobs", icon: Briefcase, label: "Jobs" },
   { href: "/jobs/new", icon: Plus, label: "New Job", highlight: true },
+  { href: "/quote-builder", icon: FileText, label: "Quote" },
 ];
 
 export default function BottomNav() {

@@ -102,6 +102,23 @@ export default function DashboardPage() {
 
       {/* Active jobs summary */}
       <ActiveJobsBar count={data.active_job_count} />
+
+      <hr className="border-gray-200" />
+
+      {/* Quote Builder CTA */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-gray-800">Quote Builder</h2>
+        <Link
+          href="/quote-builder"
+          className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-5 py-4 hover:bg-gray-50 transition-colors shadow-sm"
+        >
+          <div className="space-y-0.5">
+            <p className="font-semibold text-gray-900">Build a quote with AI</p>
+            <p className="text-sm text-gray-500">Describe the job — get 3 options in seconds</p>
+          </div>
+          <span className="text-purple-600 text-xl">✨</span>
+        </Link>
+      </section>
     </main>
   );
 }

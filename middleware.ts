@@ -28,8 +28,9 @@ export async function middleware(req: NextRequest) {
   }
 
   // ── Check session ──────────────────────────────────────────────────────────
-  // auth0.getSession() reads the encrypted session cookie Auth0 set.
-  const session = await auth0.getSession();
+  // Must pass `req` here — in middleware there is no implicit request context.
+  // Without it the SDK tries to read cookies from the wrong scope → "invalid body keys".
+  const session = await auth0.getSession(req);
   const isLoggedIn = !!session?.user;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
