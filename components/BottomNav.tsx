@@ -18,14 +18,28 @@ const NAV: NavItem[] = [
   { href: "/quote-builder", icon: FileText, label: "Quote" },
 ];
 
+// Pages where the bottom nav should not appear
+const HIDE_ON = ["/auth/", "/onboarding"];
+
 export default function BottomNav() {
   const pathname = usePathname();
+
+  if (HIDE_ON.some((p) => pathname.startsWith(p))) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white z-50">
       <div className="mx-auto max-w-lg flex items-stretch">
         {NAV.map(({ href, icon: Icon, label, highlight }) => {
-          const active = pathname === href || (href !== "/" && pathname.startsWith(href));
+          // Exact match for "/" and "/jobs/new"; prefix match for others except when a
+          // more-specific path is already handled (e.g. /jobs/new shouldn't activate /jobs)
+          const active =
+            href === "/"
+              ? pathname === "/"
+              : href === "/jobs/new"
+              ? pathname === "/jobs/new" || pathname.startsWith("/jobs/new/")
+              : href === "/jobs"
+              ? pathname === "/jobs" || (pathname.startsWith("/jobs/") && !pathname.startsWith("/jobs/new"))
+              : pathname === href || pathname.startsWith(href + "/");
           return (
             <Link
               key={href}

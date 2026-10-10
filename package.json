@@ -3,14 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 4000",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port 4000",
     "lint": "eslint"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.31.1",
     "@base-ui/react": "^1.9.0",
+    "@elevenlabs/elevenlabs-js": "^2.71.0",
     "@google/generative-ai": "^0.24.1",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",

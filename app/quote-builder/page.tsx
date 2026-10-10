@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Sparkles, Check, ChevronRight, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import VoiceButton from "@/components/VoiceButton";
 
 interface QuoteOption {
   tier: "basic" | "standard" | "premium";
@@ -60,12 +61,18 @@ export default function QuoteBuilderPage() {
     const style = TIER_STYLE[selected.tier];
     return (
       <main className="mx-auto max-w-lg px-4 pt-8 pb-24 space-y-6">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setSelected(null)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-            <ArrowLeft className="h-4 w-4 text-gray-600" />
-          </button>
-          <h1 className="text-xl font-bold text-gray-900">Quote Ready</h1>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSelected(null)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+              <ArrowLeft className="h-4 w-4 text-gray-600" />
+            </button>
+            <h1 className="text-xl font-bold text-gray-900">Quote Ready</h1>
+          </div>
+          <VoiceButton
+            label="Hear quote"
+            text={`${selected.title}. ${selected.description}. Price: ${selected.price}. Includes: ${selected.includes.join(", ")}.`}
+          />
         </div>
 
         <Card className={`border-2 ${style.border}`}>

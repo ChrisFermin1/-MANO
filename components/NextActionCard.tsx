@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Sparkles, Check, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import VoiceButton from "@/components/VoiceButton";
 import type { NextAction } from "@/lib/types";
 
 interface NextActionCardProps {
@@ -43,20 +44,26 @@ export default function NextActionCard({ action }: NextActionCardProps) {
             <p className="text-base text-gray-800 font-medium leading-snug">
               {action.label}
             </p>
-            <Link
-              href={`/jobs/${action.job_id}`}
-              className="shrink-0 text-xs text-blue-600 hover:underline"
-            >
-              View job →
-            </Link>
+            <div className="flex items-center gap-2 shrink-0">
+              <VoiceButton text={action.label} />
+              <Link
+                href={`/jobs/${action.job_id}`}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                View job →
+              </Link>
+            </div>
           </div>
 
           {/* Draft message */}
           {step === "draft" && draft && (
             <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                Mano drafted this message
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Mano drafted this message
+                </p>
+                <VoiceButton text={draft} label="Hear it" />
+              </div>
               <p className="text-sm text-gray-800 leading-relaxed">{draft}</p>
               <div className="flex gap-2">
                 <Button size="lg" className="flex-1 gap-2">
