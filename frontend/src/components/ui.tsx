@@ -12,6 +12,8 @@ export const btnLime =
   "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-lime text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40";
 export const btnDanger =
   "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-[#8a2a17] text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-40";
+export const btnSecondary =
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] border border-forest/25 bg-white/50 text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40";
 export const btnGhost =
   "flex h-[48px] w-full items-center justify-center gap-2 rounded-[20px] text-sm font-semibold text-forest";
 export const input =

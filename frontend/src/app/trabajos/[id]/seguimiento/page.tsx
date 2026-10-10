@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Eye, Loader2, RotateCcw, Send, Sparkles } from "lucide-react";
+import { Eye, Loader2, MessageCircle, RotateCcw, Send, Smartphone, Sparkles } from "lucide-react";
 import { PageHeader, Screen, SuccessScreen, Title, btnLime, btnPrimary } from "@/components/ui";
-import { firstName, getJob, jobTotal, money, sendMessage, type Job } from "@/lib/api";
+import { firstName, getJob, jobTotal, money, sendMessage, smsLink, whatsappLink, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 import { followUpMessage } from "@/lib/mano";
@@ -79,6 +79,14 @@ export default function Seguimiento() {
   };
 
   const ready = spanish ? enState === "ok" && en.trim() !== "" : en.trim() !== "";
+  // approving = Carlos sends it from his phone; we record it as sent (resets Ojo's "no reply" clock)
+  const wa = whatsappLink(job.customer_phone, en);
+  const sms = smsLink(job.customer_phone, en);
+  const markSent = () => {
+    if (!ready) return;
+    void sendMessage(job.id);
+    setTimeout(() => setSent(true), 300);
+  };
 
   return (
     <Screen>
@@ -139,10 +147,37 @@ export default function Seguimiento() {
       )}
 
       <div className="mt-auto pt-8">
-        <button type="button" onClick={send} disabled={!ready || sending} className={btnPrimary}>
-          {sending ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" strokeWidth={2.25} />}
-          {t.approveSend}
-        </button>
+        {wa && sms ? (
+          // Customer phone saved → send the English message through WhatsApp / Messages, already addressed
+          <div className="grid grid-cols-2 gap-2">
+            <a
+              href={ready ? wa : undefined}
+              target="_blank"
+              rel="noopener"
+              aria-disabled={!ready}
+              onClick={markSent}
+              className={`${btnPrimary} aria-disabled:pointer-events-none aria-disabled:opacity-40`}
+            >
+              <MessageCircle className="size-5" strokeWidth={2.25} /> {t.sendWhatsApp}
+            </a>
+            <a
+              href={ready ? sms : undefined}
+              aria-disabled={!ready}
+              onClick={markSent}
+              className={`${btnPrimary} aria-disabled:pointer-events-none aria-disabled:opacity-40`}
+            >
+              <Smartphone className="size-5" strokeWidth={2.25} /> {t.sendSms}
+            </a>
+          </div>
+        ) : (
+          <>
+            <button type="button" onClick={send} disabled={!ready || sending} className={btnPrimary}>
+              {sending ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" strokeWidth={2.25} />}
+              {t.approveSend}
+            </button>
+            <p className="mt-3 text-center text-xs leading-4 text-muted">{t.addPhoneHint}</p>
+          </>
+        )}
       </div>
     </Screen>
   );

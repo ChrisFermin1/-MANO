@@ -22,13 +22,16 @@ const NAME = "[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+";
 const CUSTOMER = new RegExp(`(?:para|for|de|cliente|customer)\\s+(${NAME}(?:\\s+${NAME})?)`);
 const ADDRESS = /\d+\s+[\w\s.]+?\b(?:st|street|ave|avenue|rd|road|dr|drive|blvd|ln|lane|calle|way)\b\.?(?:,\s*[\w\s]+)?/i;
 
+// US-style phone: 832-555-1234, (832) 555 1234, 8325551234, +1 832 555 1234
+const PHONE = /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/;
+
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // Prices: the real Gemini version returns only prices Carlos *said*. Mano never suggests prices.
 export function interpret(
   text: string,
   otherTrade?: OtherTrade | null,
-): Pick<Job, "customer_name" | "address" | "service" | "line_items"> {
+): Pick<Job, "customer_name" | "customer_phone" | "address" | "service" | "line_items"> {
   const items: LineItem[] = [];
   let service = "";
 
@@ -81,6 +84,7 @@ export function interpret(
 
   return {
     customer_name: text.match(CUSTOMER)?.[1] ?? null,
+    customer_phone: text.match(PHONE)?.[0]?.trim() ?? null,
     address: text.match(ADDRESS)?.[0]?.trim() ?? null,
     service,
     line_items: items,

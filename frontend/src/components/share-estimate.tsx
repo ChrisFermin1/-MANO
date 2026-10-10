@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { Check, Copy, ExternalLink, QrCode, Share2 } from "lucide-react";
-import { estimateLink, firstName, type Job } from "@/lib/api";
+import { Check, Copy, MessageCircle, QrCode, Share2, Smartphone } from "lucide-react";
+import { estimateLink, firstName, smsLink, whatsappLink, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 import { shareOrigin } from "@/lib/relay";
 
 // Carlos sends the homeowner a link (WhatsApp/SMS via the phone's share sheet). No app needed on their side.
-export function ShareEstimate({ job, dark = false }: { job: Job; dark?: boolean }) {
+export function ShareEstimate({ job, dark = false, quiet = false }: { job: Job; dark?: boolean; quiet?: boolean }) {
   const { t, lang } = useLang();
   const [link, setLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -53,9 +53,13 @@ export function ShareEstimate({ job, dark = false }: { job: Job; dark?: boolean 
     }
   };
 
-  const chip = `flex h-11 items-center justify-center gap-1.5 rounded-[14px] text-sm font-semibold transition active:scale-[0.97] ${
-    dark ? "bg-white/10 text-white" : "bg-white/60 text-forest"
-  }`;
+  const fullText = link ? `${msg.en} ${link}` : "";
+  const wa = link ? whatsappLink(job.customer_phone, fullText) : null;
+  const sms = link ? smsLink(job.customer_phone, fullText) : null;
+
+  const base = "flex h-12 items-center justify-center gap-2 rounded-[16px] text-sm font-bold transition active:scale-[0.98]";
+  const solid = `${base} bg-lime text-forest`;
+  const outline = `${base} border ${dark ? "border-white/35 text-white" : "border-forest/25 bg-white/50 text-forest"}`;
 
   return (
     <div className={`rounded-[20px] p-4 ${dark ? "glass-dark" : "glass"}`}>
@@ -74,27 +78,34 @@ export function ShareEstimate({ job, dark = false }: { job: Job; dark?: boolean 
         )}
       </div>
 
-      {canShare && (
-        <button
-          type="button"
-          onClick={share}
-          className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-[16px] bg-lime text-sm font-bold text-forest transition active:scale-[0.98]"
-        >
-          <Share2 className="size-4" strokeWidth={2.5} /> {t.shareButton}
-        </button>
+      {/* Hierarchy: ONE solid button (WhatsApp, or the share sheet) → Mensaje as outline → Copiar · QR as small links.
+          `quiet` (customer hasn't replied, follow-up is the main job now): no solid button here. */}
+      {wa && sms ? (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <a href={wa} target="_blank" rel="noopener" className={quiet ? outline : solid}>
+            <MessageCircle className="size-4" strokeWidth={2.5} /> {t.sendWhatsApp}
+          </a>
+          <a href={sms} className={outline}>
+            <Smartphone className="size-4" strokeWidth={2.5} /> {t.sendSms}
+          </a>
+        </div>
+      ) : (
+        canShare && (
+          <button type="button" onClick={share} className={`mt-3 w-full ${quiet ? outline : solid}`}>
+            <Share2 className="size-4" strokeWidth={2.5} /> {t.shareButton}
+          </button>
+        )
       )}
 
-      <div className="mt-2 grid grid-cols-3 gap-2">
-        <button type="button" onClick={copy} className={chip}>
+      <div className={`mt-3 flex items-center justify-center gap-5 text-sm font-semibold ${dark ? "text-white/80" : "text-forest"}`}>
+        <button type="button" onClick={copy} className="flex items-center gap-1.5 py-1">
           {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
           {copied ? t.copied : t.copyLink}
         </button>
-        <button type="button" onClick={() => setShowQr((v) => !v)} aria-expanded={showQr} className={chip}>
+        <span aria-hidden className={dark ? "text-white/30" : "text-black/20"}>·</span>
+        <button type="button" onClick={() => setShowQr((v) => !v)} aria-expanded={showQr} className="flex items-center gap-1.5 py-1">
           <QrCode className="size-4" /> QR
         </button>
-        <a href={link} target="_blank" rel="noopener" className={chip}>
-          <ExternalLink className="size-4" /> {t.viewAsCustomer}
-        </a>
       </div>
 
       {showQr && qr && (
