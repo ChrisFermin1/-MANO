@@ -6,27 +6,35 @@ import { Loader2, Mic, RotateCcw, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { PageHeader, Screen, Title, btnPrimary } from "@/components/ui";
 import { createJob } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
+import { ManoBusyError } from "@/lib/mano";
+
+// ElevenLabs voice (backend). Default: port 8000 on the same machine that serves this page,
+// so it also works from a phone on the Wi-Fi. If it fails, the phone's own speech recognition takes over.
+const voiceUrl = () =>
+  process.env.NEXT_PUBLIC_VOICE_URL || `${window.location.protocol}//${window.location.hostname}:8000/api/voice/transcribe`;
 
 const chip =
   "flex h-10 items-center gap-1.5 rounded-full glass px-4 text-sm font-semibold text-forest transition active:scale-[0.97]";
 
 const EXAMPLE ="Pintar la sala y cocina para Maria Lopez, dos manos, y reparar una grieta en la pared.";
 
-// Minimal typing for the Web Speech API (not in TS's DOM lib)
 type Recognition = {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
   start: () => void;
   stop: () => void;
-  onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null;
+  onresult: ((event: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null;
   onend: (() => void) | null;
 };
 
 function getRecognition(): (new () => Recognition) | null {
   if (typeof window === "undefined") return null;
-  const w = window as unknown as { SpeechRecognition?: new () => Recognition; webkitSpeechRecognition?: new () => Recognition };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+  const browser = window as unknown as {
+    SpeechRecognition?: new () => Recognition;
+    webkitSpeechRecognition?: new () => Recognition;
+  };
+  return browser.SpeechRecognition ?? browser.webkitSpeechRecognition ?? null;
 }
 
 export default function NuevoTrabajo() {
@@ -34,40 +42,158 @@ export default function NuevoTrabajo() {
   const router = useRouter();
   const [text, setText] = useState("");
   const [interim, setInterim] = useState("");
-  const [listening, setListening] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const [canListen, setCanListen] = useState(false);
   const [busy, setBusy] = useState(false);
-  // Snapshots of `text` before each recorded phrase / clear, so any step can be undone
   const [history, setHistory] = useState<string[]>([]);
   const [justCleared, setJustCleared] = useState(false);
+  const [voiceError, setVoiceError] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const rec = useRef<Recognition | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const useBrowserSpeech = useRef(false);
   const textRef = useRef("");
 
-  useEffect(() => setCanListen(getRecognition() !== null), []);
+  useEffect(() => {
+    setCanListen(typeof MediaRecorder !== "undefined" || getRecognition() !== null);
+  }, []);
   useEffect(() => {
     textRef.current = text;
   }, [text]);
-
   useEffect(() => {
     if (!justCleared) return;
     const id = setTimeout(() => setJustCleared(false), 6000);
     return () => clearTimeout(id);
   }, [justCleared]);
 
+  const appendText = (addition: string) => {
+    const previous = textRef.current;
+    const next = `${previous}${previous && !previous.endsWith(" ") ? " " : ""}${addition.trim()}`;
+    textRef.current = next;
+    setHistory((items) => [...items, previous]);
+    setText(next);
+  };
+
+  // Fallback: browser speech recognition
+  const startBrowserSpeech = () => {
+    const RecognitionConstructor = getRecognition();
+    if (!RecognitionConstructor) return;
+
+    const recognition = new RecognitionConstructor();
+    recognition.lang = lang === "es" ? "es-US" : "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = (event) => {
+      let finalText = "";
+      let interimText = "";
+      for (let index = event.resultIndex; index < event.results.length; index++) {
+        const result = event.results[index];
+        if (result.isFinal) finalText += result[0].transcript;
+        else interimText += result[0].transcript;
+      }
+      if (finalText) appendText(finalText);
+      setInterim(interimText);
+    };
+    recognition.onend = () => {
+      if (rec.current !== recognition) return;
+      rec.current = null;
+      setIsRecording(false);
+      setInterim("");
+    };
+    rec.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  };
+
+  // Main: record audio and send it to the ElevenLabs backend
+  const startRecording = async () => {
+    setVoiceError("");
+
+    if (useBrowserSpeech.current || typeof MediaRecorder === "undefined") {
+      startBrowserSpeech();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((track) => track.stop());
+        setTranscribing(true);
+        try {
+          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          const formData = new FormData();
+          formData.append("file", audioBlob, "audio.webm");
+
+          const response = await fetch(voiceUrl(), {
+            method: "POST",
+            body: formData,
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            const detail = typeof data.detail === "string" ? data.detail : response.statusText;
+            throw new Error(detail || "Transcription failed");
+          }
+          if (data.text) appendText(data.text);
+        } catch (err) {
+          console.warn("ElevenLabs transcription failed:", err);
+          if (getRecognition()) {
+            useBrowserSpeech.current = true;
+            setVoiceError(t.voiceRetry);
+          } else {
+            setVoiceError(t.voiceFailed);
+          }
+        } finally {
+          setTranscribing(false);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      setVoiceError(t.micDenied);
+    }
+  };
+
+  const stopRecording = () => {
+    setIsRecording(false);
+    if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+    rec.current?.stop();
+  };
+
+  const toggleMic = () => {
+    if (transcribing) return;
+    if (isRecording) stopRecording();
+    else startRecording();
+  };
+
+  const recordAgain = () => {
+    clearAll();
+    setJustCleared(false);
+    startRecording();
+  };
+
   const removeLast = () => {
-    setText(history[history.length - 1] ?? "");
+    const previous = history[history.length - 1] ?? "";
+    textRef.current = previous;
+    setText(previous);
     setHistory((h) => h.slice(0, -1));
   };
 
   const clearAll = () => {
-    const old = rec.current;
-    rec.current = null;
-    old?.stop();
-    setListening(false);
     if (text) setHistory((h) => [...h, text]);
     textRef.current = "";
     setText("");
-    setInterim("");
     setJustCleared(true);
   };
 
@@ -76,56 +202,17 @@ export default function NuevoTrabajo() {
     setJustCleared(false);
   };
 
-  const recordAgain = () => {
-    clearAll();
-    setJustCleared(false);
-    startListening();
-  };
-
-  const toggleMic = () => {
-    if (listening) rec.current?.stop();
-    else startListening();
-  };
-
-  const startListening = () => {
-    const R = getRecognition();
-    if (!R) return;
-    const r = new R();
-    r.lang = lang === "es" ? "es-US" : "en-US";
-    r.continuous = true;
-    r.interimResults = true;
-    r.onresult = (e) => {
-      let finalText = "";
-      let interimText = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const res = e.results[i];
-        if (res.isFinal) finalText += res[0].transcript;
-        else interimText += res[0].transcript;
-      }
-      if (finalText) {
-        const prev = textRef.current;
-        const next = `${prev}${prev && !prev.endsWith(" ") ? " " : ""}${finalText.trim()}`;
-        textRef.current = next;
-        setHistory((h) => [...h, prev]);
-        setText(next);
-      }
-      setInterim(interimText);
-    };
-    r.onend = () => {
-      if (rec.current !== r) return; // an older session ending after "Grabar de nuevo"
-      setListening(false);
-      setInterim("");
-    };
-    rec.current = r;
-    r.start();
-    setListening(true);
-  };
-
   const submit = async () => {
-    rec.current?.stop();
+    if (!text.trim() || busy || isRecording || transcribing) return;
     setBusy(true);
-    const job = await createJob(text.trim());
-    router.push(`/trabajos/${job.id}`);
+    setSubmitError("");
+    try {
+      const job = await createJob(text.trim());
+      router.push(`/trabajos/${job.id}`);
+    } catch (err) {
+      setSubmitError(err instanceof ManoBusyError ? t.extractBusy : t.extractError);
+      setBusy(false);
+    }
   };
 
   if (busy) {
@@ -147,31 +234,47 @@ export default function NuevoTrabajo() {
         <button
           type="button"
           onClick={toggleMic}
-          aria-pressed={listening}
+          disabled={transcribing}
+          aria-pressed={isRecording}
           className="mt-8 flex flex-col items-center gap-3 self-center"
         >
           <span
             className={`flex size-[88px] items-center justify-center rounded-full transition ${
-              listening ? "bg-forest ring-8 ring-lime/40 glow-lime" : "bg-lime glow-lime"
+              isRecording ? "bg-forest ring-8 ring-lime/40 glow-lime" : "bg-lime glow-lime"
             }`}
           >
-            <Mic className={`size-10 ${listening ? "animate-pulse text-lime" : "text-forest"}`} strokeWidth={2} />
+            {transcribing ? (
+              <Loader2 className="size-10 animate-spin text-forest" strokeWidth={2} />
+            ) : (
+              <Mic className={`size-10 ${isRecording ? "animate-pulse text-lime" : "text-forest"}`} strokeWidth={2} />
+            )}
           </span>
-          <span className="text-sm font-semibold">{listening ? t.listening : t.tapToTalk}</span>
+          <span className="text-sm font-semibold">
+            {transcribing ? t.thinking : isRecording ? t.listening : t.tapToTalk}
+          </span>
         </button>
+      )}
+
+      {voiceError && (
+        <p role="alert" className="mt-3 text-center text-sm font-semibold text-[#8a2a17]">
+          {voiceError}
+        </p>
       )}
 
       <div className="relative mt-6">
         <textarea
           value={interim ? `${text} ${interim}` : text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            textRef.current = e.target.value;
+            setText(e.target.value);
+          }}
           placeholder={t.newJobPlaceholder}
           rows={6}
           className="w-full resize-none rounded-[20px] glass-field p-5 text-base leading-6 outline-none ring-forest/60 placeholder:text-muted focus:ring-2"
         />
       </div>
 
-      {text && !listening && (
+      {text && !isRecording && !transcribing && (
         <div className="mt-3 flex flex-wrap gap-2">
           {history.length > 0 && (
             <button type="button" onClick={removeLast} className={chip}>
@@ -202,7 +305,8 @@ export default function NuevoTrabajo() {
         <button
           type="button"
           onClick={() => {
-            setHistory((h) => [...h, text]);
+            textRef.current = EXAMPLE;
+            setHistory((items) => [...items, text]);
             setText(EXAMPLE);
           }}
           className="mt-2 self-start text-sm font-semibold text-forest underline underline-offset-4"
@@ -211,8 +315,19 @@ export default function NuevoTrabajo() {
         </button>
       )}
 
+      {submitError && (
+        <p role="alert" className="mt-4 rounded-[14px] bg-[#fff0ed] px-4 py-3 text-sm font-semibold text-[#8a2a17]">
+          {submitError}
+        </p>
+      )}
+
       <div className="mt-auto pt-8">
-        <button type="button" onClick={submit} disabled={!text.trim()} className={btnPrimary}>
+        <button
+          type="button"
+          onClick={submit}
+          disabled={!text.trim() || isRecording || transcribing}
+          className={btnPrimary}
+        >
           <Sparkles className="size-5" strokeWidth={2.5} />
           {t.organize}
         </button>

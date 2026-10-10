@@ -1,9 +1,50 @@
-// MANO (mock) — turns Carlos's words into a structured job, and writes messages.
-// Person 3's LLM endpoint replaces interpret(); keep the same return shape.
+// MANO — turns Carlos's words into a structured job, and writes messages.
+// interpret(): Gemini via /api/extract. If the key is missing or Gemini fails, the built-in
+// extractor below takes over, so creating a job never stops (and the demo never breaks).
 
 import type { Job, LineItem } from "@/lib/api";
 import type { OtherTrade } from "@/lib/business";
 import { toEnglish } from "@/lib/translate";
+
+type Interpreted = Pick<Job, "customer_name" | "customer_phone" | "address" | "service" | "line_items">;
+
+// Thrown only when Mano is busy (rate limit) — worth telling Carlos to wait a moment
+export class ManoBusyError extends Error {}
+
+export async function interpret(description: string, otherTrade?: OtherTrade | null): Promise<Interpreted> {
+  let data: unknown = null;
+  let status = 0;
+  try {
+    const response = await fetch("/api/extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description, otherTrade: otherTrade?.name ?? null }),
+    });
+    status = response.status;
+    data = await response.json().catch(() => null);
+  } catch {
+    // offline / server down — fall through to the built-in extractor
+  }
+
+  if (status === 429) throw new ManoBusyError();
+
+  const d = data as Partial<Interpreted> | null;
+  if (status === 200 && d && typeof d.service === "string" && Array.isArray(d.line_items)) {
+    return {
+      customer_name: d.customer_name ?? null,
+      // Gemini's schema has no phone yet; the regex still catches one Carlos said
+      customer_phone: description.match(PHONE)?.[0]?.trim() ?? null,
+      address: d.address ?? null,
+      service: d.service,
+      line_items: d.line_items.map((i) => ({ ...i, translation_pending: !i.description })),
+    };
+  }
+
+  if (status !== 503) console.warn("Mano (Gemini) failed, using the built-in extractor", status, data);
+  return interpretLocally(description, otherTrade);
+}
+
+/* ───────── Built-in extractor (no AI) ───────── */
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
@@ -28,7 +69,7 @@ const PHONE = /(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // Prices: the real Gemini version returns only prices Carlos *said*. Mano never suggests prices.
-export function interpret(
+function interpretLocally(
   text: string,
   otherTrade?: OtherTrade | null,
 ): Pick<Job, "customer_name" | "customer_phone" | "address" | "service" | "line_items"> {
@@ -91,7 +132,7 @@ export function interpret(
   };
 }
 
-export function followUpMessage(job: Job, owner: string, business: string, total: string) {
+export async function followUpMessage(job: Job, owner: string, business: string, total: string) {
   const name = (job.customer_name ?? "").split(" ")[0] || "there";
   if (job.status === "PAYMENT_PENDING" || job.status === "COMPLETED") {
     return {
