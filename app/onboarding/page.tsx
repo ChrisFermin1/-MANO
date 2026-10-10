@@ -12,7 +12,6 @@
 //   5. We show it to the contractor before sending them to the dashboard
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Sparkles, ChevronRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,7 +52,6 @@ const CHALLENGES = [
 const STEPS = ["About you", "Your business", "Your goals"];
 
 export default function OnboardingPage() {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<OnboardingForm>({
     name: "",
@@ -72,6 +70,12 @@ export default function OnboardingPage() {
 
   async function handleSubmit() {
     setLoading(true);
+
+    // ── Mark onboarding complete FIRST ───────────────────────────────────────
+    // Set the cookie before the Gemini call so the dashboard redirect always
+    // works, even if Gemini fails (wrong key, network error, etc.).
+    document.cookie = "mano_onboarded=1; path=/; max-age=31536000; SameSite=Lax";
+
     try {
       // POST to our server route which calls Gemini
       // See app/api/onboarding/route.ts for how this works
@@ -82,12 +86,6 @@ export default function OnboardingPage() {
       });
       const data = await res.json() as { welcomeMessage?: string };
       setWelcomeMessage(data.welcomeMessage ?? "Welcome to Mano! Let's get to work.");
-
-      // ── Mark onboarding complete ──────────────────────────────────────────
-      // The middleware reads this cookie to decide whether to redirect to
-      // /onboarding or let the user through to the dashboard.
-      // Expires in 365 days — effectively permanent for hackathon purposes.
-      document.cookie = "mano_onboarded=1; path=/; max-age=31536000; SameSite=Lax";
     } catch {
       setWelcomeMessage("Welcome to Mano! Let's get started.");
     } finally {
@@ -122,7 +120,12 @@ export default function OnboardingPage() {
           <Button
             size="lg"
             className="w-full gap-2 text-base"
-            onClick={() => router.push("/")}
+            onClick={() => {
+              // Full page load required — router.push() is client-side and
+              // won't re-send the mano_onboarded cookie to middleware.
+              // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+              window.location.href = "/";
+            }}
           >
             Go to my dashboard
             <ChevronRight className="h-4 w-4" />
