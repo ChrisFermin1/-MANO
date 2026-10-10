@@ -21,6 +21,7 @@ export default function NuevoTrabajo() {
   const [justCleared, setJustCleared] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [voiceError, setVoiceError] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
@@ -98,8 +99,14 @@ export default function NuevoTrabajo() {
 
   const submit = async () => {
     setBusy(true);
-    const job = await createJob(text.trim());
-    router.push(`/trabajos/${job.id}`);
+    setSubmitError("");
+    try {
+      const job = await createJob(text.trim());
+      router.push(`/trabajos/${job.id}`);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : t.extractError);
+      setBusy(false);
+    }
   };
 
   if (busy) {
@@ -181,6 +188,12 @@ export default function NuevoTrabajo() {
         >
           {t.tryExample}
         </button>
+      )}
+
+      {submitError && (
+        <p role="alert" className="mt-4 rounded-[14px] bg-[#fff0ed] px-4 py-3 text-sm font-semibold text-[#8a2a17]">
+          {submitError}
+        </p>
       )}
 
       <div className="mt-auto pt-8">

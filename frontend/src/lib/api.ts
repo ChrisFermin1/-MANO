@@ -262,7 +262,10 @@ export async function createJob(description: string): Promise<Job> {
   const jobs = read();
   const now = new Date().toISOString();
   const parsed = await interpret(description, loadBusiness()?.otherTrade);
-  parsed.line_items = parsed.line_items.map((i) => (i.amount != null ? { ...i, price_source: "spoken" } : i));
+  parsed.line_items = parsed.line_items.map((item) => ({
+    ...item,
+    ...(item.amount != null ? { price_source: "spoken" as const } : {}),
+  }));
   const draft: Job = {
     id: Math.max(0, ...jobs.map((j) => j.id)) + 1,
     ...parsed,

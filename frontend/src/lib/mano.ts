@@ -8,15 +8,22 @@ export async function interpret(
   const response = await fetch("/api/extract", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ description }),
+    body: JSON.stringify({ description, otherTrade: otherTrade?.name ?? null }),
   });
-  
+
+  const data = await response.json().catch(() => null);
   if (!response.ok) {
-    console.error("Mano extraction API failed");
-    return { customer_name: null, address: null, service: "General", line_items: [] };
+    const message = typeof data?.error === "string" ? data.error : "Mano couldn't organize that job. Please try again.";
+    if (response.status === 429) {
+      throw new Error(message.includes("busy") ? message : "Mano is busy right now. Please try again shortly.");
+    }
+    throw new Error(message);
   }
-  
-  return response.json();
+  if (!data || typeof data.service !== "string" || !Array.isArray(data.line_items)) {
+    throw new Error("Mano returned incomplete job details. Please try again.");
+  }
+
+  return data as Pick<Job, "customer_name" | "address" | "service" | "line_items">;
 }
 
 export async function followUpMessage(job: Job, owner: string, business: string, total: string) {

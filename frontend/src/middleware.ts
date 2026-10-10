@@ -10,8 +10,6 @@
 // automatically — we only add our own logic on top.
 
 import { NextResponse, type NextRequest } from "next/server";
-import { auth0 } from "@/lib/auth0";
-
 // Pages that don't require authentication
 const PUBLIC_PATHS = ["/auth/signin", "/auth/signup"];
 
@@ -57,5 +55,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/auth).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
 };
