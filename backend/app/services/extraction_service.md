@@ -1,6 +1,6 @@
 # Mano — extraction
 
-`extraction.py` implements the interface Joshua defined for `job_service`:
+`extraction_service.py` implements the interface Joshua defined for `job_service`:
 
 ```python
 extract_job_information(description, *, extract_customer_name: bool, extract_job_price: bool)

@@ -1,4 +1,4 @@
-"""Tests for Mano extraction (stdlib unittest — no extra dependencies).
+"""Tests for app/services/extraction_service.py (Mano extraction (stdlib unittest — no extra dependencies).
 
 Run from backend/:  python -m unittest discover -s tests -v
 """
@@ -6,7 +6,7 @@ Run from backend/:  python -m unittest discover -s tests -v
 import unittest
 from decimal import Decimal
 
-from app.mano.extraction import ExtractedJobInformation, extract_job_information
+from app.services.extraction_service import ExtractedJobInformation, extract_job_information
 
 
 def both(text: str) -> ExtractedJobInformation:
