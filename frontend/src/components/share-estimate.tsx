@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { Check, Copy, ExternalLink, QrCode, Share2 } from "lucide-react";
 import { estimateLink, firstName, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
+import { shareOrigin } from "@/lib/relay";
 
 // Carlos sends the homeowner a link (WhatsApp/SMS via the phone's share sheet). No app needed on their side.
 export function ShareEstimate({ job, dark = false }: { job: Job; dark?: boolean }) {
@@ -21,8 +22,13 @@ export function ShareEstimate({ job, dark = false }: { job: Job; dark?: boolean 
   };
 
   useEffect(() => {
-    setLink(estimateLink(job));
+    // on "localhost" this swaps in the Mac's Wi-Fi address, so the QR/link opens on a phone
+    let alive = true;
+    shareOrigin().then((origin) => alive && setLink(estimateLink(job, origin)));
     setCanShare(typeof navigator !== "undefined" && "share" in navigator);
+    return () => {
+      alive = false;
+    };
   }, [job]);
 
   useEffect(() => {
@@ -48,16 +54,16 @@ export function ShareEstimate({ job, dark = false }: { job: Job; dark?: boolean 
   };
 
   const chip = `flex h-11 items-center justify-center gap-1.5 rounded-[14px] text-sm font-semibold transition active:scale-[0.97] ${
-    dark ? "bg-white/10 text-white" : "bg-cream text-forest"
+    dark ? "bg-white/10 text-white" : "bg-white/60 text-forest"
   }`;
 
   return (
-    <div className={`rounded-[20px] p-4 ${dark ? "bg-white/5 ring-1 ring-white/15" : "bg-white"}`}>
+    <div className={`rounded-[20px] p-4 ${dark ? "glass-dark" : "glass"}`}>
       <p className={`text-sm font-semibold ${dark ? "text-white" : ""}`}>{t.shareWith(firstName(job.customer_name))}</p>
       <p className={`mt-1 truncate font-mono text-xs ${dark ? "text-white/60" : "text-muted"}`}>{link}</p>
 
       {/* The text that goes with the link — English for the customer; Spanish meaning for Carlos */}
-      <div className={`mt-3 rounded-[12px] px-3 py-2 text-xs leading-4 ${dark ? "bg-white/10" : "bg-cream"}`}>
+      <div className={`mt-3 rounded-[12px] px-3 py-2 text-xs leading-4 ${dark ? "bg-white/10" : "bg-white/60"}`}>
         <p lang="en" className={dark ? "text-white/90" : "text-black/75"}>
           “{msg.en}”
         </p>

@@ -4,31 +4,27 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CheckCircle2, X } from "lucide-react";
-import { firstName, jobTotal, money, type Job } from "@/lib/api";
+import { firstName, jobTotal, money, onJobsChange, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 
 // Pops up on any of Carlos's screens the moment a customer approves an estimate.
-// Mock: listens to localStorage changes from the customer tab. Backend version: poll /jobs or use a websocket.
+// Fires on any job change (other tab, or the relay sync in this tab). Backend version: poll /jobs or a websocket.
 export function ApprovalToast() {
   const { t } = useLang();
   const pathname = usePathname();
   const [job, setJob] = useState<Job | null>(null);
 
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key !== "mano.jobs" || !e.newValue) return;
-      try {
-        const before: Job[] = e.oldValue ? JSON.parse(e.oldValue) : [];
-        const after: Job[] = JSON.parse(e.newValue);
+  useEffect(
+    () =>
+      // fires for other tabs AND this tab (e.g. an approval that just arrived from the customer's phone)
+      onJobsChange((before, after) => {
         const newlyApproved = after.find(
           (j) => j.status === "ACCEPTED" && j.approved_by && before.find((b) => b.id === j.id)?.status !== "ACCEPTED",
         );
         if (newlyApproved) setJob(newlyApproved);
-      } catch {}
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+      }),
+    [],
+  );
 
   useEffect(() => {
     if (!job) return;

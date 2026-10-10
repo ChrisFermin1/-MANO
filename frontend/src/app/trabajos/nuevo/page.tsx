@@ -8,7 +8,7 @@ import { createJob } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 
 const chip =
-  "flex h-10 items-center gap-1.5 rounded-full bg-white px-4 text-sm font-semibold text-forest transition active:scale-[0.97]";
+  "flex h-10 items-center gap-1.5 rounded-full glass px-4 text-sm font-semibold text-forest transition active:scale-[0.97]";
 
 const EXAMPLE ="Pintar la sala y cocina para Maria Lopez, dos manos, y reparar una grieta en la pared.";
 
@@ -130,7 +130,7 @@ export default function NuevoTrabajo() {
 
   if (busy) {
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-forest px-8 text-center text-white">
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-mano-dark px-8 text-center text-white">
         <Loader2 className="size-10 animate-spin text-lime" />
         <p className="font-serif text-[28px] leading-8">{t.thinking}</p>
       </main>
@@ -152,7 +152,7 @@ export default function NuevoTrabajo() {
         >
           <span
             className={`flex size-[88px] items-center justify-center rounded-full transition ${
-              listening ? "bg-forest ring-8 ring-lime/40" : "bg-lime"
+              listening ? "bg-forest ring-8 ring-lime/40 glow-lime" : "bg-lime glow-lime"
             }`}
           >
             <Mic className={`size-10 ${listening ? "animate-pulse text-lime" : "text-forest"}`} strokeWidth={2} />
@@ -167,7 +167,7 @@ export default function NuevoTrabajo() {
           onChange={(e) => setText(e.target.value)}
           placeholder={t.newJobPlaceholder}
           rows={6}
-          className="w-full resize-none rounded-[20px] bg-white p-5 text-base leading-6 outline-none ring-forest/60 placeholder:text-muted focus:ring-2"
+          className="w-full resize-none rounded-[20px] glass-field p-5 text-base leading-6 outline-none ring-forest/60 placeholder:text-muted focus:ring-2"
         />
       </div>
 
@@ -190,7 +190,7 @@ export default function NuevoTrabajo() {
       )}
 
       {justCleared && !text && (
-        <div role="status" className="mt-3 flex items-center justify-between rounded-[14px] bg-forest px-4 py-3 text-sm text-white">
+        <div role="status" className="mt-3 flex items-center justify-between rounded-[14px] glass-forest px-4 py-3 text-sm text-white">
           {t.cleared}
           <button type="button" onClick={undoClear} className="font-bold text-lime">
             {t.undo}

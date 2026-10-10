@@ -8,7 +8,7 @@ import { saveBusiness } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 
 const inputClass =
-  "h-[56px] w-full rounded-[20px] bg-white px-5 text-base outline-none ring-forest/60 placeholder:text-muted focus:ring-2";
+  "h-[56px] w-full rounded-[20px] glass-field px-5 text-base outline-none ring-forest/60 placeholder:text-muted focus:ring-2";
 
 export default function TuNegocio() {
   const { t } = useLang();
@@ -25,7 +25,7 @@ export default function TuNegocio() {
   };
 
   return (
-    <main className="min-h-dvh bg-cream text-black">
+    <main className="min-h-dvh bg-mano-light text-black">
       <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-8 pt-[33px]">
         <OnboardingHeader step={2} total={2} backHref="/onboarding/oficio" />
 
@@ -49,7 +49,7 @@ export default function TuNegocio() {
             type="button"
             onClick={finish}
             disabled={!canFinish}
-            className="flex h-[53px] w-full items-center justify-center rounded-[20px] bg-forest text-sm font-bold text-lime transition active:scale-[0.98] disabled:opacity-40"
+            className="flex h-[53px] w-full items-center justify-center rounded-[20px] bg-forest text-sm font-bold text-lime shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40"
           >
             {t.finish} →
           </button>

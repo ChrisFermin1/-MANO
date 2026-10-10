@@ -213,6 +213,14 @@ Computed in the frontend from `GET /jobs` (`moneySummary()` and `jobBadge()` in 
 - Card is hidden until the business has sent at least one invoice.
 - **Trabajos recientes** = 3 most recently updated non-cancelled jobs with a short, **neutral** status: Sin enviar, Enviado, Aceptado, Agendado, En progreso, Terminado, Facturado, Pagado. Warnings (missing info, overdue, no reply) are **only** shown by Ojo — the list never repeats them.
 
+## 6c. DEMO-ONLY relay (delete when the backend is live)
+
+So a phone can scan the QR and approve before the backend exists, the Next.js dev server has a tiny relay:
+`POST /api/demo/estimates`, `GET /api/demo/estimates/:token`, `POST /api/demo/estimates/:token/approve`, `GET /api/demo/origin`
+(files: `src/app/api/demo/**`, `src/lib/demo-relay-server.ts`, `src/lib/relay.ts`, `src/components/relay-sync.tsx`).
+It stores to a temp file on the Mac, has **no auth**, and is meant for local Wi-Fi demos only. The real
+`GET/POST /public/estimates/:token` (§6) replaces it — same idea, same shapes.
+
 ## 7. Live updates
 
 - Today the "¡Maria aprobó el estimado!" pop-up and the live-refreshing pages only work **between tabs in one browser** (mock).

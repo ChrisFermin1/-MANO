@@ -41,7 +41,7 @@ export default function TuOficio() {
   };
 
   return (
-    <main className="min-h-dvh bg-cream text-black">
+    <main className="min-h-dvh bg-mano-light text-black">
       <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-8 pt-[33px]">
         <OnboardingHeader step={1} total={2} backHref="/" />
 
@@ -58,12 +58,12 @@ export default function TuOficio() {
                 onClick={() => toggle(id)}
                 aria-pressed={on}
                 className={`relative flex h-[124px] flex-col justify-between rounded-[20px] p-[14px] text-left transition active:scale-[0.98] ${
-                  on ? "bg-forest text-white" : "bg-white text-black"
+                  on ? "glass-forest text-white" : "glass text-black"
                 }`}
               >
                 <Icon className={`size-[34px] ${on ? "text-lime" : ""}`} strokeWidth={1.75} />
                 {on && (
-                  <span className="absolute right-[14px] top-[18px] flex size-[25px] items-center justify-center rounded-full bg-lime">
+                  <span className="absolute right-[14px] top-[18px] flex size-[25px] items-center justify-center rounded-full bg-lime glow-lime">
                     <Check className="size-[15px] text-forest" strokeWidth={3} />
                   </span>
                 )}
@@ -81,13 +81,13 @@ export default function TuOficio() {
               value={otherName}
               onChange={(e) => setOtherName(e.target.value)}
               placeholder={t.otherPlaceholder}
-              className="h-[56px] w-full rounded-[20px] bg-white px-5 text-base outline-none ring-2 ring-forest placeholder:text-muted"
+              className="h-[56px] w-full rounded-[20px] glass-field px-5 text-base outline-none ring-2 ring-forest placeholder:text-muted"
             />
           </label>
         )}
 
         {/* Paso 1's real job: picks which "forgot to charge" checklists Ojo watches */}
-        <div className="mt-5 flex gap-[7px] rounded-[10px] bg-peach py-3 pl-[23px] pr-[14px] text-xs leading-[15px]">
+        <div className="mt-5 flex gap-[7px] rounded-[14px] glass-peach py-3 pl-[23px] pr-[14px] text-xs leading-[15px]">
           <Eye className="-mt-[3px] size-6 shrink-0 text-[#b8803f]" strokeWidth={1.75} />
           {selected.length === 0 ? (
             <p>
@@ -111,7 +111,7 @@ export default function TuOficio() {
             type="button"
             onClick={next}
             disabled={selected.length === 0}
-            className="flex h-[53px] w-full items-center justify-center rounded-[20px] bg-forest text-sm font-bold text-lime transition active:scale-[0.98] disabled:opacity-40"
+            className="flex h-[53px] w-full items-center justify-center rounded-[20px] bg-forest text-sm font-bold text-lime shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40"
           >
             {t.next} →
           </button>

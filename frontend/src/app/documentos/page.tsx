@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { DocStateBadge, PageHeader, Screen, Title, type DocState } from "@/components/ui";
-import { estimateNo, fmtDate, getJobs, invoiceNo, invoiceState, jobTotal, money, STATUS_FLOW, type Job } from "@/lib/api";
+import { estimateNo, fmtDate, getJobs, onJobsChange, invoiceNo, invoiceState, jobTotal, money, STATUS_FLOW, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 
 type Tab = "estimates" | "invoices";
@@ -48,9 +48,7 @@ export default function Documentos() {
     // the dashboard's money card links here with ?tab=invoices
     if (new URLSearchParams(window.location.search).get("tab") === "invoices") setTab("invoices");
     getJobs().then(setJobs);
-    const onStorage = (e: StorageEvent) => e.key === "mano.jobs" && getJobs().then(setJobs);
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    return onJobsChange(() => void getJobs().then(setJobs));
   }, []);
 
   const rows = jobs ? (tab === "estimates" ? estimateRows(jobs) : invoiceRows(jobs)) : [];
@@ -63,7 +61,7 @@ export default function Documentos() {
       <PageHeader backHref="/inicio" />
       <Title>{t.docsTitle}</Title>
 
-      <div className="mt-6 grid grid-cols-2 rounded-[14px] bg-white p-1" role="tablist">
+      <div className="glass mt-6 grid grid-cols-2 rounded-[14px] p-1" role="tablist">
         {(["estimates", "invoices"] as Tab[]).map((k) => (
           <button
             key={k}
@@ -80,11 +78,11 @@ export default function Documentos() {
 
       {tab === "invoices" && (
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <div className="rounded-[16px] bg-peach p-4">
+          <div className="rounded-[16px] glass-peach p-4">
             <p className="text-xs font-medium">{t.outstanding}</p>
             <p className="mt-1 text-2xl font-bold">{money(outstanding)}</p>
           </div>
-          <div className="rounded-[16px] bg-lime/60 p-4">
+          <div className="rounded-[16px] glass-lime p-4">
             <p className="text-xs font-medium">{t.collected}</p>
             <p className="mt-1 text-2xl font-bold">{money(collected)}</p>
           </div>
@@ -96,7 +94,7 @@ export default function Documentos() {
       <ul className="mt-4 space-y-3">
         {rows.map((r) => (
           <li key={r.number}>
-            <Link href={r.href} className="flex items-center gap-3 rounded-[20px] bg-white p-4 transition active:scale-[0.99]">
+            <Link href={r.href} className="flex items-center gap-3 rounded-[20px] glass p-4 transition active:scale-[0.99]">
               <span className="min-w-0 flex-1">
                 <span className="block font-mono text-xs text-muted">{r.number}</span>
                 <span className="block truncate text-base font-semibold leading-5">{r.job.customer_name}</span>
