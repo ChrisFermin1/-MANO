@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 import Link from "next/link";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import OjoSection from "@/components/OjoSection";
@@ -26,12 +27,13 @@ export default function DashboardPage() {
   });
 
   const { user } = useUser();
+  const { t } = useLanguage();
   const firstName = user?.name?.split(" ")[0] ?? "there";
 
   // Move time-dependent value into state so it isn't evaluated during prerender
-  const [greeting] = useState(() => {
+  const [greetingKey] = useState(() => {
     const hour = new Date().getHours();
-    return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    return hour < 12 ? "good_morning" : hour < 18 ? "good_afternoon" : "good_evening";
   });
 
   return (
@@ -42,22 +44,22 @@ export default function DashboardPage() {
           Mano
         </p>
         <h1 className="text-2xl font-bold text-gray-900">
-          {greeting}, {firstName} 👋
+          {t(greetingKey as any)}, {firstName} 👋
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           {data.active_job_count > 0 ? (
             <>
-              You have{" "}
+              {t("you_have")}{" "}
               <Link href="/jobs" className="font-semibold text-gray-700 underline underline-offset-2">
-                {data.active_job_count} active job{data.active_job_count !== 1 ? "s" : ""}
+                {data.active_job_count} {data.active_job_count !== 1 ? t("active_jobs") : t("active_job")}
               </Link>
               .
             </>
           ) : (
             <>
-              No jobs yet.{" "}
+              {t("no_jobs_yet")}{" "}
               <Link href="/jobs/new" className="font-semibold text-gray-700 underline underline-offset-2">
-                Create your first job →
+                {t("create_first_job")}
               </Link>
             </>
           )}

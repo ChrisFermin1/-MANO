@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useLanguage } from '@/context/LanguageContext';
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import useSWR from "swr";
+import { api } from "@/lib/api";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Job, JobStatus } from "@/lib/types";
@@ -34,39 +36,39 @@ export const STATUS_COLOR: Record<JobStatus, string> = {
 };
 
 export default function JobsPage() {
-  // Lazy initializer reads localStorage once on mount — no useEffect needed
-  // TODO: replace with api.getJobs() once backend is ready
-  const [jobs] = useState<Job[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      return JSON.parse(localStorage.getItem("mano_jobs") ?? "[]") as Job[];
-    } catch {
-      return [];
-    }
-  });
+  const { t } = useLanguage();
+  const { data: jobs, error, isLoading } = useSWR("/jobs", api.getJobs);
 
   return (
     <main className="mx-auto max-w-lg px-4 pt-8 pb-24 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Jobs</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('jobs')}</h1>
         <Link href="/jobs/new" className={buttonVariants({ size: "lg" }) + " gap-2"}>
           <Plus className="h-4 w-4" />
-          New Job
+          {t('new_job')}
         </Link>
       </div>
 
-      {jobs.length === 0 && (
+      {isLoading && <p className="text-center text-gray-500 py-10">Loading jobs...</p>}
+      
+      {error && (
+        <div className="text-center py-10 text-red-600 font-medium">
+          Error loading jobs from server.
+        </div>
+      )}
+
+      {jobs && jobs.length === 0 && (
         <div className="text-center py-16 space-y-3">
           <p className="text-4xl">📋</p>
           <p className="font-semibold text-gray-700">No jobs yet</p>
           <p className="text-sm text-gray-500">
-            Tap <strong>New Job</strong> to add your first one.
+            Tap <strong>{t('new_job')}</strong> to add your first one.
           </p>
         </div>
       )}
 
       <div className="space-y-3">
-        {jobs.map((job) => (
+        {jobs?.map((job) => (
           <Link key={job.id} href={`/jobs/${job.id}`} className="block">
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="flex items-center justify-between gap-4 p-4">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser } from "@auth0/nextjs-auth0/client";
 import { LogOut } from "lucide-react";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 const HIDE_ON = ["/auth/", "/onboarding"];
 
@@ -26,6 +27,7 @@ export default function UserHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           {user.picture ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img

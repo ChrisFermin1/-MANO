@@ -16,6 +16,7 @@ interface QuoteOption {
   description: string;
   price: string;
   includes: string[];
+  breakdown: { item: string; cost: string; explanation: string }[];
 }
 
 export async function POST(req: NextRequest) {
@@ -30,43 +31,38 @@ export async function POST(req: NextRequest) {
     const language = body.preferredLanguage === "es" ? "Spanish" : "English";
 
     const prompt = `
-You are Mano, an AI assistant for a contracting business called "${body.businessName}" specialising in ${body.trade}.
+You are Mano, an AI assistant for a professional contracting business called "${body.businessName}" specializing in ${body.trade}.
 
 The contractor has described a job with these notes:
 "${body.notes}"
 
 Generate exactly 3 quote options in ${language}: Basic, Standard, and Premium.
-Each option should be appropriate for a real ${body.trade} contractor.
+
+For each option, you MUST perform a detailed cost analysis. Consider labor hours, material costs, overhead, and profit margins.
 
 Return ONLY valid JSON — no markdown, no explanation, just the JSON object:
 {
   "quotes": [
     {
       "tier": "basic",
-      "title": "short title",
-      "description": "1 sentence describing what's included",
-      "price": "$XXX",
-      "includes": ["item 1", "item 2", "item 3"]
+      "title": "...",
+      "description": "1 sentence description",
+      "price": "$total_price",
+      "includes": ["item 1", "item 2"],
+      "breakdown": [
+        {"item": "Labor", "cost": "$...", "explanation": "Reasoning for labor cost"},
+        {"item": "Materials", "cost": "$...", "explanation": "Reasoning for material cost"},
+        {"item": "Overhead/Profit", "cost": "$...", "explanation": "Reasoning for margin"}
+      ]
     },
-    {
-      "tier": "standard",
-      "title": "short title",
-      "description": "1 sentence describing what's included",
-      "price": "$XXX",
-      "includes": ["item 1", "item 2", "item 3", "item 4"]
-    },
-    {
-      "tier": "premium",
-      "title": "short title",
-      "description": "1 sentence describing what's included",
-      "price": "$XXX",
-      "includes": ["item 1", "item 2", "item 3", "item 4", "item 5"]
-    }
+    ... (repeat for standard and premium)
   ]
 }
 
-Price the basic option conservatively, standard at market rate, premium at full-service.
-Make the includes list specific to the job described, not generic.
+- Basic: Conservative pricing, essential scope.
+- Standard: Market rate, full scope.
+- Premium: Full service, premium materials, warranty included.
+- Be specific to the job described in the notes.
     `.trim();
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });

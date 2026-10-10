@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Check, ChevronRight, AlertCircle } from "lucide-react";
+import { ArrowLeft, Sparkles, Check, ChevronRight, AlertCircle, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import VoiceButton from "@/components/VoiceButton";
@@ -13,6 +13,7 @@ interface QuoteOption {
   description: string;
   price: string;
   includes: string[];
+  breakdown: { item: string; cost: string; explanation: string }[];
 }
 
 const TIER_STYLE = {
@@ -23,7 +24,32 @@ const TIER_STYLE = {
 
 export default function QuoteBuilderPage() {
   const [notes, setNotes] = useState("");
+  const [customerName, setCustomerName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  
+  async function handleDownloadPdf() {
+      if (!selected) return;
+      setGeneratingPdf(true);
+      
+      const res = await fetch("/api/quote/pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+              quote: selected,
+              customerName: customerName || "Valued Customer",
+              businessName: "My Business",
+          }),
+      });
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `quote-${customerName.replace(/\s+/g, '-').toLowerCase() || 'customer'}.pdf`;
+      a.click();
+      setGeneratingPdf(false);
+  }
   const [quotes, setQuotes] = useState<QuoteOption[] | null>(null);
   const [selected, setSelected] = useState<QuoteOption | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +109,24 @@ export default function QuoteBuilderPage() {
               </span>
               <span className="text-2xl font-bold text-gray-900">{selected.price}</span>
             </div>
+          <div className="mt-6 flex flex-col gap-3">
+              <Button className="w-full gap-2" onClick={handleDownloadPdf} disabled={generatingPdf}>
+                <FileText className="h-4 w-4" />
+                {generatingPdf ? "Generating PDF..." : "Download Quote PDF"}
+                        <div className="mt-4 pt-4 border-t">
+                            <h3 className="font-semibold mb-2">Cost Breakdown</h3>
+                            {selected.breakdown.map((item, idx) => (
+                                <div key={idx} className="flex justify-between text-sm py-1">
+                                    <span>{item.item}</span>
+                                    <span>{item.cost}</span>
+                                    <p className="text-gray-500 text-xs mt-1">{item.explanation}</p>
+                                </div>
+                            ))}
+                        </div>
+
+              </Button>
+          </div>
+
             <div>
               <p className="font-semibold text-gray-900">{selected.title}</p>
               <p className="text-sm text-gray-500 mt-1">{selected.description}</p>
@@ -143,7 +187,13 @@ export default function QuoteBuilderPage() {
               Include: what needs doing, location, size, materials, anything unusual.
               The more detail, the better the quotes.
             </p>
-            <textarea
+            <input 
+            value={customerName} 
+            onChange={(e) => setCustomerName(e.target.value)} 
+            placeholder="Customer name (optional)" 
+            className="w-full rounded-lg border border-gray-300 p-3 text-sm" 
+          />
+          <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={`e.g. Paint 3 bedrooms and a hallway for a 1,400 sq ft house in Austin. Customer wants eggshell white throughout. Walls only, no trim. Two coats needed — walls are currently dark red. Move furniture included.`}
