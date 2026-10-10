@@ -26,10 +26,10 @@ export default function Seguimiento() {
   const spanish = lang === "es";
 
   useEffect(() => {
-    getJob(Number(id)).then((j) => {
+    getJob(Number(id)).then(async (j) => {
       if (!j) return;
       const biz = { ...DEMO_BUSINESS, ...loadBusiness() };
-      const msg = followUpMessage(j, biz.ownerName || DEMO_BUSINESS.ownerName, biz.businessName || DEMO_BUSINESS.businessName, money(jobTotal(j)));
+      const msg = await followUpMessage(j, biz.ownerName || DEMO_BUSINESS.ownerName, biz.businessName || DEMO_BUSINESS.businessName, money(jobTotal(j)));
       mano.current = msg;
       setJob(j);
       setEs(msg.es);

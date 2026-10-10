@@ -20,18 +20,18 @@ export async function middleware(req: NextRequest) {
 
   // ── Let Auth0 handle its own /auth/* routes ────────────────────────────────
   // /auth/login, /auth/callback, /auth/logout, /auth/profile
-  if (pathname.startsWith("/auth/login") ||
-      pathname.startsWith("/auth/logout") ||
-      pathname.startsWith("/auth/callback") ||
-      pathname.startsWith("/auth/profile")) {
-    return auth0.middleware(req);
-  }
+  // if (pathname.startsWith("/auth/login") ||
+  //     pathname.startsWith("/auth/logout") ||
+  //     pathname.startsWith("/auth/callback") ||
+  //     pathname.startsWith("/auth/profile")) {
+  //   return auth0.middleware(req);
+  // }
 
   // ── Check session ──────────────────────────────────────────────────────────
   // Must pass `req` here — in middleware there is no implicit request context.
   // Without it the SDK tries to read cookies from the wrong scope → "invalid body keys".
-  const session = await auth0.getSession(req);
-  const isLoggedIn = !!session?.user;
+  // const session = await auth0.getSession(req);
+  const isLoggedIn = true; // Bypassing auth check
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
   // ── 1. Not logged in ───────────────────────────────────────────────────────

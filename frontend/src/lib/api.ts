@@ -261,7 +261,7 @@ export async function createJob(description: string): Promise<Job> {
   await wait(1200); // feels like the AI is working
   const jobs = read();
   const now = new Date().toISOString();
-  const parsed = interpret(description, loadBusiness()?.otherTrade);
+  const parsed = await interpret(description, loadBusiness()?.otherTrade);
   parsed.line_items = parsed.line_items.map((i) => (i.amount != null ? { ...i, price_source: "spoken" } : i));
   const draft: Job = {
     id: Math.max(0, ...jobs.map((j) => j.id)) + 1,
