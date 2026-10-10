@@ -7,7 +7,7 @@ export function LangToggle() {
   const options: Lang[] = ["es", "en"];
 
   return (
-    <div className="flex h-[35px] rounded-full bg-white/30 p-0" role="group" aria-label="Idioma / Language">
+    <div className="glass-dark flex h-[35px] rounded-full p-0" role="group" aria-label="Idioma / Language">
       {options.map((l) => (
         <button
           key={l}
@@ -15,7 +15,7 @@ export function LangToggle() {
           onClick={() => setLang(l)}
           aria-pressed={lang === l}
           className={`h-full w-[52px] rounded-full text-sm font-medium uppercase transition-colors ${
-            lang === l ? "bg-white text-black" : "text-white"
+            lang === l ? "bg-white text-black shadow-sm" : "text-white/85"
           }`}
         >
           {l}

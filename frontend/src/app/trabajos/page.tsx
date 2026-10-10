@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
 import { PageHeader, Screen, StatusBadge, Title } from "@/components/ui";
-import { estimateNo, getJobs, invoiceNo, jobTotal, money, type Job } from "@/lib/api";
+import { estimateNo, getJobs, onJobsChange, invoiceNo, jobTotal, money, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 import { serviceLabel } from "@/lib/services";
 
@@ -15,9 +15,7 @@ export default function Trabajos() {
 
   useEffect(() => {
     getJobs().then(setJobs);
-    const onStorage = (e: StorageEvent) => e.key === "mano.jobs" && getJobs().then(setJobs);
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    return onJobsChange(() => void getJobs().then(setJobs));
   }, []);
 
   const active = jobs?.filter((j) => j.status !== "CANCELLED") ?? [];
@@ -42,7 +40,7 @@ export default function Trabajos() {
           <li key={job.id}>
             <Link
               href={`/trabajos/${job.id}`}
-              className={`flex items-center gap-3 rounded-[20px] bg-white p-4 transition active:scale-[0.99] ${job.status === "CANCELLED" ? "opacity-60" : ""}`}
+              className={`flex items-center gap-3 rounded-[20px] glass p-4 transition active:scale-[0.99] ${job.status === "CANCELLED" ? "opacity-60" : ""}`}
             >
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-base font-semibold leading-5">{job.customer_name || "—"}</span>

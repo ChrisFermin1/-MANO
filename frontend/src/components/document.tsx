@@ -36,7 +36,7 @@ export function DocumentCard({
       );
 
   return (
-    <article lang={view} className="rounded-[20px] bg-white px-5 pb-5 pt-6 shadow-sm">
+    <article lang={view} className="glass-paper rounded-[20px] px-5 pb-5 pt-6">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-logo text-lg leading-none text-forest">{biz.businessName || "MANO"}</p>
@@ -107,7 +107,7 @@ export function DocLangSwitch({
   labels: { es: string; en: string };
 }) {
   return (
-    <div role="tablist" className="grid grid-cols-2 rounded-[14px] bg-white p-1 text-sm font-semibold">
+    <div role="tablist" className="glass grid grid-cols-2 rounded-[14px] p-1 text-sm font-semibold">
       {(["es", "en"] as const).map((v) => (
         <button
           key={v}

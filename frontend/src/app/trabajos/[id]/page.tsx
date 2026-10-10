@@ -17,7 +17,7 @@ import {
   fmtDate,
   reactivateJob,
   type CancelReason,
-  getJob,
+  getJob, onJobsChange,
   invoiceNo,
   invoiceState,
   jobTotal,
@@ -48,9 +48,7 @@ export default function Trabajo() {
   useEffect(() => {
     getJob(Number(id)).then(setJob);
     // Live update when the customer approves in another tab
-    const onStorage = (e: StorageEvent) => e.key === "mano.jobs" && getJob(Number(id)).then(setJob);
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    return onJobsChange(() => void getJob(Number(id)).then(setJob));
   }, [id]);
 
   if (job === undefined) return <Screen>{null}</Screen>;
@@ -104,7 +102,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
   // ONE "missing" style everywhere: amber outline (+ a "falta" tag next to the label, so it's not color-only)
   const field = (missingIt: boolean) =>
-    `h-[52px] w-full rounded-[14px] bg-white px-4 text-base outline-none placeholder:text-muted ${
+    `h-[52px] w-full rounded-[14px] glass-field px-4 text-base outline-none placeholder:text-muted ${
       missingIt ? "ring-2 ring-flag" : "focus:ring-2 focus:ring-forest/60"
     }`;
   const flag = (on: boolean) => (on ? "ring-2 ring-flag" : "");
@@ -124,7 +122,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
       {/* Ojo verdict — light; the missing FIELDS carry the highlight, tap an item to jump to it */}
       {missing.length ? (
-        <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-[14px] border border-flag/60 bg-white px-4 py-3 text-sm">
+        <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-[14px] glass border-flag/60! px-4 py-3 text-sm">
           <Eye className="size-5 shrink-0 text-ojo" strokeWidth={1.75} />
           <span className="font-semibold text-ojo-ink">{t.ojoMissingN(missing.length)}:</span>
           {missing.map((m) => (
@@ -139,7 +137,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           ))}
         </div>
       ) : (
-        <p className="mt-5 flex items-center gap-2 rounded-[14px] bg-lime/40 px-4 py-3 text-sm font-bold text-forest">
+        <p className="mt-5 flex items-center gap-2 rounded-[14px] glass-lime px-4 py-3 text-sm font-bold text-forest">
           <Check className="size-4" strokeWidth={3} /> {t.ojoReady}
         </p>
       )}
@@ -172,13 +170,13 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
       {/* Line items */}
       <section className="mt-6">
         <FieldLabel text={t.work} missingTag={missing.includes("price") || missing.includes("items") ? t.missingTag : null} />
-        <div className="rounded-[20px] bg-white p-2">
+        <div className="rounded-[20px] glass p-2">
           {job.line_items.map((item) => (
             <div key={item.id} className="flex items-start gap-2 border-b border-black/5 py-1 last:border-0">
               {/* Left column: Carlos's text + what the customer will read. Never runs under the price box. */}
               <div className="min-w-0 flex-1">
                 <AutoTextarea
-                  className="w-full rounded-[10px] bg-cream px-2.5 py-2.5 text-[15px] leading-5 outline-none focus:ring-2 focus:ring-forest/60"
+                  className="w-full rounded-[10px] bg-white/70 px-2.5 py-2.5 text-[15px] leading-5 outline-none focus:ring-2 focus:ring-forest/60"
                   value={spanish ? (item.description_es ?? item.description) : item.description}
                   onChange={(v) => {
                     if (!spanish) return setItem(item.id, { description: v, description_es: null, translation_pending: false });
@@ -206,7 +204,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                   />
                 )}
               </div>
-              <label className={`flex h-10 w-[96px] shrink-0 items-center rounded-[10px] bg-cream px-2 ${flag(item.amount == null)}`}>
+              <label className={`flex h-10 w-[96px] shrink-0 items-center rounded-[10px] bg-white/70 px-2 ${flag(item.amount == null)}`}>
                 <span className="text-sm font-bold text-muted">$</span>
                 <input
                   id={`f-price-${item.id}`}
@@ -249,7 +247,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
       {/* Ojo: "forgot to charge?" — one question at a time, from the checklists of Carlos's trades (Paso 1) */}
       {!skipped && (ask || silenced.length > 0 || (job.ojo_dismissed?.length ?? 0) > 0) && (
-        <section className={`mt-6 rounded-[20px] p-4 ${ask ? "border border-peach bg-white" : "bg-lime/40"}`}>
+        <section className={`mt-6 rounded-[20px] p-4 ${ask ? "glass border-peach!" : "glass-lime"}`}>
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-sm font-semibold">
               {ask ? <Eye className="size-5 text-[#b8803f]" strokeWidth={1.75} /> : <Check className="size-5 text-forest" strokeWidth={3} />}
@@ -278,7 +276,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                 <button
                   type="button"
                   onClick={() => dismissAsk(ask.key)}
-                  className="h-12 rounded-[14px] bg-cream text-base font-bold text-black/60 transition active:scale-[0.97]"
+                  className="h-12 rounded-[14px] bg-white/70 text-base font-bold text-black/60 transition active:scale-[0.97]"
                 >
                   {t.no}
                 </button>
@@ -368,7 +366,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
       <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang)}</p>
 
       {job.status === "ACCEPTED" && (
-        <section className="mt-5 rounded-[24px] bg-lime p-5 motion-safe:animate-[pop-in_300ms_ease-out]">
+        <section className="mt-5 rounded-[24px] glass-lime p-5 motion-safe:animate-[pop-in_300ms_ease-out]">
           <div className="flex items-start gap-3">
             <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-forest">
               <PartyPopper className="size-6 text-lime" />
@@ -407,7 +405,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </div>
       )}
 
-      <section className="mt-6 rounded-[20px] bg-white p-5">
+      <section className="mt-6 rounded-[20px] glass p-5">
         {job.address && <p className="text-sm text-muted">{job.address}</p>}
         <ul className="mt-3 space-y-1.5 text-[15px]">
           {job.line_items.map((i) => (
@@ -443,7 +441,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
       {/* Later stages: a quiet record of who approved */}
       {job.approved_by && job.approved_at && job.status !== "CANCELLED" && job.status !== "ACCEPTED" && (
-        <p className="mt-4 flex items-center gap-2 rounded-[14px] bg-lime/40 px-4 py-3 text-sm font-semibold text-forest">
+        <p className="mt-4 flex items-center gap-2 rounded-[14px] glass-lime px-4 py-3 text-sm font-semibold text-forest">
           <Check className="size-4 shrink-0" strokeWidth={3} />
           {t.approvedByOn(job.approved_by, fmtDate(job.approved_at, lang))}
         </p>
@@ -494,7 +492,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 function DocLink({ href, label, number, state }: { href: string; label: string; number?: string | null | 0; state?: InvoiceState | null }) {
   const { t } = useLang();
   return (
-    <Link href={href} className="flex items-center gap-2 rounded-[12px] bg-cream px-3 py-2.5 text-sm font-semibold text-forest">
+    <Link href={href} className="flex items-center gap-2 rounded-[12px] bg-white/60 px-3 py-2.5 text-sm font-semibold text-forest">
       <FileText className="size-4 shrink-0" />
       <span className="flex-1">{label}</span>
       {number && <span className="font-mono text-xs text-black/70">{number}</span>}
@@ -543,7 +541,7 @@ function JobActions({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
       {menu && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setMenu(false)} />
-          <div role="menu" className="absolute right-0 top-11 z-50 w-56 overflow-hidden rounded-[16px] bg-white py-1 shadow-xl ring-1 ring-black/5">
+          <div role="menu" className="absolute right-0 top-11 z-50 w-56 overflow-hidden rounded-[16px] glass-paper py-1">
             {deletable && (
               <button
                 role="menuitem"
@@ -647,7 +645,7 @@ function EnglishPreview({
 
   if (needsEnglish || editing) {
     return (
-      <div className={`mb-1.5 rounded-[12px] px-3 py-2 text-xs ${needsEnglish ? "bg-flag/15 text-ojo-ink" : "bg-cream text-black/70"}`}>
+      <div className={`mb-1.5 rounded-[12px] px-3 py-2 text-xs ${needsEnglish ? "bg-flag/15 text-ojo-ink" : "bg-white/60 text-black/70"}`}>
         {needsEnglish && <p className="mb-1 font-semibold">{t.cantTranslate}</p>}
         <div className="flex items-start gap-2">
           <AutoTextarea

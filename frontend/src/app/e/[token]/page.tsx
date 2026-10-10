@@ -9,6 +9,11 @@ import { CheckCircle2, Loader2, MessageCircle, Phone } from "lucide-react";
 import { DocumentCard } from "@/components/document";
 import { approveEstimate, fmtDate, getJobByToken, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
+import { approveRemote, fetchEstimate, type RelayEntry } from "@/lib/relay";
+
+// relay entry → the job as this page shows it (approval lives next to the snapshot)
+const withApproval = (r: RelayEntry): Job =>
+  r.approved_at ? { ...r.job, status: "ACCEPTED", approved_at: r.approved_at, approved_by: r.approved_by } : r.job;
 
 const copy = {
   en: {
@@ -55,19 +60,37 @@ export default function CustomerEstimate() {
   const [busy, setBusy] = useState(false);
   const c = copy[lang];
 
+  const [remote, setRemote] = useState(false); // loaded from the relay (a phone), not this browser
+
   useEffect(() => {
     if (!token) return;
-    getJobByToken(token).then((j) => {
-      setJob(j);
-      if (j?.customer_name) setName(j.customer_name);
-    });
-    setBiz({ ...DEMO_BUSINESS, ...loadBusiness() });
+    (async () => {
+      const local = await getJobByToken(token);
+      if (local) {
+        setJob(local);
+        setBiz({ ...DEMO_BUSINESS, ...loadBusiness() });
+        if (local.customer_name) setName(local.customer_name);
+        return;
+      }
+      // Not in this browser (e.g. the customer's phone) → ask the demo relay on Carlos's Mac
+      const r = await fetchEstimate(token);
+      if (!r) return setJob(null);
+      setRemote(true);
+      setJob(withApproval(r));
+      setBiz({ ...DEMO_BUSINESS, ...r.biz });
+      if (r.job.customer_name) setName(r.job.customer_name);
+    })();
   }, [token]);
 
   const approve = async () => {
     if (!token) return;
     setBusy(true);
-    setJob(await approveEstimate(token, name));
+    if (remote) {
+      const r = await approveRemote(token, name);
+      if (r) setJob(withApproval(r));
+    } else {
+      setJob(await approveEstimate(token, name));
+    }
     setBusy(false);
   };
 
@@ -76,12 +99,12 @@ export default function CustomerEstimate() {
   const unavailable = job && (job.status === "CANCELLED" || (!approved && job.status !== "QUOTE_SENT"));
 
   return (
-    <main className="min-h-dvh bg-cream text-black">
+    <main className="min-h-dvh bg-mano-light text-black">
       <div className="mx-auto flex min-h-dvh max-w-[520px] flex-col px-5 pb-10 pt-6">
         {/* One clean row: who it's from + a compact language switch (the document itself says "Estimate") */}
         <header className="flex items-center justify-between gap-4">
           <p className="min-w-0 truncate font-logo text-xl leading-none text-forest">{bizName}</p>
-          <div className="flex shrink-0 rounded-full bg-black/5 p-0.5 text-xs font-bold" role="group" aria-label="Language / Idioma">
+          <div className="glass flex shrink-0 rounded-full p-0.5 text-xs font-bold" role="group" aria-label="Language / Idioma">
             {(["en", "es"] as const).map((l) => (
               <button
                 key={l}
@@ -106,7 +129,7 @@ export default function CustomerEstimate() {
         ) : (
           <>
             {approved ? (
-              <section className="mt-6 rounded-[20px] bg-forest p-5 text-white">
+              <section className="mt-6 rounded-[20px] glass-forest p-5 text-white">
                 <CheckCircle2 className="size-8 text-lime" />
                 <h1 className="mt-3 font-serif text-[32px] leading-9">{c.approvedTitle}</h1>
                 <p className="mt-2 text-sm leading-5 text-white/85">{c.approvedBody(bizName)}</p>
@@ -133,14 +156,14 @@ export default function CustomerEstimate() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     autoComplete="name"
-                    className="h-[56px] w-full rounded-[16px] bg-white px-4 font-serif text-xl outline-none ring-forest/60 focus:ring-2"
+                    className="h-[56px] w-full rounded-[16px] glass-field px-4 font-serif text-xl outline-none ring-forest/60 focus:ring-2"
                   />
                 </label>
                 <button
                   type="button"
                   onClick={approve}
                   disabled={name.trim().length < 2 || busy}
-                  className="mt-4 flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-lime transition active:scale-[0.98] disabled:opacity-40"
+                  className="mt-4 flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-lime shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40"
                 >
                   {busy ? <Loader2 className="size-5 animate-spin" /> : <CheckCircle2 className="size-5" />}
                   {c.approve}
@@ -160,14 +183,14 @@ export default function CustomerEstimate() {
                     <a
                       href={biz.phone ? `tel:${biz.phone}` : undefined}
                       aria-disabled={!biz.phone}
-                      className="flex h-12 items-center justify-center gap-2 rounded-[14px] bg-white text-sm font-semibold aria-disabled:opacity-40"
+                      className="flex h-12 items-center justify-center gap-2 rounded-[14px] glass text-sm font-semibold aria-disabled:opacity-40"
                     >
                       <Phone className="size-4" /> {c.call}
                     </a>
                     <a
                       href={biz.phone ? `sms:${biz.phone}` : undefined}
                       aria-disabled={!biz.phone}
-                      className="flex h-12 items-center justify-center gap-2 rounded-[14px] bg-white text-sm font-semibold aria-disabled:opacity-40"
+                      className="flex h-12 items-center justify-center gap-2 rounded-[14px] glass text-sm font-semibold aria-disabled:opacity-40"
                     >
                       <MessageCircle className="size-4" /> {c.text}
                     </a>

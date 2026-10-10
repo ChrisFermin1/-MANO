@@ -4,6 +4,7 @@
 import { loadBusiness } from "@/lib/business";
 import { interpret } from "@/lib/mano";
 import { validate } from "@/lib/ojo";
+import { publishEstimate } from "@/lib/relay";
 
 export type JobStatus =
   | "NEW"
@@ -239,9 +240,36 @@ export function resetJobs({ demo }: { demo: boolean }) {
 }
 
 function write(jobs: Job[]) {
+  const before = read();
   try {
     localStorage.setItem(KEY, JSON.stringify(jobs));
   } catch {}
+  // other tabs hear the `storage` event; THIS tab needs its own signal (e.g. an approval synced from a phone)
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(JOBS_EVENT, { detail: { before, after: jobs } }));
+}
+
+const JOBS_EVENT = "mano:jobs-changed";
+
+/** Subscribe to job changes from this tab or any other tab. Returns an unsubscribe function. */
+export function onJobsChange(cb: (before: Job[], after: Job[]) => void): () => void {
+  const parse = (v: string | null): Job[] => {
+    try {
+      return v ? (JSON.parse(v) as Job[]) : [];
+    } catch {
+      return [];
+    }
+  };
+  const onStorage = (e: StorageEvent) => e.key === KEY && cb(parse(e.oldValue), parse(e.newValue));
+  const onLocal = (e: Event) => {
+    const { before, after } = (e as CustomEvent<{ before: Job[]; after: Job[] }>).detail;
+    cb(before, after);
+  };
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(JOBS_EVENT, onLocal);
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(JOBS_EVENT, onLocal);
+  };
 }
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -313,12 +341,14 @@ export async function sendEstimate(id: number): Promise<Job> {
   await wait(600);
   const job = (await getJob(id))!;
   const now = new Date().toISOString();
-  return updateJob(id, {
+  const sent = await updateJob(id, {
     status: "QUOTE_SENT",
     estimate_number: job.estimate_number ?? nextNumber("estimate_number"),
     estimate_sent_at: now,
     public_token: job.public_token ?? newToken(),
   });
+  void publishEstimate(sent, loadBusiness()); // demo relay: lets a phone on the Wi-Fi open & approve it
+  return sent;
 }
 
 // POST /jobs/:id/invoice/send
@@ -348,8 +378,7 @@ export async function approveEstimate(token: string, name: string): Promise<Job>
   return updateJob(job.id, { status: "ACCEPTED", approved_at: new Date().toISOString(), approved_by: name.trim() });
 }
 
-export const estimateLink = (job: Job) =>
-  job.public_token && typeof window !== "undefined" ? `${window.location.origin}/e/${job.public_token}` : null;
+export const estimateLink = (job: Job, origin: string) => (job.public_token ? `${origin}/e/${job.public_token}` : null);
 
 // DELETE /jobs/:id  — drafts only
 export async function deleteJob(id: number): Promise<void> {

@@ -17,17 +17,19 @@ export default function Welcome() {
   const { t } = useLang();
 
   return (
-    <main className="min-h-dvh bg-forest text-white">
+    <main className="min-h-dvh bg-mano-dark bg-mano-photo bg-welcome text-white">
       <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[27px] pb-8 pt-[30px]">
         <header className="flex items-center justify-between">
-          <span className="font-logo text-[32px] leading-none tracking-[-0.96px]">MANO</span>
+          <span className="font-logo text-[32px] leading-none tracking-[-0.96px]">mano</span>
           <LangToggle />
         </header>
 
         {/* Demo: voice → estimate */}
-        <section className="mt-[77px] flex flex-col items-center" aria-hidden>
-          <div className="flex size-[50px] items-center justify-center rounded-full bg-lime">
+        <section className="mt-[60px] flex flex-col items-center" aria-hidden>
+          <div className="glass-dark flex size-[84px] items-center justify-center rounded-full">
+          <div className="glow-lime flex size-[50px] items-center justify-center rounded-full bg-lime">
             <Mic className="size-[25px] text-forest" strokeWidth={2} />
+          </div>
           </div>
           <p className="mt-5 text-center text-base font-semibold leading-5">{t.welcomeQuote}</p>
           <div className="mt-6 flex h-[30px] items-center gap-[6px]">
@@ -43,7 +45,7 @@ export default function Welcome() {
             ))}
           </div>
 
-          <div className="mt-[25px] w-full max-w-[340px] rounded-[20px] bg-white px-[17px] pb-4 pt-[22px] text-black">
+          <div className="glass-paper mt-[25px] w-full max-w-[340px] rounded-[20px] px-[17px] pb-4 pt-[22px] text-black">
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs font-medium uppercase leading-none tracking-[1.44px]">
                 Estimate Maria Lopez
@@ -68,7 +70,7 @@ export default function Welcome() {
             </div>
           </div>
 
-          <div className="mt-[11px] flex h-8 w-full max-w-[291px] items-center justify-center gap-2 rounded-[10px] bg-peach px-3 text-xs text-black">
+          <div className="mt-[11px] flex h-8 border border-white/60 bg-peach/90 shadow-[0_10px_24px_-12px_rgba(0,0,0,0.5)] backdrop-blur-xl w-full max-w-[291px] items-center justify-center gap-2 rounded-full px-3 text-xs text-black">
             <Eye className="size-6 shrink-0 text-[#b8803f]" strokeWidth={1.75} />
             <p className="leading-5">
               <span className="font-bold">Ojo:</span> {t.ojoHint}
@@ -89,7 +91,7 @@ export default function Welcome() {
         <div className="mt-auto pt-8">
           <Link
             href="/onboarding/oficio"
-            className="flex h-[53px] w-full items-center justify-center rounded-[20px] bg-lime text-sm font-bold text-forest transition active:scale-[0.98]"
+            className="glow-lime flex h-[53px] w-full items-center justify-center rounded-[20px] bg-lime text-sm font-bold text-forest transition active:scale-[0.98]"
           >
             {t.start} →
           </Link>

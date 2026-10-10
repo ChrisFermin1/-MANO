@@ -36,3 +36,153 @@ body {
   0% { transform: scale(0.96); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
+
+/* ───────────────────────── Glass UI ─────────────────────────
+   Backgrounds are gradients for now. To add a photo later, set --mano-photo, e.g.
+   .bg-mano-dark { --mano-photo: url("/bg/welcome.webp") center / cover no-repeat; }
+   The gradient tint stays on top so text keeps its contrast. */
+
+.bg-mano-light,
+.bg-mano-dark {
+  position: relative;
+  isolation: isolate;
+}
+.bg-mano-light::before,
+.bg-mano-dark::before {
+  /* clean: one smooth gradient, no blobs (loading & "¡Enviado!" screens). Welcome uses .bg-mano-photo instead */
+  background:
+    linear-gradient(170deg, #155240 0%, #0f3d2e 55%, #0b2e23 100%),
+    var(--mano-photo, none);
+}
+/* Inner pages: SOLID cream (clean). The glass feel comes from the cards themselves — see-through white,
+   bright edge, soft shadow. Welcome keeps the gradient (bg-mano-dark). */
+.bg-mano-light {
+  background-color: #eef1ea;
+}
+.bg-mano-light::before {
+  background: var(--mano-photo, none);
+}
+.bg-mano-dark {
+  background-color: #0f3d2e;
+  color: #fff;
+}
+.bg-mano-dark::before {
+  background:
+    radial-gradient(60% 38% at 105% 55%, rgba(54, 140, 98, 0.55), transparent 72%),
+    radial-gradient(55% 35% at -5% 35%, rgba(31, 102, 74, 0.6), transparent 72%),
+    radial-gradient(80% 45% at 50% 105%, rgba(4, 20, 14, 0.85), transparent 70%),
+    linear-gradient(165deg, #175c45 0%, #0f3d2e 48%, #0a2a20 100%),
+    var(--mano-photo, none);
+}
+
+/* Welcome with a photo: the photo sits under a tint that is darker at the top (logo, mic) and the bottom
+   (headline, buttons), and lighter in the middle so the window light shows behind the estimate card. */
+.bg-mano-photo::before {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(8, 34, 25, 0.78) 0%,
+      rgba(12, 48, 36, 0.45) 30%,
+      rgba(12, 48, 36, 0.4) 50%,
+      rgba(8, 34, 25, 0.82) 68%,
+      rgba(6, 26, 19, 0.96) 100%
+    ),
+    var(--mano-photo, none);
+}
+.bg-mano-photo.bg-welcome {
+  --mano-photo: url("/bg/welcome.jpg") center 30% / cover no-repeat;
+}
+
+/* Frosted panels. Every one has: see-through fill + blur + light edge + soft shadow. */
+@utility glass {
+  background-color: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 10px 28px -12px rgba(15, 61, 46, 0.22);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+}
+/* text fields & the estimate document: more solid so reading/typing stays easy */
+@utility glass-field {
+  background-color: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    inset 0 1px 2px rgba(15, 61, 46, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+@utility glass-paper {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 18px 40px -16px rgba(4, 20, 14, 0.45);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+}
+/* on dark backgrounds (welcome, success) */
+@utility glass-dark {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 12px 30px -12px rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+}
+@utility glass-forest {
+  background-color: rgba(15, 61, 46, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 14px 32px -12px rgba(15, 61, 46, 0.5);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+}
+@utility glass-peach {
+  background-color: rgba(249, 212, 166, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 10px 26px -14px rgba(122, 74, 18, 0.35);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+}
+@utility glass-lime {
+  background-color: rgba(166, 217, 59, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 12px 28px -14px rgba(15, 61, 46, 0.35);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+}
+/* lime glow (mic, primary lime buttons on dark) */
+@utility glow-lime {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.25) inset,
+    0 0 32px rgba(166, 217, 59, 0.55);
+}
+
+/* Phones without blur support, or with "Reduce transparency" on: solid panels, same colors */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass, .glass-field, .glass-paper { background-color: rgba(255, 255, 255, 0.94); }
+  .glass-dark { background-color: rgba(255, 255, 255, 0.16); }
+  .glass-forest { background-color: #0f3d2e; }
+  .glass-peach { background-color: #f9d4a6; }
+  .glass-lime { background-color: #c6e68a; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass, .glass-field, .glass-paper, .glass-dark, .glass-forest, .glass-peach, .glass-lime {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass, .glass-field, .glass-paper { background-color: #fff; }
+  .glass-dark { background-color: #1c4a3a; }
+  .glass-forest { background-color: #0f3d2e; }
+  .glass-peach { background-color: #f9d4a6; }
+  .glass-lime { background-color: #c6e68a; }
+  .bg-mano-light::before, .bg-mano-dark::before { background-image: none; }
+}

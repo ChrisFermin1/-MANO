@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Hedvig_Letters_Serif, JetBrains_Mono, Montserrat, Righteous } from "next/font/google";
 import { ApprovalToast } from "@/components/approval-toast";
+import { RelaySync } from "@/components/relay-sync";
 import { LangProvider } from "@/lib/i18n";
 import "./globals.css";
 
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <LangProvider>
           {children}
           <ApprovalToast />
+          <RelaySync />
         </LangProvider>
       </body>
     </html>
