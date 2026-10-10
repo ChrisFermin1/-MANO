@@ -119,7 +119,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
     <Screen>
       <PageHeader backHref="/inicio" right={<JobActions job={job} setJob={setJob} />} />
       <Title>{job.customer_name || t.newJob}</Title>
-      <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang)}</p>
+      <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang, job.service_es)}</p>
 
       {/* Ojo verdict — light; the missing FIELDS carry the highlight, tap an item to jump to it */}
       {missing.length ? (
@@ -391,7 +391,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
     <Screen>
       <PageHeader backHref="/trabajos" right={<JobActions job={job} setJob={setJob} />} />
       <Title>{job.customer_name}</Title>
-      <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang)}</p>
+      <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang, job.service_es)}</p>
 
       {job.status === "ACCEPTED" && (
         <section className="mt-5 rounded-[24px] glass-lime p-5 motion-safe:animate-[pop-in_300ms_ease-out]">

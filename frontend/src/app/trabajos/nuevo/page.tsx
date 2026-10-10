@@ -13,8 +13,9 @@ import { ManoBusyError } from "@/lib/mano";
 const voiceUrl = () =>
   process.env.NEXT_PUBLIC_VOICE_URL || `${window.location.protocol}//${window.location.hostname}:8000/api/voice/transcribe`;
 
+// Equal-width buttons in one row (2 or 3 of them), icon above the label so long Spanish labels fit on a phone
 const chip =
-  "flex h-10 items-center gap-1.5 rounded-full glass px-4 text-sm font-semibold text-forest transition active:scale-[0.97]";
+  "flex h-[60px] flex-col items-center justify-center gap-1 rounded-[16px] glass px-1 text-[13px] font-semibold leading-4 text-balance transition active:scale-[0.97]";
 
 const EXAMPLE ="Pintar la sala y cocina para Maria Lopez, dos manos, y reparar una grieta en la pared.";
 
@@ -269,25 +270,28 @@ export default function NuevoTrabajo() {
             setText(e.target.value);
           }}
           placeholder={t.newJobPlaceholder}
-          rows={6}
-          className="w-full resize-none rounded-[20px] glass-field p-5 text-base leading-6 outline-none ring-forest/60 placeholder:text-muted focus:ring-2"
+          rows={5}
+          className="block min-h-[148px] w-full resize-none rounded-[16px] glass-field px-4 py-3.5 text-base leading-6 outline-none ring-forest/60 placeholder:text-muted focus:ring-2"
         />
       </div>
 
       {text && !isRecording && !transcribing && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 grid auto-cols-fr grid-flow-col gap-2">
           {history.length > 0 && (
-            <button type="button" onClick={removeLast} className={chip}>
-              <Undo2 className="size-4" strokeWidth={2.25} /> {t.removeLast}
+            <button type="button" onClick={removeLast} className={`${chip} text-forest`}>
+              <Undo2 className="size-[18px]" strokeWidth={2.25} />
+              {t.removeLast}
             </button>
           )}
           {canListen && (
-            <button type="button" onClick={recordAgain} className={chip}>
-              <RotateCcw className="size-4" strokeWidth={2.25} /> {t.recordAgain}
+            <button type="button" onClick={recordAgain} className={`${chip} text-forest`}>
+              <RotateCcw className="size-[18px]" strokeWidth={2.25} />
+              {t.recordAgain}
             </button>
           )}
           <button type="button" onClick={clearAll} className={`${chip} text-[#8a2a17]`}>
-            <Trash2 className="size-4" strokeWidth={2.25} /> {t.clearAll}
+            <Trash2 className="size-[18px]" strokeWidth={2.25} />
+            {t.clearAll}
           </button>
         </div>
       )}
@@ -309,7 +313,7 @@ export default function NuevoTrabajo() {
             setHistory((items) => [...items, text]);
             setText(EXAMPLE);
           }}
-          className="mt-2 self-start text-sm font-semibold text-forest underline underline-offset-4"
+          className="mt-3 self-start text-sm font-semibold text-forest underline underline-offset-4"
         >
           {t.tryExample}
         </button>

@@ -52,6 +52,7 @@ export type Job = {
   customer_phone?: string | null; // optional — never required by Ojo; enables one-tap WhatsApp / SMS
   address: string | null;
   service: string;
+  service_es?: string | null; // Spanish name for Carlos (from Gemini). The built-in job types have fixed names in services.ts
   description: string;
   line_items: LineItem[];
   status: JobStatus;

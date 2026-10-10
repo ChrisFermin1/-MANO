@@ -6,7 +6,7 @@ import { ChevronRight, Plus } from "lucide-react";
 import { PageHeader, Screen, StatusBadge, Title } from "@/components/ui";
 import { estimateNo, getJobs, onJobsChange, invoiceNo, jobTotal, money, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
-import { serviceLabel } from "@/lib/services";
+import { jobSubtitle } from "@/lib/services";
 
 export default function Trabajos() {
   const { t, lang } = useLang();
@@ -45,7 +45,7 @@ export default function Trabajos() {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-base font-semibold leading-5">{job.customer_name || "—"}</span>
                 <span className="block truncate text-sm text-muted">
-                  {serviceLabel(job.service, lang)}
+                  {jobSubtitle(job, lang)}
                   {(job.invoice_number || job.estimate_number) && (
                     <span className="font-mono text-xs">
                       {" · "}

@@ -40,7 +40,10 @@ PriceUnit = "hour" | "project" | "sqft" | "room"
   customer_name: string | null
   customer_phone?: string | null  // OPTIONAL — never required by Ojo; enables one-tap WhatsApp / SMS
   address: string | null
-  service: string                 // "Interior Painting"
+  service: string                 // "Interior Painting" (English: estimates, backend)
+  service_es?: string | null      // OPTIONAL — "Pintura interior": what Carlos sees. Returned by Gemini (/api/extract);
+                                  // the 6 built-in job types have fixed Spanish names in services.ts. Job LISTS show the
+                                  // address instead (one job can mix several kinds of work); the job page shows this.
   description: string             // what Carlos said/typed (raw transcript)
   line_items: { id: string;
                 description: string;            // ENGLISH — what the customer sees on estimate/invoice
@@ -127,7 +130,7 @@ The UI hides buttons, but **the backend must reject** invalid requests too.
 - **Input:** `description` (text, or audio if we do the audio-to-Gemini option), business `trades`, `otherTrade`, language.
 - **Output (current shape the UI needs):**
   ```ts
-  { customer_name, address, service, line_items: [{ id, description, amount }] }
+  { customer_name, address, service, service_es, line_items: [{ id, description, description_es, amount }] }
   ```
 - Return **both** `description` (customer-facing English, e.g. "Interior painting – kitchen, 2 coats") and `description_es` (the same line in Carlos's Spanish, e.g. "Pintura interior – cocina, 2 manos") for every line. Ambiguous words need context: for a roofer "techos" = roofs, for a painter = ceilings.
 - **Prices:** Gemini returns **only prices Carlos said** (`price_source: "spoken"`). Everything else → `null` (Ojo flags "falta precio"). **Never invent or suggest prices** — product decision: job sizes vary too much (a 100 vs 600 sq ft patio) for past prices to be safe defaults. Do any math in Python, not in the LLM.

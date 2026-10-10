@@ -7,7 +7,7 @@ import { firstName, getJobs, onJobsChange, invoiceNo, invoiceState, jobBadge, jo
 import { DEMO_BUSINESS, loadBusiness } from "@/lib/business";
 import { useLang, type Strings } from "@/lib/i18n";
 import { alerts, nextAction, type Alert } from "@/lib/ojo";
-import { serviceLabel } from "@/lib/services";
+import { jobSubtitle } from "@/lib/services";
 
 // Neutral grey for every fact; only "Pagado" is colored (good news). Warnings live in Ojo.
 const BADGE_STYLE: Record<JobBadge, string> = {
@@ -207,7 +207,7 @@ export default function Inicio() {
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[15px] font-semibold leading-5">{j.customer_name || "—"}</span>
                         <span className="block truncate text-sm text-muted">
-                          {serviceLabel(j.service, lang)}
+                          {jobSubtitle(j, lang)}
                           {total > 0 && ` · ${money(total)}`}
                         </span>
                       </span>
