@@ -49,6 +49,7 @@ export type LineItem = {
 export type Job = {
   id: number;
   customer_name: string | null;
+  customer_phone?: string | null; // optional — never required by Ojo; enables one-tap WhatsApp / SMS
   address: string | null;
   service: string;
   description: string;
@@ -129,6 +130,7 @@ function seed(): Job[] {
     {
       id: 1,
       customer_name: "Maria Rodriguez",
+      customer_phone: "(832) 555-0142",
       address: "214 Oak St, Houston, TX",
       service: "Interior Painting",
       description: "Pintar la sala y cocina para Maria Rodriguez, dos manos, y reparar una grieta en la pared.",
@@ -203,6 +205,7 @@ function seed(): Job[] {
     {
       id: 4,
       customer_name: "Pedro Sánchez",
+      customer_phone: "(281) 555-0187",
       address: "1502 Elm Dr, Katy, TX",
       service: "Drywall Repair",
       description: "Parchar dos hoyos en el drywall de la sala de Pedro Sánchez y texturizar.",
@@ -352,9 +355,15 @@ export async function sendEstimate(id: number): Promise<Job> {
 }
 
 // POST /jobs/:id/invoice/send
+// Invoice without an estimate: a complete draft (e.g. small/already-done jobs) can be invoiced directly.
+// Skips QUOTE_SENT…COMPLETED — the backend must allow READY_FOR_QUOTE → PAYMENT_PENDING (see handoff §3).
+export const canInvoiceDirectly = (j: Job) => canDelete(j) && validate(j).length === 0;
+export const canSendInvoice = (j: Job) => !j.invoice_number && (j.status === "COMPLETED" || canInvoiceDirectly(j));
+
 export async function sendInvoice(id: number): Promise<Job> {
   await wait(600);
   const job = (await getJob(id))!;
+  if (!canSendInvoice(job)) throw new Error("This job can't be invoiced yet");
   const now = new Date();
   return updateJob(id, {
     status: "PAYMENT_PENDING",
@@ -469,6 +478,22 @@ export function jobBadge(j: Job): JobBadge {
       return "cancelled";
   }
 }
+
+// Phone → links that open WhatsApp / Messages already addressed (US numbers get +1)
+export function phoneDigits(phone: string | null | undefined): string | null {
+  const d = (phone ?? "").replace(/\D/g, "");
+  if (d.length === 10) return `1${d}`;
+  if (d.length === 11 && d.startsWith("1")) return d;
+  return d.length >= 8 ? d : null; // other countries: as typed
+}
+export const whatsappLink = (phone: string | null | undefined, text: string) => {
+  const d = phoneDigits(phone);
+  return d ? `https://wa.me/${d}?text=${encodeURIComponent(text)}` : null;
+};
+export const smsLink = (phone: string | null | undefined, text: string) => {
+  const d = phoneDigits(phone);
+  return d ? `sms:+${d}?&body=${encodeURIComponent(text)}` : null; // "?&body" works on iOS and Android
+};
 
 export const fmtDate = (iso: string, lang: "es" | "en" = "en") =>
   new Date(iso).toLocaleDateString(lang === "es" ? "es-US" : "en-US", { month: "short", day: "numeric", year: "numeric" });

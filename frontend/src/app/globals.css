@@ -49,10 +49,11 @@ body {
 }
 .bg-mano-light::before,
 .bg-mano-dark::before {
-  /* clean: one smooth gradient, no blobs (loading & "¡Enviado!" screens). Welcome uses .bg-mano-photo instead */
-  background:
-    linear-gradient(170deg, #155240 0%, #0f3d2e 55%, #0b2e23 100%),
-    var(--mano-photo, none);
+  content: "";
+  position: fixed; /* fixed layer instead of background-attachment: fixed (broken on iOS) */
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
 }
 /* Inner pages: SOLID cream (clean). The glass feel comes from the cards themselves — see-through white,
    bright edge, soft shadow. Welcome keeps the gradient (bg-mano-dark). */
@@ -67,11 +68,9 @@ body {
   color: #fff;
 }
 .bg-mano-dark::before {
+  /* clean: one smooth gradient, no blobs (loading & "¡Enviado!" screens). Welcome uses .bg-mano-photo instead */
   background:
-    radial-gradient(60% 38% at 105% 55%, rgba(54, 140, 98, 0.55), transparent 72%),
-    radial-gradient(55% 35% at -5% 35%, rgba(31, 102, 74, 0.6), transparent 72%),
-    radial-gradient(80% 45% at 50% 105%, rgba(4, 20, 14, 0.85), transparent 70%),
-    linear-gradient(165deg, #175c45 0%, #0f3d2e 48%, #0a2a20 100%),
+    linear-gradient(170deg, #155240 0%, #0f3d2e 55%, #0b2e23 100%),
     var(--mano-photo, none);
 }
 

@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Archive, Check, Ellipsis, Eye, PartyPopper, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X } from "lucide-react";
-import { AutoTextarea, DocStateBadge, OjoNote, PageHeader, Screen, Sheet, StatusBadge, Title, btnDanger, btnGhost, btnLime, btnPrimary } from "@/components/ui";
+import { Archive, Check, Ellipsis, Eye, PartyPopper, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X } from "lucide-react";
+import { AutoTextarea, DocStateBadge, OjoNote, PageHeader, Screen, Sheet, StatusBadge, Title, btnDanger, btnGhost, btnLime, btnPrimary, btnSecondary } from "@/components/ui";
 import {
   CANCEL_REASONS,
   STATUS_FLOW,
@@ -30,6 +30,7 @@ import {
   type InvoiceState,
   type Job,
   type LineItem,
+  daysSince,
 } from "@/lib/api";
 import { ShareEstimate } from "@/components/share-estimate";
 import { loadBusiness, saveBusiness, type Business } from "@/lib/business";
@@ -163,6 +164,21 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
             onChange={(e) => patch({ address: e.target.value })}
             placeholder={t.addressPlaceholder}
             autoComplete="street-address"
+          />
+        </label>
+        {/* optional: never flagged by Ojo, only used for one-tap WhatsApp / SMS */}
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold">
+            {t.customerPhone} <span className="font-normal text-muted">· {t.optional}</span>
+          </span>
+          <input
+            className={field(false)}
+            value={job.customer_phone ?? ""}
+            onChange={(e) => patch({ customer_phone: e.target.value })}
+            placeholder={t.phonePlaceholder}
+            type="tel"
+            inputMode="tel"
+            autoComplete="off"
           />
         </label>
       </section>
@@ -342,6 +358,16 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           <FileText className="size-5" strokeWidth={2.25} />
           {t.generateQuote} →
         </button>
+        {/* quick jobs / work already done: skip the estimate */}
+        <button
+          type="button"
+          disabled={missing.length > 0}
+          onClick={() => router.push(`/trabajos/${job.id}/factura`)}
+          className={`${btnGhost} disabled:opacity-40`}
+        >
+          <Receipt className="size-4" strokeWidth={2.25} />
+          {t.invoiceWithoutEstimate}
+        </button>
       </div>
     </Screen>
   );
@@ -354,6 +380,8 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   const step = STATUS_FLOW.indexOf(job.status);
   const next = nextStatus(job.status);
   const canMessage = job.status === "QUOTE_SENT" || job.status === "PAYMENT_PENDING";
+  // Estimate out, no answer for 2+ days (same rule as Ojo): following up becomes the main job
+  const quoteStale = job.status === "QUOTE_SENT" && daysSince(job.updated_at) >= 2;
 
   const advance = async () => {
     if (next) setJob(await setStatus(job.id, next));
@@ -407,6 +435,24 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
       <section className="mt-6 rounded-[20px] glass p-5">
         {job.address && <p className="text-sm text-muted">{job.address}</p>}
+        {/* phone can still be added after sending (for reminders) */}
+        {job.status !== "CANCELLED" && job.status !== "PAID" && (
+          <label className="mt-2 flex items-center gap-2 rounded-[10px] bg-white/60 px-3 py-2 text-sm">
+            <Phone className="size-4 shrink-0 text-muted" />
+            <input
+              defaultValue={job.customer_phone ?? ""}
+              onBlur={async (e) => {
+                const v = e.currentTarget.value.trim();
+                if (v !== (job.customer_phone ?? "")) setJob(await updateJob(job.id, { customer_phone: v || null }));
+              }}
+              placeholder={`${t.customerPhone} · ${t.optional}`}
+              aria-label={t.customerPhone}
+              type="tel"
+              inputMode="tel"
+              className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted"
+            />
+          </label>
+        )}
         <ul className="mt-3 space-y-1.5 text-[15px]">
           {job.line_items.map((i) => (
             <li key={i.id} className="flex justify-between gap-4">
@@ -421,7 +467,9 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
         </div>
         <div className="mt-4 space-y-2">
-          <DocLink href={`/trabajos/${job.id}/estimado`} label={t.viewQuote} number={job.estimate_number && estimateNo(job.estimate_number)} />
+          {job.estimate_number && (
+            <DocLink href={`/trabajos/${job.id}/estimado`} label={t.viewQuote} number={estimateNo(job.estimate_number)} />
+          )}
           {job.invoice_number && (
             <DocLink
               href={`/trabajos/${job.id}/factura`}
@@ -435,7 +483,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
       {job.status === "QUOTE_SENT" && (
         <div className="mt-4">
-          <ShareEstimate job={job} />
+          <ShareEstimate job={job} quiet={quoteStale} />
         </div>
       )}
 
@@ -457,6 +505,18 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           <OjoNote>
             <span className="font-bold text-forest">{t.paidDone}</span>
           </OjoNote>
+        ) : job.status === "QUOTE_SENT" ? (
+          // Sending lives in the share box above. Here: follow up (main only once it's stale),
+          // and a small link for when the customer said yes outside the app.
+          <>
+            <Link href={`/trabajos/${job.id}/seguimiento`} className={quoteStale ? btnPrimary : btnSecondary}>
+              <MessageCircle className="size-5" strokeWidth={2.25} />
+              {t.followUp}
+            </Link>
+            <button type="button" onClick={advance} className={btnGhost}>
+              {t.markAcceptedLink}
+            </button>
+          </>
         ) : (
           <>
             {canMessage && (

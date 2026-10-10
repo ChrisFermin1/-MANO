@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { Loader2, Send } from "lucide-react";
 import { DocLangSwitch, DocumentCard } from "@/components/document";
 import { PageHeader, Screen, SuccessScreen, Title, btnLime, btnPrimary } from "@/components/ui";
-import { firstName, getJob, invoiceNo, sendInvoice, type Job } from "@/lib/api";
+import { canSendInvoice, firstName, getJob, invoiceNo, sendInvoice, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 
@@ -40,7 +40,7 @@ export default function Factura() {
   }
 
   // Only a finished job without an invoice yet can be sent
-  const canSend = job.status === "COMPLETED" && !job.invoice_number;
+  const canSend = canSendInvoice(job); // after the work, or directly without an estimate
 
   const send = async () => {
     setSending(true);

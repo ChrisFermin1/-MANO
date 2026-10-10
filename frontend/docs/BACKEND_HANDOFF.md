@@ -38,6 +38,7 @@ PriceUnit = "hour" | "project" | "sqft" | "room"
 {
   id: number
   customer_name: string | null
+  customer_phone?: string | null  // OPTIONAL — never required by Ojo; enables one-tap WhatsApp / SMS
   address: string | null
   service: string                 // "Interior Painting"
   description: string             // what Carlos said/typed (raw transcript)
@@ -91,7 +92,7 @@ Each row = one function in `src/lib/api.ts`.
 | `updateJob(id, patch)` | `PATCH /jobs/:id` | partial Job | `Job` | While still a draft, **re-run Ojo** and set status automatically (see rules) |
 | `setStatus(id, s)` | `POST /jobs/:id/status` | `{ status }` | `Job` | Manual steps: ACCEPTED → SCHEDULED → IN_PROGRESS → COMPLETED |
 | `sendEstimate(id)` | `POST /jobs/:id/estimate/send` | — | `Job` | Assigns `estimate_number`, `estimate_sent_at`, `public_token`; status → `QUOTE_SENT` |
-| `sendInvoice(id)` | `POST /jobs/:id/invoice/send` | — | `Job` | Only from `COMPLETED`. Assigns `invoice_number`, `invoice_sent_at`, `invoice_due_at` (+15d); status → `PAYMENT_PENDING` |
+| `sendInvoice(id)` | `POST /jobs/:id/invoice/send` | — | `Job` | From `COMPLETED`, **or directly from a complete draft without an estimate** (§3 rule 6). Assigns `invoice_number`, `invoice_sent_at`, `invoice_due_at` (+15d); status → `PAYMENT_PENDING` |
 | `markPaid(id)` | `POST /jobs/:id/invoice/paid` | — | `Job` | status → `PAID`, sets `paid_at` |
 | `sendMessage(id)` | `POST /jobs/:id/actions` | `{ type, message }` | `Job` | Follow-up / payment reminder approved by Carlos. Mock only bumps `updated_at` (resets Ojo's "no reply" clock). Real sending (SMS/email) = stretch |
 | `deleteJob(id)` | `DELETE /jobs/:id` | — | 204 | **Drafts only** (see rules) |
@@ -114,7 +115,7 @@ The UI hides buttons, but **the backend must reject** invalid requests too.
 3. **Numbering:** `estimate_number` / `invoice_number` are assigned **only on send**, never on drafts → no gaps. Sequential **per business** (Postgres sequence or `MAX()+1` in a transaction). Re-sending keeps the same number. Display format `EST-0001` / `INV-0001` is done in the frontend.
 4. **Delete** only if: no `estimate_number` AND status is `NEW` / `NEEDS_INFORMATION` / `READY_FOR_QUOTE` (`canDelete` in `api.ts`).
 5. **Cancel** only if: has `estimate_number`, has **no** `invoice_number`, status not `CANCELLED` / `PAID` (`canCancel`). Invoiced jobs are financial records — never delete/cancel.
-6. **Invoice** only from `COMPLETED`. Due = sent + **15 days**.
+6. **Invoice** from `COMPLETED`, **or "Facturar sin estimado"**: directly from a complete draft (`NEW`/`NEEDS_INFORMATION`/`READY_FOR_QUOTE`, no `estimate_number`, Ojo finds nothing missing) → `PAYMENT_PENDING`, skipping the estimate states. Never twice (`invoice_number` already set → reject). Due = sent + **15 days**. ⚠️ Team decision: this skips QUOTE_SENT…COMPLETED in `docs/architecture.md`; the backend state rules must allow `READY_FOR_QUOTE → PAYMENT_PENDING`.
 7. **Invoice state** (computed, not stored): `paid` if `paid_at`; `overdue` if `invoice_due_at < now`; else `unpaid`.
 8. **Public approve** only from `QUOTE_SENT`. Cancelled / already-approved → show message, don't change anything.
 
@@ -143,6 +144,7 @@ The UI hides buttons, but **the backend must reject** invalid requests too.
 | `line_items[].evidence` | Words the item came from (debugging, anti-hallucination) |
 | `transcript` | Clean transcript if audio goes straight to Gemini |
 | `unclear: string[]` | Short Spanish questions → Ojo can ask Carlos |
+| `customer_phone` | If Carlos says it ("su número es 832-555-1234"). Optional; the mock already picks US-style numbers |
 
 See the Gemini plan we discussed: structured output (JSON schema), Flash model, temperature ~0.1, model name in env var `GEMINI_MODEL`, API key **server-side only** (`GEMINI_API_KEY`).
 
@@ -150,6 +152,7 @@ See the Gemini plan we discussed: structured output (JSON schema), Flash model, 
 - **Spanish-first:** Carlos reads and edits the Spanish (`es`); the English (`en`) is shown as a read-only preview of what the customer receives. If he edits, the English is regenerated via `POST /mano/translate`. Share-link text sent to customers is always English (Spanish meaning shown to Carlos).
 - Returns `{ en, es }`: English message to the customer + Spanish meaning for Carlos.
 - Two kinds: **quote follow-up** (status `QUOTE_SENT`) and **payment reminder** (`PAYMENT_PENDING` / `COMPLETED`).
+- **Sending:** if the job has `customer_phone`, Carlos sends from his own phone via one-tap links (`https://wa.me/<digits>?text=…`, `sms:+<digits>?&body=…`, US numbers get `+1`), and the app records it as sent. The backend doesn't send messages for the MVP.
 - Carlos can edit the English text before approving.
 
 ---
