@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+/* MANO design tokens (from Figma) */
+@theme inline {
+  --color-forest: #0f3d2e;
+  --color-lime: #a6d93b;
+  --color-peach: #f9d4a6;
+  --color-cream: #f4f6f1;
+  --color-muted: #9d9d9d;
+  --color-track: #d9d9d9;
+  --color-ojo: #b8803f; /* Ojo's eye icon */
+  --color-ojo-ink: #7a4a12; /* Ojo's text & buttons on peach */
+  --color-flag: #e0a35a; /* the ONE 'missing info' color */
+
+  --font-sans: var(--font-montserrat);
+  --font-logo: var(--font-righteous);
+  --font-serif: var(--font-hedvig);
+  --font-mono: var(--font-jetbrains);
+}
+
+body {
+  font-family: var(--font-montserrat), system-ui, sans-serif;
+}
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+
+@keyframes toast-in {
+  from { transform: translateY(-120%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pop-in {
+  0% { transform: scale(0.96); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
