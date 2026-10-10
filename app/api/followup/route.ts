@@ -61,15 +61,13 @@ Rules:
 
 `.trim();
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL ?? "gemini-3.8-flash" });
     const result = await model.generateContent(prompt);
     const message = result.response.text().trim();
 
     return NextResponse.json({ message });
   } catch (err) {
     console.error("Follow-up generation error:", err);
-    return NextResponse.json({
-      message: `Hi ${customerName}, just wanted to follow up on ${jobTitle}. Let me know if you have any questions or if you'd like to move forward — I'm happy to help!`,
-    });
+    return NextResponse.json({ error: "Failed to generate follow-up" }, { status: 500 });
   }
 }

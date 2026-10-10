@@ -59,8 +59,8 @@ No bullet points — just natural sentences.
     `.trim();
 
     // ── Call Gemini ─────────────────────────────────────────────────────────
-    // gemini-1.5-flash is fast and free-tier friendly — good for a hackathon.
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // gemini-3.8-flash is fast and free-tier friendly — good for a hackathon.
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL ?? "gemini-3.8-flash" });
     const result = await model.generateContent(prompt);
     const welcomeMessage = result.response.text();
 

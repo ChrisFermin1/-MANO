@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import Link from "next/link";
 import { useUser } from "@auth0/nextjs-auth0/client";
@@ -30,11 +30,13 @@ export default function DashboardPage() {
   const { t } = useLanguage();
   const firstName = user?.name?.split(" ")[0] ?? "there";
 
-  // Move time-dependent value into state so it isn't evaluated during prerender
-  const [greetingKey] = useState(() => {
+  const [greetingKey, setGreetingKey] = useState("good_morning");
+
+  // Move time-dependent value into useEffect so it isn't evaluated during prerender
+  useEffect(() => {
     const hour = new Date().getHours();
-    return hour < 12 ? "good_morning" : hour < 18 ? "good_afternoon" : "good_evening";
-  });
+    setGreetingKey(hour < 12 ? "good_morning" : hour < 18 ? "good_afternoon" : "good_evening");
+  }, []);
 
   return (
     <main className="mx-auto max-w-lg px-4 pt-8 pb-24 space-y-8">

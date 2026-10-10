@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { ManoExtraction } from "@/lib/types";
+import { generateWithRetry } from "@/lib/gemini";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
@@ -47,8 +48,8 @@ Rules:
 - Return ONLY the JSON object, nothing else.
     `.trim();
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent(prompt);
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL ?? "gemini-3.8-flash" });
+    const result = await generateWithRetry(model, prompt);
     let text = result.response.text().trim();
 
     // Strip markdown fences if Gemini wraps the response
@@ -58,11 +59,6 @@ Rules:
     return NextResponse.json(parsed);
   } catch (err) {
     console.error("Extraction error:", err);
-    // Return all-null extraction so the UI can still show editable fields
-    const fallback: ManoExtraction = {
-      service: null, customer_name: null, rooms: null,
-      trim_repair: null, start_date: null, price: null, address: null,
-    };
-    return NextResponse.json(fallback);
+    return NextResponse.json({ error: "Failed to extract job details" }, { status: 500 });
   }
 }

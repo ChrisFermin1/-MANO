@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateWithRetry } from "@/lib/gemini";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
@@ -65,8 +66,8 @@ Return ONLY valid JSON — no markdown, no explanation, just the JSON object:
 - Be specific to the job described in the notes.
     `.trim();
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await model.generateContent(prompt);
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL ?? "gemini-3.8-flash" });
+    const result = await generateWithRetry(model, prompt);
     let text = result.response.text().trim();
 
     // Strip markdown code fences if Gemini wraps in ```json ... ```
@@ -76,31 +77,6 @@ Return ONLY valid JSON — no markdown, no explanation, just the JSON object:
     return NextResponse.json(parsed);
   } catch (err) {
     console.error("Quote generation error:", err);
-    // Return fallback quotes so the UI never breaks
-    return NextResponse.json({
-      quotes: [
-        {
-          tier: "basic",
-          title: "Essential Service",
-          description: "Core work completed to specification.",
-          price: "$300–$500",
-          includes: ["Labour", "Standard materials", "Site cleanup"],
-        },
-        {
-          tier: "standard",
-          title: "Full Service",
-          description: "Complete job with quality materials and warranty.",
-          price: "$600–$900",
-          includes: ["Labour", "Premium materials", "Site cleanup", "1-year warranty"],
-        },
-        {
-          tier: "premium",
-          title: "White Glove",
-          description: "Top-tier finish, priority scheduling, extended warranty.",
-          price: "$1,000–$1,500",
-          includes: ["Labour", "Top-grade materials", "Site cleanup", "2-year warranty", "Priority scheduling"],
-        },
-      ],
-    });
+    return NextResponse.json({ error: "Failed to generate quotes" }, { status: 500 });
   }
 }
