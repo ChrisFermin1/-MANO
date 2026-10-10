@@ -1,2 +1,2 @@
 # -MANO
-Repository for our Hacklanta project. This is where we organize the 'MANO app, a helping hand small-business AI assistant
+Bilingual AI assistant for contractors. MANO creates quotes; OJO catches missing details and follow-ups.
