@@ -10,10 +10,9 @@ import { ManoBusyError, ManoBusyReadingError, organizeAhead, readNote } from "@/
 import { loadBusiness } from "@/lib/business";
 import { NoteScanner, canUseLiveCamera } from "@/components/note-scanner";
 
-// ElevenLabs voice (backend). Default: port 8000 on the same machine that serves this page,
-// so it also works from a phone on the Wi-Fi. If it fails, the phone's own speech recognition takes over.
-const voiceUrl = () =>
-  process.env.NEXT_PUBLIC_VOICE_URL || `${window.location.protocol}//${window.location.hostname}:8000/api/voice/transcribe`;
+// ElevenLabs voice, through this app's own /api/voice (works on a phone over the https link, no backend needed).
+// If it fails, the phone's own speech recognition takes over.
+const voiceUrl = () => process.env.NEXT_PUBLIC_VOICE_URL || "/api/voice";
 
 // Equal-width buttons in one row (2 or 3 of them), icon above the label so long Spanish labels fit on a phone
 const chip =
@@ -162,9 +161,11 @@ export default function NuevoTrabajo() {
         stream.getTracks().forEach((track) => track.stop());
         setTranscribing(true);
         try {
-          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          // iPhones record mp4, Chrome/Android webm: send it as what it really is
+          const type = mediaRecorder.mimeType || "audio/webm";
+          const audioBlob = new Blob(audioChunksRef.current, { type });
           const formData = new FormData();
-          formData.append("file", audioBlob, "audio.webm");
+          formData.append("file", audioBlob, type.includes("mp4") ? "audio.mp4" : "audio.webm");
 
           const response = await fetch(voiceUrl(), {
             method: "POST",
