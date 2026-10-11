@@ -25,7 +25,12 @@ WORK_ACTIONS = frozenset(
     "paint painting repaint repainting repair repairing fix fixing remodel remodeling "
     "renovate renovating install installing replace replacing clean cleaning "
     "pintar pintando pintura repintar reparar reparando arreglar remodelar "
-    "remodelacion renovar renovacion instalar instalacion reemplazar limpiar limpieza".split()
+    "remodelacion renovar renovacion instalar instalacion reemplazar limpiar limpieza "
+    # common contractor words (Spanish, English, Spanglish) seen in real job notes
+    "poner colocar cambiar plantar sembrar cortar quitar sellar resanar parchar lijar "
+    "construir demoler lavar tinte tenir sellador calafatear "
+    "put change plant build cut remove seal patch sand stain caulk wash demolish mow "
+    "stein coquin".split()
 )
 WORK_TARGETS = frozenset(
     "room rooms bedroom bedrooms bathroom bathrooms kitchen kitchens wall walls "
@@ -33,7 +38,13 @@ WORK_TARGETS = frozenset(
     "floor floors flooring cabinet cabinets drywall deck fence roof sink "
     "cuarto cuartos habitacion habitaciones dormitorio dormitorios bano banos "
     "cocina cocinas pared paredes techo techos moldura molduras puerta puertas "
-    "ventana ventanas casa piso pisos gabinete gabinetes cerca lavabo".split()
+    "ventana ventanas casa piso pisos gabinete gabinetes cerca lavabo "
+    # common contractor words (Spanish, English, Spanglish) seen in real job notes
+    "sala comedor garaje garage cochera patio porche porch escalera stairs closet "
+    "siding pasto cesped grass lawn jardin yard arbol tree "
+    "enchufe outlet apagador switch ventilador fan lampara light luz "
+    "teja shingle zinc lamina canaleta gutter azulejo tile zoclo baseboard "
+    "sheetrock concreto concrete banqueta sidewalk driveway entrada fachada muro".split()
 )
 
 
@@ -77,13 +88,24 @@ def resolve_customer(
             func.lower(func.trim(Customer.customer_name)) == customer_name.strip().lower()
         ).limit(2)
     ).all()
-    return matches[0] if len(matches) == 1 else None
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        return None  # two customers share this name: ambiguous, Carlos picks
+    # A new client: save them, so the next job for the same name links to this record
+    customer = Customer(business_id=business_id, customer_name=customer_name.strip())
+    session.add(customer)
+    session.flush()
+    return customer
 
 
 def is_meaningful_description(description: str) -> bool:
     normalized = unicodedata.normalize("NFKD", description.lower())
     normalized = "".join(char for char in normalized if not unicodedata.combining(char))
     words = set(re.findall(r"[a-z]+", normalized))
+    # plurals count: "enchufes" → "enchufe", "ventanas" → "ventana", "outlets" → "outlet"
+    words |= {w[:-2] for w in words if w.endswith("es") and len(w) > 4}
+    words |= {w[:-1] for w in words if w.endswith("s") and len(w) > 3}
     return bool(words & WORK_ACTIONS) and bool(words & WORK_TARGETS)
 
 
