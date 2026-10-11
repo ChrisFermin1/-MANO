@@ -130,17 +130,20 @@ def create_job(session: Session, request: JobCreateRequest) -> JobCreateResponse
         extract_name = request.customer_id is None and customer_name is None
         extract_price = job_price is None
 
-        # Extract line items for display; completeness remains deterministic and
-        # requires the Job's own price. One call covers name, price and work.
+        # Line items sent by the app are used as they are; otherwise extract them for display.
+        # Completeness stays deterministic and requires the Job's own price. One call covers it all.
+        given_items = _work_items_from(request.line_items)
+        extract_work = given_items is None
         extracted = ExtractedJobInformation()
-        try:
-            extracted = extract_job_information(
-                request.description,
-                extract_customer_name=extract_name,
-                extract_job_price=extract_price,
-                extract_work_items=True,
-            )
-        except Exception:
+        if extract_name or extract_price or extract_work:
+            try:
+                extracted = extract_job_information(
+                    request.description,
+                    extract_customer_name=extract_name,
+                    extract_job_price=extract_price,
+                    extract_work_items=extract_work,
+                )
+            except Exception:
                 # Extraction is optional assistance; explicit input remains usable.
                 logger.warning("Job extraction failed; continuing with explicit inputs.")
 
@@ -155,7 +158,7 @@ def create_job(session: Session, request: JobCreateRequest) -> JobCreateResponse
             customer_id=request.customer_id,
             customer_name=customer_name,
         )
-        work_items = extracted.work_items or ()
+        work_items = given_items if given_items is not None else (extracted.work_items or ())
         status, missing_fields = evaluate_completeness(
             customer,
             request.description,
@@ -167,6 +170,8 @@ def create_job(session: Session, request: JobCreateRequest) -> JobCreateResponse
             customer_id=customer.customer_id if customer is not None else None,
             job_description=request.description,
             job_price=job_price,
+            job_title=request.job_title,
+            job_address=request.job_address,
             status=status,
             line_items=_line_items(work_items),
         )
@@ -208,6 +213,16 @@ class InvalidStatusChangeError(ValueError):
 
 class JobLockedError(ValueError):
     """The job can't be deleted once a quote was sent."""
+
+
+def _work_items_from(items) -> tuple[WorkItem, ...] | None:
+    """Line items sent by the app, as WorkItems (None = not sent)."""
+    if items is None:
+        return None
+    return tuple(
+        WorkItem(description_es=(i.description_es or "").strip() or None, description=i.description.strip(), amount=i.amount)
+        for i in items
+    )
 
 
 def _line_items(work_items: tuple[WorkItem, ...]) -> list[LineItem]:
@@ -268,11 +283,15 @@ def update_job(session: Session, job_id: UUID, request: JobUpdateRequest) -> Job
                 customer_id=changes.pop("customer_id", None),
                 customer_name=changes.pop("customer_name", None),
             )
+        given_items = _work_items_from(request.line_items) if "line_items" in changes else None
+        changes.pop("line_items", None)
         for field, value in changes.items():
             setattr(job, field, value)
 
-        # A new description before the quote: re-read the work in it
-        if "job_description" in changes and job.status in PRE_QUOTE_STATES:
+        if given_items is not None:
+            job.line_items = _line_items(given_items)
+        # A new description before the quote (and no items sent): re-read the work in it
+        elif "job_description" in changes and job.status in PRE_QUOTE_STATES:
             try:
                 work = extract_job_information(
                     job.job_description or "",
