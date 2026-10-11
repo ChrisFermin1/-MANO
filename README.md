@@ -91,8 +91,10 @@ See `.env.example`:
   network origins are also allowed by the backend's local-demo regex.
 - `BACKEND_URL`: where the frontend's `/backend` route forwards to FastAPI
   (default `http://127.0.0.1:8000`; `http://backend:8000` inside Docker Compose).
-- `NEXT_PUBLIC_VOICE_URL`: optional override for the voice transcription upload
-  (default: port 8000 on the same host).
+- `ELEVENLABS_API_KEY`: optional, for Mano's mic (speech-to-text). Without it the phone's
+  own speech recognition is used.
+- `NEXT_PUBLIC_VOICE_URL`: optional override for where the mic uploads recordings
+  (default: the app's own `/api/voice`).
 - `GEMINI_API_KEY`: optional for existing extraction. The backend falls back to
   deterministic extraction without it.
 - `GEMINI_MODEL`: backend extraction model.
