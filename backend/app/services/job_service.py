@@ -10,10 +10,11 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.db import Business, Customer, Job
-from app.schemas import JobCreateRequest, JobCreateResponse
+from app.db import Business, Customer, Job, LineItem
+from app.schemas import JobCreateRequest, JobCreateResponse, JobStatusRequest, JobUpdateRequest
 from app.services.extraction_service import (
     ExtractedJobInformation,
+    WorkItem,
     extract_job_information,
 )
 
@@ -25,7 +26,12 @@ WORK_ACTIONS = frozenset(
     "paint painting repaint repainting repair repairing fix fixing remodel remodeling "
     "renovate renovating install installing replace replacing clean cleaning "
     "pintar pintando pintura repintar reparar reparando arreglar remodelar "
-    "remodelacion renovar renovacion instalar instalacion reemplazar limpiar limpieza".split()
+    "remodelacion renovar renovacion instalar instalacion reemplazar limpiar limpieza "
+    # common contractor words (Spanish, English, Spanglish) seen in real job notes
+    "poner colocar cambiar plantar sembrar cortar quitar sellar resanar parchar lijar "
+    "construir demoler lavar tinte tenir sellador calafatear "
+    "put change plant build cut remove seal patch sand stain caulk wash demolish mow "
+    "stein coquin".split()
 )
 WORK_TARGETS = frozenset(
     "room rooms bedroom bedrooms bathroom bathrooms kitchen kitchens wall walls "
@@ -33,7 +39,13 @@ WORK_TARGETS = frozenset(
     "floor floors flooring cabinet cabinets drywall deck fence roof sink "
     "cuarto cuartos habitacion habitaciones dormitorio dormitorios bano banos "
     "cocina cocinas pared paredes techo techos moldura molduras puerta puertas "
-    "ventana ventanas casa piso pisos gabinete gabinetes cerca lavabo".split()
+    "ventana ventanas casa piso pisos gabinete gabinetes cerca lavabo "
+    # common contractor words (Spanish, English, Spanglish) seen in real job notes
+    "sala comedor garaje garage cochera patio porche porch escalera stairs closet "
+    "siding pasto cesped grass lawn jardin yard arbol tree "
+    "enchufe outlet apagador switch ventilador fan lampara light luz "
+    "teja shingle zinc lamina canaleta gutter azulejo tile zoclo baseboard "
+    "sheetrock concreto concrete banqueta sidewalk driveway entrada fachada muro".split()
 )
 
 
@@ -77,13 +89,24 @@ def resolve_customer(
             func.lower(func.trim(Customer.customer_name)) == customer_name.strip().lower()
         ).limit(2)
     ).all()
-    return matches[0] if len(matches) == 1 else None
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        return None  # two customers share this name: ambiguous, Carlos picks
+    # A new client: save them, so the next job for the same name links to this record
+    customer = Customer(business_id=business_id, customer_name=customer_name.strip())
+    session.add(customer)
+    session.flush()
+    return customer
 
 
 def is_meaningful_description(description: str) -> bool:
     normalized = unicodedata.normalize("NFKD", description.lower())
     normalized = "".join(char for char in normalized if not unicodedata.combining(char))
     words = set(re.findall(r"[a-z]+", normalized))
+    # plurals count: "enchufes" → "enchufe", "ventanas" → "ventana", "outlets" → "outlet"
+    words |= {w[:-2] for w in words if w.endswith("es") and len(w) > 4}
+    words |= {w[:-1] for w in words if w.endswith("s") and len(w) > 3}
     return bool(words & WORK_ACTIONS) and bool(words & WORK_TARGETS)
 
 
@@ -91,13 +114,17 @@ def evaluate_completeness(
     customer: Customer | None,
     description: str,
     job_price: Decimal | None,
+    has_work_items: bool = False,
+    items_all_priced: bool = False,
 ) -> tuple[str, list[str]]:
     missing_fields = []
     if customer is None:
         missing_fields.append("customer_name")
-    if not is_meaningful_description(description):
+    # Gemini found work in the note (saved as line items), or the word lists recognize it
+    if not (has_work_items or is_meaningful_description(description)):
         missing_fields.append("job_description")
-    if job_price is None:
+    # priced with one total for the job, or a price on every line item (the total is their sum)
+    if job_price is None and not items_all_priced:
         missing_fields.append("job_price")
     status = "NEEDS_INFORMATION" if missing_fields else "NEW"
     return status, missing_fields
@@ -113,15 +140,17 @@ def create_job(session: Session, request: JobCreateRequest) -> JobCreateResponse
         extract_name = request.customer_id is None and customer_name is None
         extract_price = job_price is None
 
+        # Always ask for the work in the note (line items); it also decides whether the
+        # description is a real job. One Gemini call covers name, price and work.
         extracted = ExtractedJobInformation()
-        if extract_name or extract_price:
-            try:
-                extracted = extract_job_information(
-                    request.description,
-                    extract_customer_name=extract_name,
-                    extract_job_price=extract_price,
-                )
-            except Exception:
+        try:
+            extracted = extract_job_information(
+                request.description,
+                extract_customer_name=extract_name,
+                extract_job_price=extract_price,
+                extract_work_items=True,
+            )
+        except Exception:
                 # Extraction is optional assistance; explicit input remains usable.
                 logger.warning("Job extraction failed; continuing with explicit inputs.")
 
@@ -136,8 +165,13 @@ def create_job(session: Session, request: JobCreateRequest) -> JobCreateResponse
             customer_id=request.customer_id,
             customer_name=customer_name,
         )
+        work_items = extracted.work_items or ()
         status, missing_fields = evaluate_completeness(
-            customer, request.description, job_price
+            customer,
+            request.description,
+            job_price,
+            has_work_items=bool(work_items),
+            items_all_priced=bool(work_items) and all(w.amount is not None for w in work_items),
         )
 
         job = Job(
@@ -146,13 +180,175 @@ def create_job(session: Session, request: JobCreateRequest) -> JobCreateResponse
             job_description=request.description,
             job_price=job_price,
             status=status,
+            line_items=_line_items(work_items),
         )
         session.add(job)
         session.commit()
         session.refresh(job)
-        return JobCreateResponse.model_validate(job).model_copy(
-            update={"missing_fields": missing_fields}
+        return job_response(job, missing_fields)
+    except SQLAlchemyError:
+        session.rollback()
+        raise
+
+
+# ───────────────────────── reading and updating jobs ─────────────────────────
+
+# Canonical job states (docs/technical-design.md §4), in workflow order
+JOB_STATES = (
+    "NEW",
+    "NEEDS_INFORMATION",
+    "READY_FOR_QUOTE",
+    "QUOTE_SENT",
+    "ACCEPTED",
+    "SCHEDULED",
+    "IN_PROGRESS",
+    "COMPLETED",
+    "PAYMENT_PENDING",
+    "PAID",
+)
+# Before the quote is sent, Ojo sets the status from completeness and the job can be deleted
+PRE_QUOTE_STATES = ("NEW", "NEEDS_INFORMATION", "READY_FOR_QUOTE")
+
+
+class JobNotFoundError(ValueError):
+    """The job does not exist or belongs to another business."""
+
+
+class InvalidStatusChangeError(ValueError):
+    """Unknown status, or a move backwards in the workflow."""
+
+
+class JobLockedError(ValueError):
+    """The job can't be deleted once a quote was sent."""
+
+
+def _line_items(work_items: tuple[WorkItem, ...]) -> list[LineItem]:
+    return [
+        LineItem(position=i, description=w.description, description_es=w.description_es, amount=w.amount)
+        for i, w in enumerate(work_items)
+    ]
+
+
+def job_response(job: Job, missing_fields: list[str]) -> JobCreateResponse:
+    return JobCreateResponse.model_validate(job).model_copy(
+        update={
+            "missing_fields": missing_fields,
+            "customer_name": job.customer.customer_name if job.customer is not None else None,
+        }
+    )
+
+
+def _items_all_priced(job: Job) -> bool:
+    return bool(job.line_items) and all(item.amount is not None for item in job.line_items)
+
+
+def _missing_fields(job: Job) -> list[str]:
+    _, missing = evaluate_completeness(
+        job.customer,
+        job.job_description or "",
+        job.job_price,
+        has_work_items=bool(job.line_items),
+        items_all_priced=_items_all_priced(job),
+    )
+    return missing
+
+
+def _get_job(session: Session, job_id: UUID) -> Job:
+    job = session.get(Job, job_id)
+    if job is None:
+        raise JobNotFoundError("Trabajo no encontrado.")
+    return job
+
+
+def list_jobs(session: Session, business_id: UUID) -> list[JobCreateResponse]:
+    validate_business(session, business_id)
+    jobs = session.scalars(
+        select(Job).where(Job.business_id == business_id).order_by(Job.created_at.desc())
+    ).all()
+    return [job_response(job, _missing_fields(job)) for job in jobs]
+
+
+def get_job(session: Session, job_id: UUID) -> JobCreateResponse:
+    job = _get_job(session, job_id)
+    return job_response(job, _missing_fields(job))
+
+
+def update_job(session: Session, job_id: UUID, request: JobUpdateRequest) -> JobCreateResponse:
+    """Change only the fields that were sent; before the quote, Ojo re-checks completeness."""
+    try:
+        job = _get_job(session, job_id)
+        changes = request.model_dump(exclude_unset=True)
+
+        if "customer_id" in changes or "customer_name" in changes:
+            job.customer = resolve_customer(
+                session,
+                job.business_id,
+                customer_id=changes.pop("customer_id", None),
+                customer_name=changes.pop("customer_name", None),
+            )
+        for field, value in changes.items():
+            setattr(job, field, value)
+
+        # A new description before the quote: re-read the work in it
+        if "job_description" in changes and job.status in PRE_QUOTE_STATES:
+            try:
+                work = extract_job_information(
+                    job.job_description or "",
+                    extract_customer_name=False,
+                    extract_job_price=False,
+                    extract_work_items=True,
+                ).work_items
+            except Exception:
+                logger.warning("Job extraction failed; keeping the current line items.")
+                work = None
+            if work is not None:
+                job.line_items = _line_items(work)
+
+        status, missing_fields = evaluate_completeness(
+            job.customer,
+            job.job_description or "",
+            job.job_price,
+            has_work_items=bool(job.line_items),
+            items_all_priced=_items_all_priced(job),
         )
+        if job.status in PRE_QUOTE_STATES:
+            job.status = status
+        session.commit()
+        session.refresh(job)
+        return job_response(job, missing_fields)
+    except SQLAlchemyError:
+        session.rollback()
+        raise
+
+
+def change_status(session: Session, job_id: UUID, request: JobStatusRequest) -> JobCreateResponse:
+    """Move a job forward in the workflow (skipping steps is allowed, going back is not)."""
+    try:
+        job = _get_job(session, job_id)
+        target = request.status.strip().upper()
+        if target not in JOB_STATES:
+            raise InvalidStatusChangeError(f"Estado desconocido: {request.status}.")
+        if JOB_STATES.index(target) < JOB_STATES.index(job.status):
+            raise InvalidStatusChangeError(f"No se puede volver de {job.status} a {target}.")
+        job.status = target
+        session.commit()
+        session.refresh(job)
+        return job_response(job, _missing_fields(job))
+    except SQLAlchemyError:
+        session.rollback()
+        raise
+
+
+def delete_job(session: Session, job_id: UUID) -> None:
+    """Only before anything was sent to the customer."""
+    try:
+        job = _get_job(session, job_id)
+        if job.status not in PRE_QUOTE_STATES:
+            raise JobLockedError("Este trabajo ya se envió al cliente; no se puede borrar.")
+        for row in [*job.quotes, *job.actions]:
+            session.delete(row)  # line items go with the job (cascade)
+        session.delete(job)
+        session.commit()
     except SQLAlchemyError:
         session.rollback()
         raise
