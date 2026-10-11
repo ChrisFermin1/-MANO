@@ -225,5 +225,35 @@ class GeminiTest(unittest.TestCase):
         ask.assert_not_called()
 
 
+
+class WorkItemsTest(unittest.TestCase):
+    """Gemini's list of work: kept only if each item really comes from the note."""
+
+    def test_items_from_the_note_are_kept(self):
+        note = "Poner coquin en las ventanas y pintar, pintar baño completo"
+        self.assertTrue(extraction_service._item_is_in_note("Calafatear y pintar ventanas", "Caulk and paint windows", note))
+        self.assertTrue(extraction_service._item_is_in_note("Pintar baño completo", "Paint full bathroom", note))
+
+    def test_invented_work_is_dropped(self):
+        note = "Pintar la sala para Maria Lopez"
+        self.assertFalse(extraction_service._item_is_in_note("Instalar ventilador", "Install ceiling fan", note))
+        self.assertFalse(extraction_service._item_is_in_note("", "Paint", note))
+
+    def test_work_items_only_when_asked(self):
+        items = (extraction_service.WorkItem("Plantar pasto", "Plant grass"),)
+        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"}), mock.patch.object(
+            extraction_service, "_ask_gemini", return_value=ExtractedJobInformation("ATL Homeiker", Decimal("1200"), items)
+        ):
+            asked = extract_job_information(ATL_NOTE, extract_customer_name=False, extract_job_price=False, extract_work_items=True)
+            not_asked = both(ATL_NOTE)
+        self.assertEqual(asked, ExtractedJobInformation(None, None, items))
+        self.assertIsNone(not_asked.work_items)
+
+    def test_without_gemini_work_is_unknown(self):
+        # None (not checked) is different from () (Gemini found no work)
+        result = extract_job_information(ATL_NOTE, extract_customer_name=False, extract_job_price=False, extract_work_items=True)
+        self.assertIsNone(result.work_items)
+
+
 if __name__ == "__main__":
     unittest.main()
