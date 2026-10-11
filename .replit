@@ -1,0 +1,15 @@
+# Replit run configuration
+# This tells Replit what command to run when you hit the Run button.
+run = "npm run dev"
+entrypoint = "app/page.tsx"
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "npm run build && npm start"]
+deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 4000
+externalPort = 80
