@@ -14,22 +14,42 @@ type Interpreted = Pick<
 // Thrown only when Mano is busy (rate limit) — worth telling Carlos to wait a moment
 export class ManoBusyError extends Error {}
 
-export async function interpret(description: string, otherTrade?: OtherTrade | null): Promise<Interpreted> {
-  let data: unknown = null;
-  let status = 0;
+type GeminiReply = { status: number; data: unknown };
+
+async function askGemini(description: string, otherTrade?: OtherTrade | null): Promise<GeminiReply> {
   try {
     const response = await fetch("/api/extract", {
-      // a hung request would freeze the "organizando" screen; after 30s the built-in extractor takes over
-      signal: AbortSignal.timeout(30_000),
+      // the server already races a 2nd request and stops at 20s; this is just a safety net
+      signal: AbortSignal.timeout(25_000),
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ description, otherTrade: otherTrade?.name ?? null }),
     });
-    status = response.status;
-    data = await response.json().catch(() => null);
+    return { status: response.status, data: await response.json().catch(() => null) };
   } catch {
-    // offline / server down / timed out — fall through to the built-in extractor
+    return { status: 0, data: null }; // offline / server down / timed out
   }
+}
+
+// Organize ahead of time: a scanned note's text is sent to Gemini while Carlos is still reading it.
+// If he taps "Mano, organízalo" without changing it, the answer is already here (or on its way).
+const ahead = new Map<string, Promise<GeminiReply>>();
+const aheadKey = (description: string, otherTrade?: OtherTrade | null) => `${otherTrade?.name ?? ""}\n${description.trim()}`;
+
+export function organizeAhead(description: string, otherTrade?: OtherTrade | null) {
+  const key = aheadKey(description, otherTrade);
+  if (!description.trim() || ahead.has(key)) return;
+  ahead.clear(); // only the latest note matters
+  ahead.set(key, askGemini(description.trim(), otherTrade));
+}
+
+export async function interpret(description: string, otherTrade?: OtherTrade | null): Promise<Interpreted> {
+  const key = aheadKey(description, otherTrade);
+  const early = ahead.get(key);
+  ahead.delete(key);
+  // an early answer that failed (offline, busy…) gets one fresh try instead of being reused
+  let { status, data } = early ? await early : await askGemini(description, otherTrade);
+  if (early && status !== 200) ({ status, data } = await askGemini(description, otherTrade));
 
   if (status === 429) throw new ManoBusyError();
 
@@ -140,6 +160,51 @@ function interpretLocally(
     service,
     line_items: items,
   };
+}
+
+// "Escanear una nota": shrink the photo on the phone (fast to send, still easy to read), then Gemini
+// copies the note word for word. "" = the photo isn't a job note; null = couldn't read it (try again).
+export class ManoBusyReadingError extends Error {}
+
+async function shrinkPhoto(file: File): Promise<{ image: string; mimeType: string }> {
+  const toBase64 = (blob: Blob) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    if (blob) return { image: await toBase64(blob), mimeType: "image/jpeg" };
+  } catch {
+    // this browser can't open the format (e.g. HEIC on a laptop): send the original
+  }
+  return { image: await toBase64(file), mimeType: file.type || "image/jpeg" };
+}
+
+export async function readNote(file: File): Promise<string | null> {
+  try {
+    const response = await fetch("/api/read-note", {
+      method: "POST",
+      signal: AbortSignal.timeout(40_000),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(await shrinkPhoto(file)),
+    });
+    if (response.status === 429) throw new ManoBusyReadingError();
+    if (!response.ok) return null;
+    const data = await response.json();
+    return typeof data.text === "string" ? data.text : null;
+  } catch (error) {
+    if (error instanceof ManoBusyReadingError) throw error;
+    return null;
+  }
 }
 
 // Ojo's questions from Gemini for trades without a built-in checklist. null = couldn't ask (try again later).

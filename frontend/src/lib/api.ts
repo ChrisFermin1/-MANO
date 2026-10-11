@@ -88,7 +88,12 @@ export type Job = {
   ojo_dismissed?: string[];
   // Carlos tapped ✕ on "Ojo pregunta" — skip all of Ojo's questions for this job (reversible)
   ojo_skipped?: boolean;
-  ojo_ai?: OjoAiQuestion[] | null; // Gemini's questions for this job; asked once, then kept (undefined = not asked yet)
+  ojo_ai?: OjoAiQuestion[] | null;
+  // Copy in Josh's backend (Postgres). Only jobs made with "Nuevo trabajo" are sent (not the samples).
+  backend_sync?: "pending" | "ok" | "error";
+  backend_id?: string; // the database's job_id
+  backend_sent?: string; // what was last sent (to skip sending the same thing twice)
+  backend_status?: string; // the status the database has // Gemini's questions for this job; asked once, then kept (undefined = not asked yet)
 };
 
 export type CancelReason = "declined" | "no_response" | "other";
@@ -265,13 +270,63 @@ export function resetJobs({ demo }: { demo: boolean }) {
   write(demo ? seed() : []);
 }
 
-function write(jobs: Job[]) {
+function write(jobs: Job[], { quiet = false }: { quiet?: boolean } = {}) {
   const before = read();
   try {
     localStorage.setItem(KEY, JSON.stringify(jobs));
   } catch {}
   // other tabs hear the `storage` event; THIS tab needs its own signal (e.g. an approval synced from a phone)
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(JOBS_EVENT, { detail: { before, after: jobs } }));
+  if (!quiet) queueBackendSync(before, jobs);
+}
+
+/* ───────── Copy to Josh's backend, in the background ─────────
+   The app keeps reading from the browser. Every saved change to a job made with "Nuevo trabajo" is
+   sent to the backend a moment later (create, edit, move forward, delete). If the backend is off,
+   nothing breaks: the job shows "Sin conexión con la base de datos" and the next change retries. */
+
+const syncTimers = new Map<number, ReturnType<typeof setTimeout>>();
+
+function queueBackendSync(before: Job[], after: Job[]) {
+  if (typeof window === "undefined") return;
+  for (const job of after) {
+    if (!job.backend_sync) continue;
+    clearTimeout(syncTimers.get(job.id));
+    syncTimers.set(job.id, setTimeout(() => void syncJob(job.id), 800)); // typing → one request, not one per key
+  }
+  const gone = before.filter((b) => b.backend_id && !after.some((a) => a.id === b.id));
+  for (const job of gone) void import("@/lib/backend").then((b) => b.deleteRemoteJob(job.backend_id!)).catch(() => {});
+}
+
+function saveSyncResult(id: number, patch: Partial<Job>) {
+  write(read().map((j) => (j.id === id ? { ...j, ...patch } : j)), { quiet: true }); // quiet: don't sync the sync
+}
+
+async function syncJob(id: number) {
+  const job = read().find((j) => j.id === id);
+  if (!job?.backend_sync) return;
+  const b = await import("@/lib/backend");
+  const sent = JSON.stringify(b.backendFields(job));
+  const wantStatus = b.isBackendState(job.status) && job.status !== job.backend_status ? job.status : null;
+  if (job.backend_id && sent === job.backend_sent && !wantStatus && job.backend_sync === "ok") return;
+  try {
+    let backendId = job.backend_id;
+    let status = job.backend_status;
+    if (!backendId) {
+      const created = await b.createRemoteJob(job);
+      backendId = created.job_id;
+      status = created.status;
+    } else if (sent !== job.backend_sent) {
+      status = (await b.updateRemoteJob(backendId, job)).status;
+    }
+    if (b.isBackendState(job.status) && job.status !== status) {
+      // forward only on the backend; going "back" (e.g. a draft re-checked by Ojo) isn't an error here
+      status = await b.moveRemoteJob(backendId, job.status).then((r) => r.status, () => status);
+    }
+    saveSyncResult(id, { backend_sync: "ok", backend_id: backendId, backend_sent: sent, backend_status: status });
+  } catch {
+    saveSyncResult(id, { backend_sync: "error" });
+  }
 }
 
 const JOBS_EVENT = "mano:jobs-changed";
@@ -312,7 +367,6 @@ export async function getJob(id: number): Promise<Job | null> {
 
 // POST /jobs  — backend runs Mano (interpret) then Ojo (validate)
 export async function createJob(description: string, opts: { docIntent?: "estimate" | "invoice" } = {}): Promise<Job> {
-  await wait(1200); // feels like the AI is working
   const jobs = read();
   const now = new Date().toISOString();
   const parsed = await interpret(description, loadBusiness()?.otherTrade);
@@ -328,6 +382,7 @@ export async function createJob(description: string, opts: { docIntent?: "estima
     id: Math.max(0, ...jobs.map((j) => j.id)) + 1,
     ...parsed,
     description,
+    backend_sync: "pending",
     doc_intent: opts.docIntent === "invoice" ? "invoice" : null,
     customer_name_heard: heard,
     status: "NEW",

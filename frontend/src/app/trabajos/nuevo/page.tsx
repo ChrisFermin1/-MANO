@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Mic, RotateCcw, Sparkles, Trash2, Undo2 } from "lucide-react";
+import { Camera, Loader2, Mic, RotateCcw, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { PageHeader, Screen, Title, btnPrimary } from "@/components/ui";
 import { createJob } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
-import { ManoBusyError } from "@/lib/mano";
+import { ManoBusyError, ManoBusyReadingError, organizeAhead, readNote } from "@/lib/mano";
+import { loadBusiness } from "@/lib/business";
+import { NoteScanner, canUseLiveCamera } from "@/components/note-scanner";
 
 // ElevenLabs voice (backend). Default: port 8000 on the same machine that serves this page,
 // so it also works from a phone on the Wi-Fi. If it fails, the phone's own speech recognition takes over.
@@ -51,6 +53,11 @@ export default function NuevoTrabajo() {
   const [justCleared, setJustCleared] = useState(false);
   const [voiceError, setVoiceError] = useState("");
   const [submitError, setSubmitError] = useState("");
+  // "Escanear una nota": a photo of a paper estimate or a WhatsApp screenshot → its text in the box
+  const [reading, setReading] = useState(false);
+  const [scanMessage, setScanMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const photoInput = useRef<HTMLInputElement>(null);
+  const [scanning, setScanning] = useState(false); // live camera with the paper outline (https only)
   // what Carlos is writing: an estimate (before the work) or an invoice (work already done)
   const [docKind, setDocKind] = useState<"estimate" | "invoice">("estimate");
   const rec = useRef<Recognition | null>(null);
@@ -70,6 +77,28 @@ export default function NuevoTrabajo() {
     const id = setTimeout(() => setJustCleared(false), 6000);
     return () => clearTimeout(id);
   }, [justCleared]);
+
+  const scanNote = async (file: File | undefined) => {
+    if (!file) return;
+    setReading(true);
+    setScanMessage(null);
+    try {
+      const note = await readNote(file);
+      if (note === null) setScanMessage({ kind: "error", text: t.scanFailed });
+      else if (!note.trim()) setScanMessage({ kind: "error", text: t.scanNoNote });
+      else {
+        appendText(note);
+        setScanMessage({ kind: "ok", text: t.scanRead });
+        // start organizing now, while Carlos reads it; "Mano, organízalo" then has the answer ready
+        organizeAhead(textRef.current, loadBusiness()?.otherTrade);
+      }
+    } catch (error) {
+      setScanMessage({ kind: "error", text: error instanceof ManoBusyReadingError ? t.extractBusy : t.scanFailed });
+    } finally {
+      setReading(false);
+      if (photoInput.current) photoInput.current.value = ""; // same photo can be picked again
+    }
+  };
 
   const appendText = (addition: string) => {
     const previous = textRef.current;
@@ -271,6 +300,47 @@ export default function NuevoTrabajo() {
             {transcribing ? t.thinking : isRecording ? t.listening : t.tapToTalk}
           </span>
         </button>
+      )}
+
+      {/* Escanear una nota: camera or photo library (no "capture" attribute, so WhatsApp screenshots work too) */}
+      <input
+        ref={photoInput}
+        id="f-note-photo"
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={(e) => void scanNote(e.target.files?.[0])}
+        disabled={reading}
+      />
+      <button
+        type="button"
+        onClick={() => (canUseLiveCamera() ? setScanning(true) : photoInput.current?.click())}
+        disabled={reading || isRecording || transcribing}
+        className="mt-4 flex h-11 items-center justify-center gap-2 self-center rounded-full glass px-5 text-sm font-semibold text-forest transition active:scale-[0.97] disabled:opacity-50"
+      >
+        {reading ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" strokeWidth={2.25} />}
+        {reading ? t.scanReading : t.scanNote}
+      </button>
+      {scanning && (
+        <NoteScanner
+          onCapture={(photo) => {
+            setScanning(false);
+            void scanNote(photo);
+          }}
+          onClose={() => setScanning(false)}
+          onPickPhoto={() => {
+            setScanning(false);
+            photoInput.current?.click();
+          }}
+        />
+      )}
+      {scanMessage && (
+        <p
+          role={scanMessage.kind === "error" ? "alert" : "status"}
+          className={`mt-2 text-center text-sm font-semibold ${scanMessage.kind === "error" ? "text-[#8a2a17]" : "text-forest"}`}
+        >
+          {scanMessage.text}
+        </p>
       )}
 
       {voiceError && (

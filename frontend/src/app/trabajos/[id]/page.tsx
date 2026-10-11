@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Archive, Check, Ellipsis, Eye, PartyPopper, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X } from "lucide-react";
+import { Archive, Check, Database, Ellipsis, Eye, PartyPopper, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X } from "lucide-react";
 import { AutoTextarea, DocStateBadge, OjoNote, PageHeader, Screen, Sheet, StatusBadge, Title, btnDanger, btnGhost, btnLime, btnPrimary, btnSecondary } from "@/components/ui";
 import {
   CANCEL_REASONS,
@@ -150,6 +150,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
       <PageHeader backHref="/inicio" right={<JobActions job={job} setJob={setJob} />} />
       <Title>{job.customer_name || t.newJob}</Title>
       <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang, job.service_es)}</p>
+      <SyncNote job={job} />
 
       {/* Ojo verdict — light; the missing FIELDS carry the highlight, tap an item to jump to it */}
       {missing.length ? (
@@ -552,6 +553,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
       <PageHeader backHref="/trabajos" right={<JobActions job={job} setJob={setJob} />} />
       <Title>{job.customer_name}</Title>
       <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang, job.service_es)}</p>
+      <SyncNote job={job} />
 
       {job.status === "ACCEPTED" && (
         <section className="mt-5 rounded-[24px] glass-lime p-5 motion-safe:animate-[pop-in_300ms_ease-out]">
@@ -901,6 +903,18 @@ function EnglishPreview({
     >
       <span className="shrink-0 font-mono text-[10px] uppercase leading-4 tracking-wide">EN</span>
       <span lang="en">{item.description}</span>
+    </p>
+  );
+}
+
+/** Quiet line under the title: is this job saved in the backend's database? (only jobs made with Nuevo trabajo) */
+function SyncNote({ job }: { job: Job }) {
+  const { t } = useLang();
+  if (!job.backend_sync) return null;
+  const text = job.backend_sync === "ok" ? t.syncedDb : job.backend_sync === "error" ? t.syncFailedDb : t.syncingDb;
+  return (
+    <p role="status" className={`mt-1 flex items-center gap-1 text-xs ${job.backend_sync === "ok" ? "text-forest/70" : "text-muted"}`}>
+      <Database className="size-3" strokeWidth={2} aria-hidden /> {text}
     </p>
   );
 }
