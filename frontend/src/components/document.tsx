@@ -1,4 +1,4 @@
-import { estimateNo, fmtDate, invoiceNo, jobTotal, money, type Job } from "@/lib/api";
+import { estimateNo, fmtDate, invoiceNo, money, type Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
 
 // Estimate / invoice document. The CUSTOMER always gets `view="en"`.
@@ -81,14 +81,14 @@ export function DocumentCard({
         {job.line_items.map((i) => (
           <li key={i.id} className="flex justify-between gap-4">
             <span>{es ? i.description_es || i.description : i.description}</span>
-            <span className="font-bold">{money(i.amount ?? 0)}</span>
+            <span className="font-bold">{money(i.amount)}</span>
           </li>
         ))}
       </ul>
       <hr className="mt-5 border-black/10" />
       <div className="mt-3 flex items-center justify-between">
         <span className="text-sm">{isInvoice ? (job.paid_at ? L("Total paid", "Total pagado") : L("Amount due", "Total a pagar")) : "Total"}</span>
-        <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
+        <span className="text-2xl font-bold">{money(job.job_price)}</span>
       </div>
 
       <p className="mt-5 text-xs leading-4 text-muted">{terms}</p>

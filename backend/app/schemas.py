@@ -69,6 +69,14 @@ class BusinessResponse(BaseModel):
     phone_number: str | None
 
 
+class CustomerResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    customer_id: UUID
+    customer_name: str | None
+    phone_number: str | None
+
+
 # Responses for reading jobs have the same shape as the create response
 JobResponse = JobCreateResponse
 

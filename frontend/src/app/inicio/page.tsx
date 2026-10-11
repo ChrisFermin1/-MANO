@@ -3,24 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Eye, FileText, PartyPopper, Plus, Sparkles } from "lucide-react";
-import { firstName, getJobs, onJobsChange, invoiceNo, invoiceState, jobBadge, jobTotal, moneySummary, money, type Job, type JobBadge } from "@/lib/api";
-import { DEMO_BUSINESS, loadBusiness } from "@/lib/business";
+import { firstName, getJobs, getDemoJobs, missingFieldLabel, onJobsChange, invoiceNo, invoiceState, jobTotal, moneySummary, money, type Job } from "@/lib/api";
+import { fetchBusiness } from "@/lib/business";
 import { useLang, type Strings } from "@/lib/i18n";
 import { alerts, nextAction, type Alert } from "@/lib/ojo";
-import { serviceLabel } from "@/lib/services";
-
-// Neutral grey for every fact; only "Pagado" is colored (good news). Warnings live in Ojo.
-const BADGE_STYLE: Record<JobBadge, string> = {
-  unsent: "bg-black/5 text-black/60",
-  sent: "bg-black/5 text-black/60",
-  accepted: "bg-black/5 text-black/60",
-  scheduled: "bg-black/5 text-black/60",
-  in_progress: "bg-black/5 text-black/60",
-  done: "bg-black/5 text-black/60",
-  invoiced: "bg-black/5 text-black/60",
-  paid: "bg-lime text-forest",
-  cancelled: "bg-black/5 text-black/40",
-};
+import { StatusBadge } from "@/components/ui";
 
 function alertText(a: Alert, t: Strings) {
   switch (a.kind) {
@@ -65,24 +52,33 @@ function actionCopy(a: Alert, t: Strings) {
 
 export default function Inicio() {
   const { t, lang } = useLang();
-  const [name, setName] = useState(DEMO_BUSINESS.ownerName);
+  const [name, setName] = useState("");
   const [hour, setHour] = useState<number | null>(null);
   const [jobs, setJobs] = useState<Job[] | null>(null);
 
+  const [demoJobs, setDemoJobs] = useState<Job[]>([]);
+  const [error, setError] = useState("");
   useEffect(() => {
-    setName(loadBusiness()?.ownerName || DEMO_BUSINESS.ownerName);
+    let active = true;
+    fetchBusiness().then((business) => { if (active) setName(business.ownerName); })
+      .catch((e: Error) => { if (active) setError(e.message); });
     setHour(new Date().getHours());
-    getJobs().then(setJobs);
-    // Live update when the customer approves in another tab (backend version: poll or websocket)
-    return onJobsChange(() => void getJobs().then(setJobs));
+    const refresh = () => getJobs().then((data) => { if (active) setJobs(data); })
+      .catch((e: Error) => { if (active) setError(e.message); });
+    const refreshDemo = () => getDemoJobs().then((data) => { if (active) setDemoJobs(data); });
+    void refresh();
+    void refreshDemo();
+    const unsubscribe = onJobsChange(() => { void refresh(); void refreshDemo(); });
+    return () => { active = false; unsubscribe(); };
   }, []);
 
-  const next = jobs ? nextAction(jobs) : null;
+  const next = demoJobs.length ? nextAction(demoJobs) : null;
   const copy = next && actionCopy(next, t);
   // One signal per job: whatever is the next action is not repeated in Ojo's list
-  const ojoAlerts = (jobs ? alerts(jobs) : []).filter((a) => a.job.id !== next?.job.id);
+  const ojoAlerts = alerts(demoJobs).filter((a) => a.job.id !== next?.job.id);
   const approval = next?.kind === "to_schedule" && next.job.approved_by ? next : null;
-  const cash = jobs ? moneySummary(jobs) : null;
+  const cash = demoJobs.length ? moneySummary(demoJobs) : null;
+  const reviewJobs = (jobs ?? []).filter((job) => job.status === "NEEDS_INFORMATION");
   const recent = (jobs ?? []).filter((j) => j.status !== "CANCELLED").slice(0, 3); // getJobs() is newest first
 
   return (
@@ -101,6 +97,21 @@ export default function Inicio() {
           <span className="text-forest">{name}!</span>
         </h1>
 
+        {error && <p role="alert" className="mt-5 rounded-[14px] bg-[#fff0ed] p-4 text-sm text-[#8a2a17]">{error}</p>}
+        {!jobs && !error && <p role="status" className="mt-5 text-muted">{lang === "es" ? "Cargando trabajos…" : "Loading jobs…"}</p>}
+        {jobs?.length === 0 && <p className="mt-5 text-muted">{t.noJobs}</p>}
+        {reviewJobs.length > 0 && <section className="mt-7 rounded-[20px] glass-peach p-4">
+          <p className="flex items-center gap-2 font-semibold text-ojo-ink"><Eye className="size-5" />{t.review}</p>
+          <ul className="mt-3 space-y-2">{reviewJobs.map((job) => <li key={job.job_id}>
+            <Link href={`/trabajos/${job.job_id}`} className="flex items-center gap-3 rounded-[14px] bg-white/75 px-4 py-3">
+              <span className="min-w-0 flex-1"><span className="block font-semibold">{job.customer_name || "—"}</span>
+                <span className="block text-sm">{job.job_title || job.job_description || "—"}</span>
+                <span className="block text-xs text-ojo-ink">{job.missing_fields.map((key) => missingFieldLabel(key, lang)).join(" · ")}</span>
+              </span><span className="text-sm font-bold text-forest">{t.review}</span><ChevronRight className="size-4 text-forest" />
+            </Link>
+          </li>)}</ul>
+        </section>}
+        {demoJobs.length > 0 && <p className="mt-5 text-xs text-muted">{lang === "es" ? "Vista demo: documentos y recomendaciones de ejemplo" : "Demo preview: sample documents and recommendations"}</p>}
         {/* Next action — the ONE thing to do now. Turns into good news when a customer approved. */}
         {next && copy &&
           (approval ? (
@@ -156,7 +167,7 @@ export default function Inicio() {
 
         {/* Ojo — everything ELSE that needs attention. Hidden when the next action is the only thing pending
             (an Ojo card saying "nothing else" right under an Ojo warning reads like a contradiction). */}
-        {jobs && (ojoAlerts.length > 0 || !next) && (
+        {demoJobs.length > 0 && (ojoAlerts.length > 0 || !next) && (
           <section className={`${next || cash?.hasInvoices ? "mt-4" : "mt-7"} rounded-[20px] glass-peach p-4`}>
             <div className="flex items-center gap-2">
               <Eye className="size-6 text-[#b8803f]" strokeWidth={1.75} />
@@ -199,19 +210,17 @@ export default function Inicio() {
             </div>
             <ul className="mt-2 divide-y divide-black/5">
               {recent.map((j) => {
-                const b = jobBadge(j);
-                const total = jobTotal(j);
                 return (
-                  <li key={j.id}>
-                    <Link href={`/trabajos/${j.id}`} className="flex items-center gap-3 py-3">
+                  <li key={j.job_id}>
+                    <Link href={`/trabajos/${j.job_id}`} className="flex items-center gap-3 py-3">
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[15px] font-semibold leading-5">{j.customer_name || "—"}</span>
-                        <span className="block truncate text-sm text-muted">
-                          {serviceLabel(j.service, lang)}
-                          {total > 0 && ` · ${money(total)}`}
+                        <span className="flex items-baseline gap-1 text-sm text-muted">
+                          <span className="truncate">{j.job_title || j.job_description || "—"}</span>
+                          {j.job_price !== null && <span className="shrink-0">· {money(j.job_price)}</span>}
                         </span>
                       </span>
-                      <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${BADGE_STYLE[b]}`}>{t.badge[b]}</span>
+                      <StatusBadge status={j.status} />
                     </Link>
                   </li>
                 );

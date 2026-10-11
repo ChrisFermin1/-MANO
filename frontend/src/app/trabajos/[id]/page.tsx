@@ -29,6 +29,12 @@ import {
   updateJob,
   type InvoiceState,
   type Job,
+  isLiveJob,
+  missingFieldLabel,
+  getCustomers,
+  patchJob,
+  type Customer,
+  type JobReviewInput,
   type LineItem,
   daysSince,
 } from "@/lib/api";
@@ -38,21 +44,33 @@ import { useLang } from "@/lib/i18n";
 import { toEnglish } from "@/lib/translate";
 import { serviceLabel } from "@/lib/services";
 import { silencedFor, suggestions, validate } from "@/lib/ojo";
+import { ApiError } from "@/lib/http";
 
 const EDITABLE = ["NEW", "NEEDS_INFORMATION", "READY_FOR_QUOTE"];
 
 export default function Trabajo() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { id } = useParams<{ id: string }>();
   const [job, setJob] = useState<Job | null | undefined>(undefined);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    getJob(Number(id)).then(setJob);
-    // Live update when the customer approves in another tab
-    return onJobsChange(() => void getJob(Number(id)).then(setJob));
+    let active = true;
+    setJob(undefined);
+    setError("");
+    const refresh = () => getJob(id).then((data) => { if (active) setJob(data); })
+      .catch((e: Error) => {
+        if (!active) return;
+        if (e instanceof ApiError && e.status === 404) setJob(null);
+        else setError(e.message);
+      });
+    void refresh();
+    const unsubscribe = onJobsChange(() => void refresh());
+    return () => { active = false; unsubscribe(); };
   }, [id]);
 
-  if (job === undefined) return <Screen>{null}</Screen>;
+  if (error) return <Screen><PageHeader backHref="/trabajos" /><p role="alert" className="mt-6 text-[#8a2a17]">{error}</p></Screen>;
+  if (job === undefined) return <Screen><PageHeader backHref="/trabajos" /><p role="status" className="mt-6 text-muted">{lang === "es" ? "Cargando trabajo…" : "Loading job…"}</p></Screen>;
   if (job === null)
     return (
       <Screen>
@@ -61,7 +79,103 @@ export default function Trabajo() {
       </Screen>
     );
 
+  if (isLiveJob(job)) return <LiveJob key={job.job_id} job={job} setJob={setJob} />;
   return EDITABLE.includes(job.status) ? <ReviewJob job={job} setJob={setJob} /> : <TrackJob job={job} setJob={setJob} />;
+}
+
+/** Revisar edits the existing Job and displays the server's completeness result. */
+function LiveJob({ job, setJob }: { job: Job; setJob: (job: Job) => void }) {
+  const { t, lang } = useLang();
+  const [customerId, setCustomerId] = useState(job.customer_id ?? "");
+  const [description, setDescription] = useState(job.job_description ?? "");
+  const [jobPrice, setJobPrice] = useState(job.job_price ?? "");
+  const [customers, setCustomers] = useState<Customer[] | null>(null);
+  const [customerError, setCustomerError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const reviewing = job.status === "NEEDS_INFORMATION";
+  useEffect(() => {
+    if (!reviewing) return;
+    let active = true;
+    getCustomers(job.business_id).then((data) => { if (active) setCustomers(data); })
+      .catch((error: Error) => { if (active) setCustomerError(error.message); });
+    return () => { active = false; };
+  }, [reviewing, job.business_id]);
+
+  const save = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (saving) return;
+    const changes: JobReviewInput = {};
+    if (customerId !== (job.customer_id ?? "")) changes.customer_id = customerId || null;
+    if (description !== (job.job_description ?? "")) changes.job_description = description;
+    if (jobPrice !== (job.job_price ?? "")) changes.job_price = jobPrice.trim() || null;
+    setSaving(true);
+    setSaved(false);
+    setSaveError("");
+    try {
+      const updated = await patchJob(job.job_id, changes);
+      setCustomerId(updated.customer_id ?? "");
+      setDescription(updated.job_description ?? "");
+      setJobPrice(updated.job_price ?? "");
+      setJob(updated);
+      setSaved(true);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "No se pudieron guardar los cambios.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const fieldClass = (key: string) => `w-full rounded-[14px] glass-field px-4 text-base outline-none placeholder:text-muted ${job.missing_fields.includes(key) ? "ring-2 ring-flag" : "focus:ring-2 focus:ring-forest/60"}`;
+  const missingTag = (key: string) => job.missing_fields.includes(key) && <span className="ml-2 text-xs font-semibold text-ojo-ink">{lang === "es" ? "Falta" : "Missing"}</span>;
+
+  return <Screen>
+    <PageHeader backHref="/inicio" />
+    <Title>{job.customer_name || t.newJob}</Title>
+    <p className="mt-1 text-sm text-muted">{job.job_title || job.job_description || "—"}</p>
+    <div className="mt-4"><StatusBadge status={job.status} /></div>
+    {job.status === "NEEDS_INFORMATION" && <section className="mt-5 rounded-[14px] glass border-flag/60! p-4 text-ojo-ink">
+      <p className="flex items-center gap-2 font-semibold"><Eye className="size-5" />{t.review}</p>
+      <ul className="mt-2 space-y-1">{job.missing_fields.map((key) => <li key={key}>{missingFieldLabel(key, lang)}</li>)}</ul>
+    </section>}
+    {saved && <div role="status" className="mt-5 rounded-[14px] glass-lime p-4 text-forest">
+      <p className="font-semibold">{lang === "es" ? "Cambios guardados." : "Changes saved."}</p>
+      <Link href="/inicio" className="mt-2 inline-block font-bold underline underline-offset-4">{t.backHome}</Link>
+    </div>}
+    {(customerError || saveError) && <p role="alert" className="mt-4 rounded-[14px] bg-[#fff0ed] p-4 text-sm text-[#8a2a17]">{[customerError, saveError].filter(Boolean).join(" · ")}</p>}
+    {reviewing ? <form onSubmit={save} className="mt-6 space-y-4 rounded-[20px] glass p-5">
+      <label htmlFor="review-customer" className="block text-sm font-semibold">
+        {missingFieldLabel("customer_name", lang)}{missingTag("customer_name")}
+        <select id="review-customer" value={customerId} onChange={(event) => setCustomerId(event.target.value)} disabled={saving || customers === null} aria-invalid={job.missing_fields.includes("customer_name")} className={`${fieldClass("customer_name")} mt-2 h-[52px]`}>
+          <option value="">{lang === "es" ? "Sin selección" : "No selection"}</option>
+          {job.customer_id && !customers?.some((customer) => customer.customer_id === job.customer_id) && <option value={job.customer_id}>{job.customer_name || "—"}</option>}
+          {(customers ?? []).map((customer) => <option key={customer.customer_id} value={customer.customer_id}>{customer.customer_name || "—"} · {customer.phone_number || customer.customer_id.slice(-8)}</option>)}
+        </select>
+      </label>
+      {customers === null && !customerError && <p role="status" className="text-sm text-muted">{lang === "es" ? "Cargando clientes…" : "Loading customers…"}</p>}
+      <label htmlFor="review-description" className="block text-sm font-semibold">
+        {missingFieldLabel("job_description", lang)}{missingTag("job_description")}
+        <textarea id="review-description" value={description} onChange={(event) => setDescription(event.target.value)} disabled={saving} rows={5} aria-invalid={job.missing_fields.includes("job_description")} className={`${fieldClass("job_description")} mt-2 resize-none py-4 leading-6`} />
+      </label>
+      <label htmlFor="review-price" className="block text-sm font-semibold">
+        {missingFieldLabel("job_price", lang)}{missingTag("job_price")}
+        <input id="review-price" value={jobPrice} onChange={(event) => setJobPrice(event.target.value)} disabled={saving} inputMode="decimal" placeholder="2500.00" aria-invalid={job.missing_fields.includes("job_price")} className={`${fieldClass("job_price")} mt-2 h-[52px]`} />
+      </label>
+      <button type="submit" disabled={saving} className={btnPrimary}>{saving ? (lang === "es" ? "Guardando…" : "Saving…") : (lang === "es" ? "Guardar cambios" : "Save changes")}</button>
+    </form> : <section className="mt-6 space-y-4 rounded-[20px] glass p-5">
+      <div><p className="text-sm text-muted">{lang === "es" ? "Cliente" : "Customer"}</p><p>{job.customer_name || "—"}</p></div>
+      <div><p className="text-sm text-muted">{lang === "es" ? "Descripción del trabajo" : "Job description"}</p><p className="whitespace-pre-wrap">{job.job_description || "—"}</p></div>
+      <div><p className="text-sm text-muted">{lang === "es" ? "Dirección" : "Address"}</p><p>{job.job_address || "—"}</p></div>
+      <div><p className="text-sm text-muted">{lang === "es" ? "Precio del trabajo" : "Job price"}</p><p className="text-2xl font-bold">{money(job.job_price)}</p></div>
+    </section>}
+    {job.line_items.length > 0 && <section className="mt-4 rounded-[20px] glass p-5">
+      <ul className="space-y-3">{job.line_items.map((item) => <li key={item.id} className="flex justify-between gap-3"><span>{lang === "es" ? item.description_es || item.description : item.description}</span><span className="font-semibold">{money(item.amount)}</span></li>)}</ul>
+    </section>}
+    <div className="mt-6 space-y-2">
+      <Link href={`/trabajos/${job.job_id}/estimado`} className={btnSecondary}><FileText className="size-4" />{lang === "es" ? "Vista previa del estimado" : "Estimate preview"}</Link>
+      <Link href={`/trabajos/${job.job_id}/factura`} className={btnSecondary}><Receipt className="size-4" />{lang === "es" ? "Vista previa de factura" : "Invoice preview"}</Link>
+    </div>
+  </Screen>;
 }
 
 /* ───────── Before the quote: Ojo checks, Carlos fills gaps ───────── */

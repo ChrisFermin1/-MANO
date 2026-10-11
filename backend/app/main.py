@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.business import ensure_demo_business, router as business_router
 from app.config import Settings
+from app.customers import router as customers_router
 from app.db import Base
 from app.jobs import router as jobs_router
 from app.voice.service import transcribe_audio
@@ -44,6 +45,7 @@ app.add_middleware(
 )
 app.include_router(business_router)
 app.include_router(jobs_router)
+app.include_router(customers_router)
 
 @app.get("/health")
 def health() -> dict[str, str]:

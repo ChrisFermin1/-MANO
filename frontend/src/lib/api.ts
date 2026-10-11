@@ -1,8 +1,8 @@
-// Fake API backed by localStorage. When the FastAPI backend is ready, replace each
-// function body with a fetch() call — the screens won't need to change.
+// Core Jobs use FastAPI. The existing document demos remain isolated below.
+// UI aliases are mapped from the backend response; they are never persisted separately.
 
-import { loadBusiness } from "@/lib/business";
-import { interpret } from "@/lib/mano";
+import { DEMO_BUSINESS_ID, loadBusiness } from "@/lib/business";
+import { apiRequest } from "@/lib/http";
 import { validate } from "@/lib/ojo";
 import { publishEstimate } from "@/lib/relay";
 
@@ -47,7 +47,16 @@ export type LineItem = {
 };
 
 export type Job = {
-  id: number;
+  id: string; // presentation alias of job_id; demo IDs have a demo- prefix
+  job_id: string;
+  business_id: string;
+  customer_id: string | null;
+  job_title: string | null;
+  job_description: string | null;
+  job_address: string | null;
+  job_price: string | null;
+  start_date: string | null;
+  missing_fields: string[];
   customer_name: string | null;
   customer_phone?: string | null; // optional — never required by Ojo; enables one-tap WhatsApp / SMS
   address: string | null;
@@ -96,8 +105,17 @@ const DAY = 86_400_000;
 
 const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
 export const uid = () => Math.random().toString(36).slice(2, 9);
-export const jobTotal = (job: Job) => job.line_items.reduce((s, i) => s + (i.amount ?? 0), 0);
-export const money = (n: number) => `$${n.toLocaleString("en-US")}`;
+// Decimal strings remain authoritative. Number conversion happens only in this
+// presentation layer (legacy demo summaries also consume jobTotal).
+export const jobTotal = (job: Job) => Number(job.job_price ?? 0);
+const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const money = (value: string | number | null | undefined) => value == null ? "—" : currency.format(Number(value));
+export const isLiveJob = (job: Job) => !job.id.startsWith("demo-");
+export const missingFieldLabel = (key: string, lang: "es" | "en") => ({
+  customer_name: lang === "es" ? "Cliente" : "Customer",
+  job_description: lang === "es" ? "Descripción del trabajo" : "Job description",
+  job_price: lang === "es" ? "Precio del trabajo" : "Job price",
+}[key] ?? key);
 export const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / DAY);
 export const firstName = (name: string | null) => (name ?? "").split(" ")[0] || "—";
 
@@ -126,9 +144,9 @@ const paidThisMonth = () => {
 };
 
 function seed(): Job[] {
-  return [
+  const samples = [
     {
-      id: 1,
+      id: "demo-1",
       customer_name: "Maria Rodriguez",
       customer_phone: "(832) 555-0142",
       address: "214 Oak St, Houston, TX",
@@ -147,7 +165,7 @@ function seed(): Job[] {
       public_token: "maria-x7k2p9",
     },
     {
-      id: 2,
+      id: "demo-2",
       customer_name: "Juan Pérez",
       address: null,
       service: "Drywall Repair",
@@ -159,7 +177,7 @@ function seed(): Job[] {
       ...NO_DOCS,
     },
     {
-      id: 3,
+      id: "demo-3",
       customer_name: "Ana García",
       address: "88 Pine Ave, Houston, TX",
       service: "Interior Painting",
@@ -179,7 +197,7 @@ function seed(): Job[] {
       approved_by: "Ana García",
     },
     {
-      id: 5,
+      id: "demo-5",
       customer_name: "Luis Gómez",
       address: "77 Maple Ct, Sugar Land, TX",
       service: "Interior Painting",
@@ -203,7 +221,7 @@ function seed(): Job[] {
       paid_at: paidThisMonth(),
     },
     {
-      id: 4,
+      id: "demo-4",
       customer_name: "Pedro Sánchez",
       customer_phone: "(281) 555-0187",
       address: "1502 Elm Dr, Katy, TX",
@@ -227,12 +245,32 @@ function seed(): Job[] {
       invoice_due_at: ago(18 - INVOICE_DUE_DAYS),
     },
   ];
+  return samples.map((job) => ({
+    ...job, status: job.status as JobStatus,
+    job_id: job.id, business_id: DEMO_BUSINESS_ID, customer_id: null,
+    job_title: job.service, job_description: job.description, job_address: job.address,
+    job_price: job.line_items.reduce((sum, item) => sum + (item.amount ?? 0), 0).toFixed(2),
+    start_date: null, missing_fields: [],
+  }));
 }
 
 function read(): Job[] {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as Job[];
+    if (raw) {
+      // Older document samples used numeric IDs. Normalize only those demo
+      // records; a real UUID record is never read from browser persistence.
+      const samples = JSON.parse(raw) as Job[];
+      return samples.filter((job) => typeof job.id === "number" || String(job.id).startsWith("demo-")).map((job) => {
+        const id = String(job.id).startsWith("demo-") ? String(job.id) : `demo-${job.id}`;
+        return {
+          ...job, id, job_id: id, business_id: DEMO_BUSINESS_ID, customer_id: null,
+          job_title: job.service, job_description: job.description, job_address: job.address,
+          job_price: job.line_items.reduce((sum, item) => sum + (item.amount ?? 0), 0).toFixed(2),
+          start_date: null, missing_fields: [],
+        };
+      });
+    }
   } catch {}
   return [];
 }
@@ -277,44 +315,73 @@ export function onJobsChange(cb: (before: Job[], after: Job[]) => void): () => v
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// GET /jobs
-export async function getJobs(): Promise<Job[]> {
-  return read().sort((a, b) => b.updated_at.localeCompare(a.updated_at));
-}
+export type Customer = { customer_id: string; customer_name: string | null; phone_number: string | null };
+export type JobCreateInput = {
+  business_id: string; description: string;
+  customer_id?: string; customer_name?: string; job_price?: string;
+};
 
-// GET /jobs/:id
-export async function getJob(id: number): Promise<Job | null> {
-  return read().find((j) => j.id === id) ?? null;
-}
+// The one existing frontend Job type serves both screens and demo previews.
+// This projection describes only the wire response, not another domain model.
+type JobResponse = Pick<Job, "job_id" | "business_id" | "customer_id" | "customer_name" | "job_title" | "job_description" | "job_address" | "job_price" | "status" | "start_date" | "created_at" | "updated_at" | "missing_fields"> & {
+  line_items: { line_item_id: string; position: number; description: string; description_es: string | null; amount: string | null }[];
+};
 
-// POST /jobs  — backend runs Mano (interpret) then Ojo (validate)
-export async function createJob(description: string): Promise<Job> {
-  await wait(1200); // feels like the AI is working
-  const jobs = read();
-  const now = new Date().toISOString();
-  const parsed = await interpret(description, loadBusiness()?.otherTrade);
-  parsed.line_items = parsed.line_items.map((item) => ({
-    ...item,
-    ...(item.amount != null ? { price_source: "spoken" as const } : {}),
-  }));
-  const draft: Job = {
-    id: Math.max(0, ...jobs.map((j) => j.id)) + 1,
-    ...parsed,
-    description,
-    status: "NEW",
-    created_at: now,
-    updated_at: now,
-    ...NO_DOCS,
+function fromResponse(data: JobResponse): Job {
+  return {
+    ...data, ...NO_DOCS,
+    id: data.job_id,
+    description: data.job_description ?? "",
+    address: data.job_address,
+    service: data.job_title || data.job_description || "",
+    line_items: data.line_items.map((item) => ({
+      ...item, id: item.line_item_id,
+      amount: item.amount === null ? null : Number(item.amount),
+    })),
   };
-  draft.status = validate(draft).length ? "NEEDS_INFORMATION" : "READY_FOR_QUOTE";
-  write([...jobs, draft]);
-  return draft;
 }
 
-// PATCH /jobs/:id  — Ojo re-validates whenever details change before the quote is sent
-export async function updateJob(id: number, patch: Partial<Job>): Promise<Job> {
+export async function getCustomers(businessId = DEMO_BUSINESS_ID): Promise<Customer[]> {
+  return apiRequest(`/customers?business_id=${encodeURIComponent(businessId)}`);
+}
+
+export async function getJobs(): Promise<Job[]> {
+  const jobs = await apiRequest<JobResponse[]>(`/jobs?business_id=${DEMO_BUSINESS_ID}`);
+  return jobs.map(fromResponse);
+}
+
+/** The document demo cannot populate the live list or serve as an API fallback. */
+export async function getDemoJobs(): Promise<Job[]> { return read(); }
+
+export async function getJob(id: string): Promise<Job | null> {
+  if (id.startsWith("demo-")) return read().find((job) => job.id === id) ?? null;
+  return fromResponse(await apiRequest<JobResponse>(`/jobs/${encodeURIComponent(id)}`));
+}
+
+export async function createJob(input: JobCreateInput): Promise<Job> {
+  const job = fromResponse(await apiRequest<JobResponse>("/jobs", { method: "POST", body: JSON.stringify(input) }));
+  // Notification only: PostgreSQL remains the source on every reload.
+  window.dispatchEvent(new CustomEvent(JOBS_EVENT, { detail: { before: [], after: [] } }));
+  return job;
+}
+
+export type JobReviewInput = Partial<Pick<Job, "customer_id" | "job_description" | "job_price">>;
+
+/** Update an existing real Job; status and missing fields come from FastAPI. */
+export async function patchJob(jobId: string, changes: JobReviewInput): Promise<Job> {
+  const job = fromResponse(await apiRequest<JobResponse>(`/jobs/${encodeURIComponent(jobId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(changes),
+  }));
+  window.dispatchEvent(new CustomEvent(JOBS_EVENT, { detail: { before: [], after: [] } }));
+  return job;
+}
+
+export async function updateJob(id: string, patch: Partial<Job>): Promise<Job> {
+  if (!id.startsWith("demo-")) throw new Error("La edición de trabajos se habilitará en Revisar. No se guardaron cambios.");
   const jobs = read();
   const i = jobs.findIndex((j) => j.id === id);
+  if (i < 0) throw new Error("Demo job not found");
   const next: Job = { ...jobs[i], ...patch, updated_at: new Date().toISOString() };
   if (!patch.status && canDelete(next)) {
     next.status = validate(next).length ? "NEEDS_INFORMATION" : "READY_FOR_QUOTE";
@@ -324,12 +391,12 @@ export async function updateJob(id: number, patch: Partial<Job>): Promise<Job> {
   return next;
 }
 
-export async function setStatus(id: number, status: JobStatus): Promise<Job> {
+export async function setStatus(id: string, status: JobStatus): Promise<Job> {
   return updateJob(id, { status });
 }
 
 // POST /jobs/:id/actions  — Carlos approved; Mano "sends" (mock just records the time)
-export async function sendMessage(id: number): Promise<Job> {
+export async function sendMessage(id: string): Promise<Job> {
   await wait(600);
   return updateJob(id, {});
 }
@@ -340,7 +407,7 @@ function nextNumber(field: "estimate_number" | "invoice_number") {
 }
 
 // POST /jobs/:id/estimate/send
-export async function sendEstimate(id: number): Promise<Job> {
+export async function sendEstimate(id: string): Promise<Job> {
   await wait(600);
   const job = (await getJob(id))!;
   const now = new Date().toISOString();
@@ -360,7 +427,7 @@ export async function sendEstimate(id: number): Promise<Job> {
 export const canInvoiceDirectly = (j: Job) => canDelete(j) && validate(j).length === 0;
 export const canSendInvoice = (j: Job) => !j.invoice_number && (j.status === "COMPLETED" || canInvoiceDirectly(j));
 
-export async function sendInvoice(id: number): Promise<Job> {
+export async function sendInvoice(id: string): Promise<Job> {
   await wait(600);
   const job = (await getJob(id))!;
   if (!canSendInvoice(job)) throw new Error("This job can't be invoiced yet");
@@ -390,14 +457,15 @@ export async function approveEstimate(token: string, name: string): Promise<Job>
 export const estimateLink = (job: Job, origin: string) => (job.public_token ? `${origin}/e/${job.public_token}` : null);
 
 // DELETE /jobs/:id  — drafts only
-export async function deleteJob(id: number): Promise<void> {
+export async function deleteJob(id: string): Promise<void> {
+  if (!id.startsWith("demo-")) throw new Error("Esta acción de demostración no modifica trabajos reales.");
   const job = await getJob(id);
   if (!job || !canDelete(job)) throw new Error("Only unsent drafts can be deleted");
   write(read().filter((j) => j.id !== id));
 }
 
 // POST /jobs/:id/cancel
-export async function cancelJob(id: number, reason: CancelReason): Promise<Job> {
+export async function cancelJob(id: string, reason: CancelReason): Promise<Job> {
   const job = (await getJob(id))!;
   if (!canCancel(job)) throw new Error("This job can't be cancelled");
   return updateJob(id, {
@@ -409,7 +477,7 @@ export async function cancelJob(id: number, reason: CancelReason): Promise<Job> 
 }
 
 // POST /jobs/:id/reactivate  — back to where it was; Ojo's clock restarts
-export async function reactivateJob(id: number): Promise<Job> {
+export async function reactivateJob(id: string): Promise<Job> {
   const job = (await getJob(id))!;
   return updateJob(id, {
     status: job.cancelled_from ?? "QUOTE_SENT",
@@ -419,7 +487,7 @@ export async function reactivateJob(id: number): Promise<Job> {
   });
 }
 
-export async function markPaid(id: number): Promise<Job> {
+export async function markPaid(id: string): Promise<Job> {
   return updateJob(id, { status: "PAID", paid_at: new Date().toISOString() });
 }
 

@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Mic, RotateCcw, Sparkles, Trash2, Undo2 } from "lucide-react";
-import { PageHeader, Screen, Title, btnPrimary } from "@/components/ui";
-import { createJob } from "@/lib/api";
+import { PageHeader, Screen, Title, btnPrimary, input } from "@/components/ui";
+import { createJob, getCustomers, type Customer } from "@/lib/api";
+import { DEMO_BUSINESS_ID, fetchBusiness } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 
 const chip =
@@ -44,11 +45,26 @@ export default function NuevoTrabajo() {
   const [justCleared, setJustCleared] = useState(false);
   const [voiceError, setVoiceError] = useState("");
   const [submitError, setSubmitError] = useState("");
+  const [customers, setCustomers] = useState<Customer[] | null>(null);
+  const [customerId, setCustomerId] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [jobPrice, setJobPrice] = useState("");
+  const [contextError, setContextError] = useState("");
+  const [businessReady, setBusinessReady] = useState(false);
   const rec = useRef<Recognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const useBrowserSpeech = useRef(false);
   const textRef = useRef("");
+
+  useEffect(() => {
+    let active = true;
+    fetchBusiness().then(() => { if (active) setBusinessReady(true); })
+      .catch((error: Error) => { if (active) setContextError(error.message); });
+    getCustomers().then((data) => { if (active) setCustomers(data); })
+      .catch((error: Error) => { if (active) setContextError(error.message); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     setCanListen(typeof MediaRecorder !== "undefined" || getRecognition() !== null);
@@ -199,12 +215,17 @@ export default function NuevoTrabajo() {
   };
 
   const submit = async () => {
-    if (!text.trim() || busy || isRecording || transcribing) return;
+    if (!text.trim() || !businessReady || busy || isRecording || transcribing) return;
     setBusy(true);
     setSubmitError("");
     try {
-      const job = await createJob(text.trim());
-      router.push(`/trabajos/${job.id}`);
+      await createJob({
+        business_id: DEMO_BUSINESS_ID,
+        description: text.trim(),
+        ...(customerId ? { customer_id: customerId } : customerName.trim() ? { customer_name: customerName.trim() } : {}),
+        ...(jobPrice.trim() !== "" ? { job_price: jobPrice.trim() } : {}),
+      });
+      router.push("/inicio");
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : t.extractError);
       setBusy(false);
@@ -311,9 +332,29 @@ export default function NuevoTrabajo() {
         </button>
       )}
 
-      {submitError && (
+      <div className="mt-6 space-y-3">
+        <label className="block text-sm font-semibold">
+          {lang === "es" ? "Cliente (opcional)" : "Customer (optional)"}
+          <select aria-label={lang === "es" ? "Cliente" : "Customer"} value={customerId} onChange={(e) => setCustomerId(e.target.value)} className={`${input} mt-1 w-full`}>
+            <option value="">{customers === null ? (lang === "es" ? "Cargando clientes…" : "Loading customers…") : (lang === "es" ? "Sin selección" : "No selection")}</option>
+            {(customers ?? []).map((customer) => <option key={customer.customer_id} value={customer.customer_id}>
+              {customer.customer_name || "—"}{` · ${customer.phone_number || customer.customer_id.slice(-8)}`}
+            </option>)}
+          </select>
+        </label>
+        {!customerId && <label className="block text-sm font-semibold">
+          {lang === "es" ? "Nombre del cliente (opcional)" : "Customer name (optional)"}
+          <input aria-label={lang === "es" ? "Nombre del cliente" : "Customer name"} value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={`${input} mt-1 w-full`} />
+        </label>}
+        <label className="block text-sm font-semibold">
+          {lang === "es" ? "Precio del trabajo (opcional)" : "Job price (optional)"}
+          <input aria-label={lang === "es" ? "Precio del trabajo" : "Job price"} inputMode="decimal" placeholder="2500.00" value={jobPrice} onChange={(e) => setJobPrice(e.target.value)} className={`${input} mt-1 w-full`} />
+        </label>
+      </div>
+
+      {(contextError || submitError) && (
         <p role="alert" className="mt-4 rounded-[14px] bg-[#fff0ed] px-4 py-3 text-sm font-semibold text-[#8a2a17]">
-          {submitError}
+          {[contextError, submitError].filter(Boolean).join(" · ")}
         </p>
       )}
 
@@ -321,7 +362,7 @@ export default function NuevoTrabajo() {
         <button
           type="button"
           onClick={submit}
-          disabled={!text.trim() || isRecording || transcribing}
+          disabled={!businessReady || !text.trim() || isRecording || transcribing}
           className={btnPrimary}
         >
           <Sparkles className="size-5" strokeWidth={2.5} />
