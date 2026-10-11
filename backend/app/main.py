@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
@@ -50,6 +50,19 @@ app.include_router(customers_router)
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+@app.post("/api/extract")
+async def extract(request: Request):
+    data = await request.json()
+    description = data.get("description", "")
+    # Stub for now
+    return {
+        "service": "General",
+        "customer_name": "Test User",
+        "address": "123 Main St",
+        "line_items": []
+    }
+
 
 
 @app.post("/api/voice/transcribe")
