@@ -3,8 +3,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
+from sqlalchemy.orm import Session
 
+from app.business import ensure_demo_business, router as business_router
 from app.config import Settings
+from app.db import Base
+from app.jobs import router as jobs_router
 from app.voice.service import transcribe_audio
 
 
@@ -25,7 +29,7 @@ app = FastAPI(title="Mano foundation", lifespan=lifespan)
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4000"],
+    allow_origins=["http://localhost:4000", "http://localhost:4000",]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
