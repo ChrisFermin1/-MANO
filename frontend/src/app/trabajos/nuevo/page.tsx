@@ -128,7 +128,8 @@ export default function NuevoTrabajo() {
           const formData = new FormData();
           formData.append("file", audioBlob, "audio.webm");
 
-          const response = await fetch("http://localhost:8000/api/voice/transcribe", {
+          const apiBase = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
+          const response = await fetch(`${apiBase}/api/voice/transcribe`, {
             method: "POST",
             body: formData,
           });

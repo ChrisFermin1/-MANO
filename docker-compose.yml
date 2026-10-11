@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:17-bookworm
     environment:
-      POSTGRES_USER: mano_local
-      POSTGRES_PASSWORD: manoProject2006
-      POSTGRES_DB: mano_local
+      POSTGRES_USER: ${POSTGRES_USER:-mano_local}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-mano_local}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,8 +18,12 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     environment:
-      DATABASE_URL: postgresql+psycopg://mano_local:manoProject2006@postgres:5432/mano_local
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-lite-latest}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      SEED_DEMO_BUSINESS: ${SEED_DEMO_BUSINESS:-true}
+      CORS_ORIGINS: '${CORS_ORIGINS:-["http://localhost:3000","http://127.0.0.1:3000"]}'
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
@@ -32,7 +36,12 @@ services:
       retries: 12
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:

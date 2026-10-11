@@ -91,13 +91,7 @@ def resolve_customer(
     ).all()
     if len(matches) == 1:
         return matches[0]
-    if len(matches) > 1:
-        return None  # two customers share this name: ambiguous, Carlos picks
-    # A new client: save them, so the next job for the same name links to this record
-    customer = Customer(business_id=business_id, customer_name=customer_name.strip())
-    session.add(customer)
-    session.flush()
-    return customer
+    return None  # no match or ambiguous: Carlos reviews; never create a customer here
 
 
 def is_meaningful_description(description: str) -> bool:
@@ -114,17 +108,13 @@ def evaluate_completeness(
     customer: Customer | None,
     description: str,
     job_price: Decimal | None,
-    has_work_items: bool = False,
-    items_all_priced: bool = False,
 ) -> tuple[str, list[str]]:
     missing_fields = []
     if customer is None:
         missing_fields.append("customer_name")
-    # Gemini found work in the note (saved as line items), or the word lists recognize it
-    if not (has_work_items or is_meaningful_description(description)):
+    if not is_meaningful_description(description):
         missing_fields.append("job_description")
-    # priced with one total for the job, or a price on every line item (the total is their sum)
-    if job_price is None and not items_all_priced:
+    if job_price is None:
         missing_fields.append("job_price")
     status = "NEEDS_INFORMATION" if missing_fields else "NEW"
     return status, missing_fields
@@ -140,8 +130,8 @@ def create_job(session: Session, request: JobCreateRequest) -> JobCreateResponse
         extract_name = request.customer_id is None and customer_name is None
         extract_price = job_price is None
 
-        # Always ask for the work in the note (line items); it also decides whether the
-        # description is a real job. One Gemini call covers name, price and work.
+        # Extract line items for display; completeness remains deterministic and
+        # requires the Job's own price. One call covers name, price and work.
         extracted = ExtractedJobInformation()
         try:
             extracted = extract_job_information(
@@ -170,8 +160,6 @@ def create_job(session: Session, request: JobCreateRequest) -> JobCreateResponse
             customer,
             request.description,
             job_price,
-            has_work_items=bool(work_items),
-            items_all_priced=bool(work_items) and all(w.amount is not None for w in work_items),
         )
 
         job = Job(
@@ -238,17 +226,11 @@ def job_response(job: Job, missing_fields: list[str]) -> JobCreateResponse:
     )
 
 
-def _items_all_priced(job: Job) -> bool:
-    return bool(job.line_items) and all(item.amount is not None for item in job.line_items)
-
-
 def _missing_fields(job: Job) -> list[str]:
     _, missing = evaluate_completeness(
         job.customer,
         job.job_description or "",
         job.job_price,
-        has_work_items=bool(job.line_items),
-        items_all_priced=_items_all_priced(job),
     )
     return missing
 
@@ -308,8 +290,6 @@ def update_job(session: Session, job_id: UUID, request: JobUpdateRequest) -> Job
             job.customer,
             job.job_description or "",
             job.job_price,
-            has_work_items=bool(job.line_items),
-            items_all_priced=_items_all_priced(job),
         )
         if job.status in PRE_QUOTE_STATES:
             job.status = status

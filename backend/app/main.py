@@ -1,7 +1,6 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File
-from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
@@ -33,26 +32,18 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Mano foundation", lifespan=lifespan)
+cors_settings = Settings()
 # The app runs on another port (3000/3002/4000) and on phones over Wi-Fi: allow this machine on any
 # port plus private network addresses. Nothing from the public internet.
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?",
+    allow_origins=cors_settings.cors_origins,
+    allow_origin_regex=cors_settings.cors_origin_regex,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 app.include_router(business_router)
 app.include_router(jobs_router)
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:4000", "http://localhost:4000",]
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 
 @app.get("/health")
 def health() -> dict[str, str]:

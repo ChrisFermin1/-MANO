@@ -1,4 +1,4 @@
-import type { Job } from "@/lib/api";
+import type { Job, LineItem } from "@/lib/api";
 import type { OtherTrade } from "@/lib/business";
 import { toEnglish } from "@/lib/translate";
 
@@ -68,10 +68,6 @@ export function interpret(
     items.push({ id: uid(), description: "Flooring installation", description_es: "Instalación de piso", amount: null });
     service ||= "Flooring";
   }
-  if (!data || typeof data.service !== "string" || !Array.isArray(data.line_items)) {
-    throw new Error("Mano returned incomplete job details. Please try again.");
-  }
-
   return {
     customer_name: text.match(CUSTOMER)?.[1] ?? null,
     customer_phone: text.match(PHONE)?.[0]?.trim() ?? null,
