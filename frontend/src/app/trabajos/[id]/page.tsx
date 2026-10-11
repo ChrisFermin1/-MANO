@@ -38,7 +38,8 @@ import { loadBusiness, rememberNameFix, saveBusiness, type Business } from "@/li
 import { useLang } from "@/lib/i18n";
 import { toEnglish } from "@/lib/translate";
 import { serviceLabel } from "@/lib/services";
-import { silencedFor, suggestions, validate } from "@/lib/ojo";
+import { needsAiQuestions, silencedFor, suggestions, validate } from "@/lib/ojo";
+import { ojoQuestions } from "@/lib/mano";
 
 const EDITABLE = ["NEW", "NEEDS_INFORMATION", "READY_FOR_QUOTE"];
 
@@ -73,6 +74,17 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   const missing = validate(job);
   const [biz, setBiz] = useState<Business | null>(null);
   useEffect(() => setBiz(loadBusiness()), []);
+  // Trades without a built-in checklist: ask Gemini once for this job, then keep the answer on the job
+  const askedAi = useRef(false);
+  useEffect(() => {
+    if (!biz || askedAi.current || job.ojo_ai !== undefined || job.ojo_skipped || !needsAiQuestions(job, biz)) return;
+    if (!job.line_items.length && !job.description.trim()) return;
+    askedAi.current = true;
+    const trade = biz.otherTrade?.name || biz.trades.map((id) => t.trades[id]).join(", ");
+    ojoQuestions(job, trade).then((questions) => {
+      if (questions) updateJob(job.id, { ojo_ai: questions }).then(setJob);
+    });
+  }, [biz, job, setJob, t]);
   const asks = suggestions(job, biz);
   const silenced = silencedFor(job, biz);
   const ask = asks[0]; // one question at a time
@@ -88,17 +100,33 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   const setItem = (itemId: string, p: Partial<LineItem>) =>
     patch({ line_items: job.line_items.map((i) => (i.id === itemId ? { ...i, ...p } : i)) });
   const addItem = () => patch({ line_items: [...job.line_items, { id: uid(), description: "", description_es: "", amount: null }] });
-  const acceptAsk = (key: string, description: string, description_es: string) =>
+  // "Sí, agregar" opens a price step in the same card: an amount, or "ya está incluido"
+  const [pricing, setPricing] = useState<{ key: string; item: string; item_es: string } | null>(null);
+  const [extra, setExtra] = useState("");
+  const extraAmount = Number(extra) > 0 ? Number(extra) : null;
+  const acceptAsk = (key: string, description: string, description_es: string, amount: number | null) => {
+    const lump = isLumpSum(job);
     patch({
-      line_items: [...job.line_items, { id: uid(), description, description_es, amount: null }],
+      // one total: the item has no own price and the amount is added to the total;
+      // price per line: the item gets the amount (0 = included, shown as "Incluido")
+      line_items: [...job.line_items, { id: uid(), description, description_es, amount: lump ? null : (amount ?? 0) }],
+      ...(lump && amount ? { job_total: (job.job_total ?? 0) + amount } : {}),
       ojo_dismissed: [...(job.ojo_dismissed ?? []), key],
     });
+    setPricing(null);
+    setExtra("");
+  };
   const dismissAsk = (key: string) => patch({ ojo_dismissed: [...(job.ojo_dismissed ?? []), key] });
   const setIgnore = (ojoIgnore: string[]) => {
     saveBusiness({ ojoIgnore });
     setBiz((b) => (b ? { ...b, ojoIgnore } : b));
   };
-  const alwaysIncluded = (key: string) => setIgnore([...(biz?.ojoIgnore ?? []), key]);
+  const alwaysIncluded = (key: string) => {
+    // Gemini's questions have no built-in label: keep one so "Tu negocio" can list it
+    const ai = job.ojo_ai?.find((q) => q.key === key);
+    if (ai) saveBusiness({ ojoIgnoreLabels: { ...(biz?.ojoIgnoreLabels ?? {}), [key]: { es: ai.item_es, en: ai.item } } });
+    setIgnore([...(biz?.ojoIgnore ?? []), key]);
+  };
   const askAgain = (key: string) => setIgnore((biz?.ojoIgnore ?? []).filter((k) => k !== key));
   const removeItem = (itemId: string) => patch({ line_items: job.line_items.filter((i) => i.id !== itemId) });
 
@@ -347,7 +375,58 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
             )}
           </div>
 
-          {ask && (
+          {ask && pricing?.key === ask.key && (
+            <div key={`${ask.key}-price`} className="motion-safe:animate-[pop-in_200ms_ease-out]">
+              <p className="mt-3 text-sm font-semibold text-ojo-ink">{lang === "es" ? ask.item_es : ask.item}</p>
+              <label htmlFor="f-ojo-price" className="mt-1 block font-serif text-[22px] leading-7">
+                {t.howMuch}
+              </label>
+              <span className="mt-3 flex h-12 items-center rounded-[14px] bg-white/80 px-3 ring-forest/60 focus-within:ring-2">
+                <span className="font-bold text-muted">$</span>
+                <input
+                  id="f-ojo-price"
+                  autoFocus
+                  inputMode="decimal"
+                  value={extra}
+                  onChange={(e) => setExtra(e.target.value.replace(/[^\d.]/g, ""))}
+                  placeholder="0"
+                  className="w-full bg-transparent text-right text-xl font-bold outline-none"
+                />
+              </span>
+              {isLumpSum(job) && extraAmount && (
+                <p className="mt-1.5 text-right text-xs text-black/60">{t.newTotal(money((job.job_total ?? 0) + extraAmount))}</p>
+              )}
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => acceptAsk(ask.key, ask.item, ask.item_es, null)}
+                  className="h-12 rounded-[14px] bg-white/70 px-2 text-sm font-bold leading-4 text-black/70 transition active:scale-[0.97]"
+                >
+                  {t.alreadyIncluded}
+                </button>
+                <button
+                  type="button"
+                  disabled={!extraAmount}
+                  onClick={() => acceptAsk(ask.key, ask.item, ask.item_es, extraAmount)}
+                  className="h-12 rounded-[14px] bg-forest text-base font-bold text-lime transition active:scale-[0.97] disabled:opacity-40"
+                >
+                  {t.add}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setPricing(null);
+                  setExtra("");
+                }}
+                className="mx-auto mt-2 block px-2 py-1.5 text-xs font-semibold text-ojo-ink/70"
+              >
+                {t.back}
+              </button>
+            </div>
+          )}
+
+          {ask && pricing?.key !== ask.key && (
             <div key={ask.key} className="motion-safe:animate-[pop-in_200ms_ease-out]">
               <p className="mt-3 font-serif text-[22px] leading-7">{ask[lang]}</p>
               <div className="mt-4 grid grid-cols-2 gap-2">
@@ -360,7 +439,10 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => acceptAsk(ask.key, ask.item, ask.item_es)}
+                  onClick={() => {
+                    setExtra("");
+                    setPricing({ key: ask.key, item: ask.item, item_es: ask.item_es });
+                  }}
                   className="h-12 rounded-[14px] bg-peach text-base font-bold text-ojo-ink transition active:scale-[0.97]"
                 >
                   {t.yesAdd}
@@ -535,7 +617,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           {job.line_items.map((i) => (
             <li key={i.id} className="flex justify-between gap-4">
               <span>{lang === "es" ? (i.description_es ?? i.description) : i.description}</span>
-              {!isLumpSum(job) && <span className="font-bold">{money(i.amount ?? 0)}</span>}
+              {!isLumpSum(job) && <span className="font-bold">{i.amount === 0 ? t.included : money(i.amount ?? 0)}</span>}
             </li>
           ))}
         </ul>

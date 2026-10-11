@@ -46,6 +46,9 @@ export type LineItem = {
   price_source?: PriceSource | null;
 };
 
+// An Ojo question from Gemini, for trades without a built-in checklist (same shape as Ojo's Suggestion)
+export type OjoAiQuestion = { key: string; es: string; en: string; item: string; item_es: string };
+
 export type Job = {
   id: number;
   customer_name: string | null;
@@ -85,6 +88,7 @@ export type Job = {
   ojo_dismissed?: string[];
   // Carlos tapped ✕ on "Ojo pregunta" — skip all of Ojo's questions for this job (reversible)
   ojo_skipped?: boolean;
+  ojo_ai?: OjoAiQuestion[] | null; // Gemini's questions for this job; asked once, then kept (undefined = not asked yet)
 };
 
 export type CancelReason = "declined" | "no_response" | "other";

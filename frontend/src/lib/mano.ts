@@ -2,7 +2,7 @@
 // interpret(): Gemini via /api/extract. If the key is missing or Gemini fails, the built-in
 // extractor below takes over, so creating a job never stops (and the demo never breaks).
 
-import type { Job, LineItem } from "@/lib/api";
+import type { Job, LineItem, OjoAiQuestion } from "@/lib/api";
 import type { OtherTrade } from "@/lib/business";
 import { toEnglish } from "@/lib/translate";
 
@@ -140,6 +140,28 @@ function interpretLocally(
     service,
     line_items: items,
   };
+}
+
+// Ojo's questions from Gemini for trades without a built-in checklist. null = couldn't ask (try again later).
+export async function ojoQuestions(job: Job, trade: string): Promise<OjoAiQuestion[] | null> {
+  try {
+    const response = await fetch("/api/ojo-suggest", {
+      method: "POST",
+      signal: AbortSignal.timeout(30_000),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        trade,
+        service: job.service_es || job.service,
+        description: job.description,
+        items: job.line_items.map((i) => [i.description_es, i.description].filter(Boolean).join(" / ")),
+      }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return Array.isArray(data.questions) ? (data.questions as OjoAiQuestion[]) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function followUpMessage(job: Job, owner: string, business: string, total: string) {

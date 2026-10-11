@@ -14,6 +14,8 @@ export type Business = {
   otherTrade?: OtherTrade | null;
   // Ojo checklist items Carlos said he always includes in his price ("Ya lo incluyo siempre")
   ojoIgnore?: string[];
+  // Labels for silenced questions that came from Gemini (built-in questions have their own labels)
+  ojoIgnoreLabels?: Record<string, { es: string; en: string }>;
   // Client names Carlos corrected once ("atl homeiker" → "ATL Homemaker"), fixed automatically on new jobs
   nameFixes?: Record<string, string>;
 };

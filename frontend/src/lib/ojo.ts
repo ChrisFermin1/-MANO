@@ -36,10 +36,18 @@ function involvedChecklist(job: Job, business: Pick<Business, "trades"> | null) 
 export function suggestions(job: Job, business: Pick<Business, "trades" | "ojoIgnore"> | null): Suggestion[] {
   const { text, items } = involvedChecklist(job, business);
   const skip = new Set([...(business?.ojoIgnore ?? []), ...(job.ojo_dismissed ?? [])]);
+  if (!items.length) {
+    // No built-in checklist covers this job (auto repair, roofing…): use Gemini's questions, if any
+    const onEstimate = new Set(job.line_items.flatMap((i) => [i.description, i.description_es ?? ""]).map((s) => s.trim().toLowerCase()));
+    return (job.ojo_ai ?? []).filter((q) => !skip.has(q.key) && !onEstimate.has(q.item.toLowerCase()) && !onEstimate.has(q.item_es.toLowerCase()));
+  }
   return items
     .filter((c) => !skip.has(c.key) && !c.mentioned.test(text)) // already said or already on the estimate
     .map((c) => ({ key: c.key, es: c.ask.es, en: c.ask.en, item: c.item, item_es: c.item_es }));
 }
+
+/** True when none of the built-in checklists covers this job, so Ojo asks Gemini instead. */
+export const needsAiQuestions = (job: Job, business: Pick<Business, "trades"> | null) => involvedChecklist(job, business).items.length === 0;
 
 /** Items Ojo would ask about on this job but Carlos said "Ya lo incluyo siempre" — so he can undo it. */
 export function silencedFor(job: Job, business: Pick<Business, "trades" | "ojoIgnore"> | null): ChecklistItem[] {

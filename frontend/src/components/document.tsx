@@ -82,7 +82,7 @@ export function DocumentCard({
           <li key={i.id} className="flex justify-between gap-4">
             <span>{es ? i.description_es || i.description : i.description}</span>
             {/* one price for the whole job → the items are the scope; the price is the total below */}
-            {!isLumpSum(job) && <span className="font-bold">{money(i.amount ?? 0)}</span>}
+            {!isLumpSum(job) && <span className="font-bold">{i.amount === 0 ? L("Included", "Incluido") : money(i.amount ?? 0)}</span>}
           </li>
         ))}
       </ul>

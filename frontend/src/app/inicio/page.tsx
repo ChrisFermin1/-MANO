@@ -92,9 +92,13 @@ export default function Inicio() {
       <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[120px] pt-[30px]">
         <header className="flex items-center justify-between">
           <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest">mano</span>
-          <span className="flex size-10 items-center justify-center rounded-full bg-forest text-base font-semibold text-lime">
+          <Link
+            href="/negocio"
+            aria-label={t.openSettings}
+            className="flex size-10 items-center justify-center rounded-full bg-forest text-base font-semibold text-lime transition active:scale-95"
+          >
             {name.charAt(0).toUpperCase()}
-          </span>
+          </Link>
         </header>
 
         <h1 className="mt-10 font-serif text-[36px] leading-10 tracking-[-0.72px]">
