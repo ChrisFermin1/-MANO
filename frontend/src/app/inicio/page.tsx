@@ -42,7 +42,7 @@ function alertText(a: Alert, t: Strings) {
 
 function alertHref(a: Alert) {
   if (a.kind === "no_response" || a.kind === "payment") return `/trabajos/${a.job.id}/seguimiento`;
-  if (a.kind === "ready") return `/trabajos/${a.job.id}/estimado`;
+  if (a.kind === "ready") return `/trabajos/${a.job.id}/${a.job.doc_intent === "invoice" ? "factura" : "estimado"}`;
   return `/trabajos/${a.job.id}`;
 }
 
@@ -55,7 +55,9 @@ function actionCopy(a: Alert, t: Strings) {
     case "payment":
       return { title: t.naPayment(name), detail: t.naPaymentDetail(total), cta: t.letManoHelp, mano: true };
     case "ready":
-      return { title: t.naSendQuote(name), detail: t.naSendQuoteDetail, cta: t.viewQuote, mano: false };
+      return a.job.doc_intent === "invoice"
+        ? { title: t.naSendInvoice(name), detail: t.naSendInvoiceDetail, cta: t.viewInvoice, mano: false }
+        : { title: t.naSendQuote(name), detail: t.naSendQuoteDetail, cta: t.viewQuote, mano: false };
     case "missing":
       return { title: t.naCompleteInfo(name), detail: t.naCompleteInfoDetail(a.missing.map((m) => t.missing[m])), cta: t.complete, mano: false };
     case "to_schedule":

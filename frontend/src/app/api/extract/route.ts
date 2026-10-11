@@ -9,6 +9,7 @@ const responseSchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
     customer_name: { type: SchemaType.STRING, nullable: true },
+    customer_name_suggested: { type: SchemaType.STRING, nullable: true },
     address: { type: SchemaType.STRING, nullable: true },
     service: { type: SchemaType.STRING },
     service_es: { type: SchemaType.STRING, nullable: true },
@@ -28,7 +29,7 @@ const responseSchema: Schema = {
       },
     },
   },
-  required: ["customer_name", "address", "service", "service_es", "job_total", "price_note", "price_note_es", "line_items"] as string[],
+  required: ["customer_name", "customer_name_suggested", "address", "service", "service_es", "job_total", "price_note", "price_note_es", "line_items"] as string[],
 };
 
 export async function POST(request: NextRequest) {
@@ -58,10 +59,11 @@ export async function POST(request: NextRequest) {
       },
     }, { timeout: 25_000 }); // usually 4–10s, sometimes 15+; past this it's hung — the built-in extractor takes over
 
-    const result = await generateWithRetry(model, `You are Mano, an assistant that extracts residential service job details. The input can be English, Spanish, or a mixture. Return exactly the requested JSON schema. Never make up a customer name, street address, price, or work detail. Use null for customer_name and address if they were not explicitly provided. Keep each distinct task or scope detail as a line item, with its price only when explicitly stated; never suggest prices. If the speaker gives ONE total for the whole job instead of a price per item (e.g. "Total 1400$"), put it in job_total and leave every item amount null; otherwise job_total is null. price_note is a short English note about what the price covers ONLY if the speaker said so (e.g. "Labor only", "Materials included"); price_note_es is the same in Spanish; both null if not said. The speaker may misspell trade words or mix English into Spanish (coquin = caulk, stein = stain, leibor = labor); interpret them. Set description to a concise, accurate English translation suitable for a customer estimate, and description_es to a concise Spanish version of the same work (use null only if the work itself cannot be understood). service is a short trade/project label such as Interior Painting or Drywall Repair; if no work is described use an empty string. service_es is the same label in natural Spanish, as a Latino contractor in the US would say it (e.g. Pintura interior, Instalación de ventilador de techo); null if service is empty. Do not include a person’s name or address as work. ${otherTrade ? `The business's other trade is ${otherTrade}.` : ""}\n\nJob description:\n${description}`);
+    const result = await generateWithRetry(model, `You are Mano, an assistant that extracts residential service job details. The input can be English, Spanish, or a mixture. Return exactly the requested JSON schema. Never make up a customer name, street address, price, or work detail. customer_name is the client: a person OR a company (a property manager, builder, realtor, e.g. "ATL Homes"). It can appear anywhere in the text, including alone on the first or last line with no word like "para" or "for". Copy names exactly as written, without correcting their spelling. If a word in a company name is clearly a misspelled common English word (e.g. "ATL Homeiker" -> "ATL Homemaker", "Roofin Pros" -> "Roofing Pros"), put the corrected full name in customer_name_suggested; otherwise null. Never "correct" people's first or last names. Never use a title like "Estimado de trabajo" or a greeting as a name. address: copy any street address as written, even if short or misspelled (e.g. "636 Wite"). Use null for customer_name and address if they are not in the text. Keep each distinct task or scope detail as a line item, with its price only when explicitly stated; never suggest prices. If the speaker gives ONE total for the whole job instead of a price per item (e.g. "Total 1400$"), put it in job_total and leave every item amount null; otherwise job_total is null. price_note is a short English note about what the price covers ONLY if the speaker said so (e.g. "Labor only", "Materials included"); price_note_es is the same in Spanish; both null if not said. The speaker may misspell trade words or mix English into Spanish (coquin = caulk, stein = stain, leibor = labor); interpret them. Set description to a concise, accurate English translation suitable for a customer estimate, and description_es to a concise Spanish version of the same work (use null only if the work itself cannot be understood). service is a short trade/project label such as Interior Painting or Drywall Repair; if no work is described use an empty string. service_es is the same label in natural Spanish, as a Latino contractor in the US would say it (e.g. Pintura interior, Instalación de ventilador de techo); null if service is empty. Do not include a person’s name or address as work. ${otherTrade ? `The business's other trade is ${otherTrade}.` : ""}\n\nJob description:\n${description}`);
 
     const data = JSON.parse(result.response.text()) as {
       customer_name: string | null;
+      customer_name_suggested: string | null;
       address: string | null;
       service: string;
       service_es: string | null;
@@ -77,6 +79,12 @@ export async function POST(request: NextRequest) {
 
     const normalized = {
       customer_name: typeof data.customer_name === "string" && data.customer_name.trim() ? data.customer_name.trim() : null,
+      customer_name_suggested:
+        typeof data.customer_name_suggested === "string" &&
+        data.customer_name_suggested.trim() &&
+        data.customer_name_suggested.trim().toLowerCase() !== (data.customer_name ?? "").trim().toLowerCase()
+          ? data.customer_name_suggested.trim()
+          : null,
       address: typeof data.address === "string" && data.address.trim() ? data.address.trim() : null,
       service: data.service.trim() || "General",
       service_es: typeof data.service_es === "string" && data.service_es.trim() ? data.service_es.trim() : null,

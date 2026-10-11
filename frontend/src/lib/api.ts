@@ -1,7 +1,7 @@
 // Fake API backed by localStorage. When the FastAPI backend is ready, replace each
 // function body with a fetch() call — the screens won't need to change.
 
-import { loadBusiness } from "@/lib/business";
+import { loadBusiness, knownNameFix } from "@/lib/business";
 import { interpret } from "@/lib/mano";
 import { validate } from "@/lib/ojo";
 import { publishEstimate } from "@/lib/relay";
@@ -57,7 +57,10 @@ export type Job = {
   // Set → the job total is this; null/absent → the total is the sum of the items.
   job_total?: number | null;
   price_note?: string | null; // what the price covers, for the customer ("Labor only")
-  price_note_es?: string | null; // same note, for Carlos ("Solo mano de obra") // Spanish name for Carlos (from Gemini). The built-in job types have fixed names in services.ts
+  price_note_es?: string | null; // same note, for Carlos ("Solo mano de obra")
+  doc_intent?: "invoice" | null;
+  customer_name_heard?: string | null; // the name exactly as Mano read it — to remember Carlos's correction
+  customer_name_suggested?: string | null; // Mano's spelling fix, shown as "¿Quisiste decir…?" — never applied by itself // Carlos picked "Factura" on Nuevo trabajo (work already done) → the job screen leads with the invoice // Spanish name for Carlos (from Gemini). The built-in job types have fixed names in services.ts
   description: string;
   line_items: LineItem[];
   status: JobStatus;
@@ -106,7 +109,16 @@ export const isLumpSum = (job: Pick<Job, "job_total">) => job.job_total != null;
 export const jobTotal = (job: Job) => (isLumpSum(job) ? job.job_total! : job.line_items.reduce((s, i) => s + (i.amount ?? 0), 0));
 export const money = (n: number) => `$${n.toLocaleString("en-US")}`;
 export const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / DAY);
-export const firstName = (name: string | null) => (name ?? "").split(" ")[0] || "—";
+// "Maria Lopez" → "Maria". A company keeps its full name ("ATL Homeiker", not "ATL"):
+// an all-caps first word, or a business word in the name.
+const COMPANY = /\b(llc|inc|co|corp|company|group|homes?|builders?|construction|properties|property|realty|services|management|contractors?)\b\.?/i;
+export const firstName = (name: string | null) => {
+  const full = (name ?? "").trim();
+  if (!full) return "—";
+  const first = full.split(/\s+/)[0];
+  const allCaps = first.length >= 2 && first === first.toUpperCase() && /[A-Z]/.test(first);
+  return allCaps || COMPANY.test(full) ? full : first;
+};
 
 const NO_DOCS = {
   estimate_number: null,
@@ -295,11 +307,15 @@ export async function getJob(id: number): Promise<Job | null> {
 }
 
 // POST /jobs  — backend runs Mano (interpret) then Ojo (validate)
-export async function createJob(description: string): Promise<Job> {
+export async function createJob(description: string, opts: { docIntent?: "estimate" | "invoice" } = {}): Promise<Job> {
   await wait(1200); // feels like the AI is working
   const jobs = read();
   const now = new Date().toISOString();
   const parsed = await interpret(description, loadBusiness()?.otherTrade);
+  // Carlos already corrected this name on an earlier job → use his spelling
+  const heard = parsed.customer_name ?? null;
+  const fixed = knownNameFix(heard);
+  if (fixed) Object.assign(parsed, { customer_name: fixed, customer_name_suggested: null });
   parsed.line_items = parsed.line_items.map((item) => ({
     ...item,
     ...(item.amount != null ? { price_source: "spoken" as const } : {}),
@@ -308,6 +324,8 @@ export async function createJob(description: string): Promise<Job> {
     id: Math.max(0, ...jobs.map((j) => j.id)) + 1,
     ...parsed,
     description,
+    doc_intent: opts.docIntent === "invoice" ? "invoice" : null,
+    customer_name_heard: heard,
     status: "NEW",
     created_at: now,
     updated_at: now,

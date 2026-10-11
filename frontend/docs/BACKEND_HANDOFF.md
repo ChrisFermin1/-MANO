@@ -49,6 +49,12 @@ PriceUnit = "hour" | "project" | "sqft" | "room"
                                   // null → total = sum of line_items. Ojo accepts either: job_total > 0, or every item priced.
   price_note?: string | null      // OPTIONAL — what the price covers, as said ("Labor only"); price_note_es for Carlos
   price_note_es?: string | null
+  doc_intent?: "invoice" | null   // OPTIONAL — Carlos picked "Factura" on Nuevo trabajo (work already done): the job screen,
+                                  // badge ("Listo para facturar") and dashboard lead with the invoice instead of the estimate
+  customer_name_heard?: string | null     // OPTIONAL — the name exactly as Mano read it ("ATL Homeiker")
+  customer_name_suggested?: string | null // OPTIONAL — Mano's spelling fix ("ATL Homemaker"), shown as "¿Quisiste decir…?";
+                                          // never applied by itself. When Carlos accepts or edits the name, the app remembers
+                                          // heard → fixed (Business.nameFixes) and applies it to future jobs automatically.
   description: string             // what Carlos said/typed (raw transcript)
   line_items: { id: string;
                 description: string;            // ENGLISH — what the customer sees on estimate/invoice

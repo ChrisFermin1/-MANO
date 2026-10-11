@@ -14,6 +14,8 @@ export type Business = {
   otherTrade?: OtherTrade | null;
   // Ojo checklist items Carlos said he always includes in his price ("Ya lo incluyo siempre")
   ojoIgnore?: string[];
+  // Client names Carlos corrected once ("atl homeiker" → "ATL Homemaker"), fixed automatically on new jobs
+  nameFixes?: Record<string, string>;
 };
 
 const KEY = "mano.business";
@@ -34,6 +36,15 @@ export function loadBusiness(): Business | null {
     return null;
   }
 }
+
+const nameKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, " ");
+
+export function rememberNameFix(heard: string | null | undefined, fixed: string | null | undefined) {
+  if (!heard?.trim() || !fixed?.trim() || nameKey(heard) === nameKey(fixed)) return;
+  saveBusiness({ nameFixes: { ...(loadBusiness()?.nameFixes ?? {}), [nameKey(heard)]: fixed.trim() } });
+}
+
+export const knownNameFix = (name: string | null | undefined) => (name ? loadBusiness()?.nameFixes?.[nameKey(name)] ?? null : null);
 
 export function saveBusiness(patch: Partial<Business>) {
   try {

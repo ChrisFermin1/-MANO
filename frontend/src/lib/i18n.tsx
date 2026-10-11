@@ -99,6 +99,8 @@ const strings = {
     naCompleteInfoDetail: (items: string[]) => `Ojo dice que falta: ${items.join(", ")}.`,
     naSendQuote: (n: string) => `Manda el estimado a ${n}`,
     naSendQuoteDetail: "Todo está listo. Solo falta que lo apruebes.",
+    naSendInvoice: (n: string) => `Manda la factura a ${n}`,
+    naSendInvoiceDetail: "Todo está listo. Solo falta que la apruebes.",
     complete: "Completar",
     viewQuote: "Ver estimado",
 
@@ -119,6 +121,8 @@ const strings = {
 
     // Trabajo
     customer: "Cliente",
+    didYouMean: "¿Quisiste decir",
+    yesChange: "Sí, cambiar",
     address: "Dirección",
     work: "Trabajo",
     extractError: "Mano no pudo organizar el trabajo. Inténtalo de nuevo.",
@@ -135,6 +139,8 @@ const strings = {
     whatYouSaid: "Lo que dijiste",
     ojoMissingN: (n: number) => (n === 1 ? "Falta 1 cosa" : `Faltan ${n} cosas`),
     ojoReady: "Todo listo para el estimado.",
+    ojoReadyInvoice: "Todo listo para la factura.",
+    readyToInvoice: "Listo para facturar",
     missingTag: "falta",
     cantTranslate: "Mano no pudo traducir esto. Escríbelo en inglés para el cliente:",
     englishPlaceholder: "En inglés",
@@ -144,6 +150,11 @@ const strings = {
     add: "Agregar",
     generateQuote: "Generar estimado",
     invoiceWithoutEstimate: "Facturar sin estimado",
+    docKindLabel: "¿Qué vas a hacer?",
+    docEstimate: "Estimado",
+    docInvoice: "Factura",
+    generateInvoice: "Generar factura",
+    estimateInstead: "Mejor hacer un estimado",
     nextStep: {
       QUOTE_SENT: "El cliente aceptó",
       ACCEPTED: "Marcar como agendado",
@@ -357,6 +368,8 @@ const strings = {
     naCompleteInfoDetail: (items: string[]) => `Ojo says it's missing: ${items.join(", ")}.`,
     naSendQuote: (n: string) => `Send the estimate to ${n}`,
     naSendQuoteDetail: "Everything is ready. It just needs your approval.",
+    naSendInvoice: (n: string) => `Send the invoice to ${n}`,
+    naSendInvoiceDetail: "Everything is ready. It just needs your approval.",
     complete: "Complete",
     viewQuote: "View estimate",
 
@@ -375,6 +388,8 @@ const strings = {
     undo: "Undo",
 
     customer: "Customer",
+    didYouMean: "Did you mean",
+    yesChange: "Yes, change",
     address: "Address",
     work: "Work",
     extractError: "Mano couldn't organize the job. Please try again.",
@@ -391,6 +406,8 @@ const strings = {
     whatYouSaid: "What you said",
     ojoMissingN: (n: number) => (n === 1 ? "1 thing missing" : `${n} things missing`),
     ojoReady: "Everything is ready for the estimate.",
+    ojoReadyInvoice: "Everything is ready for the invoice.",
+    readyToInvoice: "Ready to invoice",
     missingTag: "missing",
     cantTranslate: "Mano couldn't translate this. Write it in English for the customer:",
     englishPlaceholder: "In English",
@@ -400,6 +417,11 @@ const strings = {
     add: "Add",
     generateQuote: "Generate estimate",
     invoiceWithoutEstimate: "Invoice without estimate",
+    docKindLabel: "What are you writing?",
+    docEstimate: "Estimate",
+    docInvoice: "Invoice",
+    generateInvoice: "Generate invoice",
+    estimateInstead: "Make an estimate instead",
     nextStep: {
       QUOTE_SENT: "Customer accepted",
       ACCEPTED: "Mark as scheduled",

@@ -54,7 +54,7 @@ export default function Trabajos() {
                   )}
                 </span>
                 <span className="mt-2 block">
-                  <StatusBadge status={job.status} />
+                  <StatusBadge status={job.status} invoice={job.doc_intent === "invoice"} />
                 </span>
               </span>
               <span className="text-lg font-bold">{jobTotal(job) ? money(jobTotal(job)) : "—"}</span>

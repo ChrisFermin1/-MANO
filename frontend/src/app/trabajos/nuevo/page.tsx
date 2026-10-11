@@ -51,6 +51,8 @@ export default function NuevoTrabajo() {
   const [justCleared, setJustCleared] = useState(false);
   const [voiceError, setVoiceError] = useState("");
   const [submitError, setSubmitError] = useState("");
+  // what Carlos is writing: an estimate (before the work) or an invoice (work already done)
+  const [docKind, setDocKind] = useState<"estimate" | "invoice">("estimate");
   const rec = useRef<Recognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -208,7 +210,7 @@ export default function NuevoTrabajo() {
     setBusy(true);
     setSubmitError("");
     try {
-      const job = await createJob(text.trim());
+      const job = await createJob(text.trim(), { docIntent: docKind });
       router.push(`/trabajos/${job.id}`);
     } catch (err) {
       setSubmitError(err instanceof ManoBusyError ? t.extractBusy : t.extractError);
@@ -230,6 +232,21 @@ export default function NuevoTrabajo() {
       <PageHeader backHref="/inicio" />
       <Title>{t.newJob}</Title>
       <p className="mt-2 text-base leading-5">{t.newJobBody}</p>
+
+      <div role="tablist" aria-label={t.docKindLabel} className="glass mt-5 grid grid-cols-2 rounded-[14px] p-1 text-sm font-semibold">
+        {(["estimate", "invoice"] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={docKind === k}
+            onClick={() => setDocKind(k)}
+            className={`min-h-10 rounded-[10px] px-2 py-1.5 leading-4 transition ${docKind === k ? "bg-forest text-lime" : "text-black/60"}`}
+          >
+            {k === "estimate" ? t.docEstimate : t.docInvoice}
+          </button>
+        ))}
+      </div>
 
       {canListen && (
         <button

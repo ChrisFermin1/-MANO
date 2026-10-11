@@ -34,7 +34,7 @@ import {
   daysSince,
 } from "@/lib/api";
 import { ShareEstimate } from "@/components/share-estimate";
-import { loadBusiness, saveBusiness, type Business } from "@/lib/business";
+import { loadBusiness, rememberNameFix, saveBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 import { toEnglish } from "@/lib/translate";
 import { serviceLabel } from "@/lib/services";
@@ -141,7 +141,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </div>
       ) : (
         <p className="mt-5 flex items-center gap-2 rounded-[14px] glass-lime px-4 py-3 text-sm font-bold text-forest">
-          <Check className="size-4" strokeWidth={3} /> {t.ojoReady}
+          <Check className="size-4" strokeWidth={3} /> {job.doc_intent === "invoice" ? t.ojoReadyInvoice : t.ojoReady}
         </p>
       )}
 
@@ -154,9 +154,32 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
             className={field(missing.includes("customer"))}
             value={job.customer_name ?? ""}
             onChange={(e) => patch({ customer_name: e.target.value })}
+            // Carlos fixed the name by hand → next time Mano hears it the same way, use his spelling
+            onBlur={(e) => rememberNameFix(job.customer_name_heard, e.currentTarget.value)}
             placeholder={t.namePlaceholder}
           />
         </label>
+        {/* Mano's spelling fix — only a suggestion; one tap to accept, and it's remembered */}
+        {job.customer_name_suggested && job.customer_name_suggested !== job.customer_name && (
+          <div className="-mt-1 flex items-center gap-2 rounded-[12px] glass-peach px-3 py-2 text-sm">
+            <span className="min-w-0 flex-1">
+              {t.didYouMean} <b>{job.customer_name_suggested}</b>?
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                rememberNameFix(job.customer_name_heard ?? job.customer_name, job.customer_name_suggested);
+                patch({ customer_name: job.customer_name_suggested, customer_name_suggested: null });
+              }}
+              className="shrink-0 rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-lime"
+            >
+              {t.yesChange}
+            </button>
+            <button type="button" onClick={() => patch({ customer_name_suggested: null })} aria-label={t.close} className="shrink-0 p-1 text-ojo-ink">
+              <X className="size-4" />
+            </button>
+          </div>
+        )}
         <label className="block">
           <FieldLabel text={t.address} missingTag={missing.includes("address") ? t.missingTag : null} />
           <input
@@ -388,25 +411,41 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         {missing.length > 0 && (
           <p className="mb-2 text-center text-sm font-semibold text-ojo-ink">{t.completeFirst(missing.map((m) => t.missing[m]))}</p>
         )}
-        <button
-          type="button"
-          disabled={missing.length > 0}
-          onClick={() => router.push(`/trabajos/${job.id}/estimado`)}
-          className={btnPrimary}
-        >
-          <FileText className="size-5" strokeWidth={2.25} />
-          {t.generateQuote} →
-        </button>
-        {/* quick jobs / work already done: skip the estimate */}
-        <button
-          type="button"
-          disabled={missing.length > 0}
-          onClick={() => router.push(`/trabajos/${job.id}/factura`)}
-          className={`${btnGhost} disabled:opacity-40`}
-        >
-          <Receipt className="size-4" strokeWidth={2.25} />
-          {t.invoiceWithoutEstimate}
-        </button>
+        {/* Main button follows what Carlos picked on Nuevo trabajo; the other document stays one tap away */}
+        {job.doc_intent === "invoice" ? (
+          <>
+            <button type="button" disabled={missing.length > 0} onClick={() => router.push(`/trabajos/${job.id}/factura`)} className={btnPrimary}>
+              <Receipt className="size-5" strokeWidth={2.25} />
+              {t.generateInvoice} →
+            </button>
+            <button
+              type="button"
+              disabled={missing.length > 0}
+              onClick={() => router.push(`/trabajos/${job.id}/estimado`)}
+              className={`${btnGhost} disabled:opacity-40`}
+            >
+              <FileText className="size-4" strokeWidth={2.25} />
+              {t.estimateInstead}
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" disabled={missing.length > 0} onClick={() => router.push(`/trabajos/${job.id}/estimado`)} className={btnPrimary}>
+              <FileText className="size-5" strokeWidth={2.25} />
+              {t.generateQuote} →
+            </button>
+            {/* quick jobs / work already done: skip the estimate */}
+            <button
+              type="button"
+              disabled={missing.length > 0}
+              onClick={() => router.push(`/trabajos/${job.id}/factura`)}
+              className={`${btnGhost} disabled:opacity-40`}
+            >
+              <Receipt className="size-4" strokeWidth={2.25} />
+              {t.invoiceWithoutEstimate}
+            </button>
+          </>
+        )}
       </div>
     </Screen>
   );
@@ -627,7 +666,7 @@ function JobActions({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
   return (
     <div className="relative flex items-center gap-2">
-      <StatusBadge status={job.status} />
+      <StatusBadge status={job.status} invoice={job.doc_intent === "invoice"} />
       {(deletable || cancellable) && (
         <button
           type="button"

@@ -57,12 +57,13 @@ const STATUS_STYLE: Record<JobStatus, string> = {
   CANCELLED: "bg-black/10 text-black/60",
 };
 
-export function StatusBadge({ status }: { status: JobStatus }) {
+// invoice: Carlos picked "Factura" on Nuevo trabajo, so "ready" means ready to invoice, not to quote
+export function StatusBadge({ status, invoice = false }: { status: JobStatus; invoice?: boolean }) {
   const { t } = useLang();
   return (
     <span className={`inline-flex items-center gap-1 rounded-[6px] px-2 py-1 font-mono text-[11px] uppercase leading-none tracking-[0.5px] ${STATUS_STYLE[status]}`}>
       {(status === "ACCEPTED" || status === "PAID") && <Check className="size-3" strokeWidth={3.5} />}
-      {t.status[status]}
+      {invoice && status === "READY_FOR_QUOTE" ? t.readyToInvoice : t.status[status]}
     </span>
   );
 }

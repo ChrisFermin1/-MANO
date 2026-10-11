@@ -8,7 +8,7 @@ import { toEnglish } from "@/lib/translate";
 
 type Interpreted = Pick<
   Job,
-  "customer_name" | "customer_phone" | "address" | "service" | "service_es" | "job_total" | "price_note" | "price_note_es" | "line_items"
+  "customer_name" | "customer_name_suggested" | "customer_phone" | "address" | "service" | "service_es" | "job_total" | "price_note" | "price_note_es" | "line_items"
 >;
 
 // Thrown only when Mano is busy (rate limit) — worth telling Carlos to wait a moment
@@ -37,6 +37,7 @@ export async function interpret(description: string, otherTrade?: OtherTrade | n
   if (status === 200 && d && typeof d.service === "string" && Array.isArray(d.line_items)) {
     return {
       customer_name: d.customer_name ?? null,
+      customer_name_suggested: d.customer_name_suggested ?? null,
       // Gemini's schema has no phone yet; the regex still catches one Carlos said
       customer_phone: description.match(PHONE)?.[0]?.trim() ?? null,
       address: d.address ?? null,
