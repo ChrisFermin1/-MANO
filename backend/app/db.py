@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -9,6 +10,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Integer,
     Numeric,
     String,
     Text,
@@ -88,6 +90,9 @@ class Job(Base):
     customer: Mapped[Customer | None] = relationship(back_populates="jobs")
     quotes: Mapped[list[Quote]] = relationship(back_populates="job")
     actions: Mapped[list[Action]] = relationship(back_populates="job")
+    line_items: Mapped[list[LineItem]] = relationship(
+        back_populates="job", order_by="LineItem.position", cascade="all, delete-orphan"
+    )
 
 
 class Quote(Base):
@@ -133,3 +138,23 @@ class Action(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     job: Mapped[Job] = relationship(back_populates="actions")
+
+
+class LineItem(Base):
+    """One piece of work on a job: English for the customer, Spanish for Carlos."""
+
+    __tablename__ = "job_line_items"
+
+    line_item_id: Mapped[UUIDValue] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    job_id: Mapped[UUIDValue] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("jobs.job_id"), nullable=False
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    description_es: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # NULL when the job has one total price instead of a price per item
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+
+    job: Mapped[Job] = relationship(back_populates="line_items")
