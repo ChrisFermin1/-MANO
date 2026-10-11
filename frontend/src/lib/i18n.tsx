@@ -264,6 +264,7 @@ const strings = {
 
     // Compartir estimado / aprobación del cliente
     shareWith: (n: string) => `Manda el estimado a ${n}`,
+    shareInvoiceWith: (n: string) => `Manda la factura a ${n}`,
     shareButton: "Compartir (WhatsApp, mensaje…)",
     copyLink: "Copiar",
     meaning: "En español",
@@ -558,6 +559,7 @@ const strings = {
     hideCancelled: "Hide cancelled",
 
     shareWith: (n: string) => `Send the estimate to ${n}`,
+    shareInvoiceWith: (n: string) => `Send the invoice to ${n}`,
     shareButton: "Share (WhatsApp, text…)",
     copyLink: "Copy",
     meaning: "In Spanish",

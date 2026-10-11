@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Loader2, Send } from "lucide-react";
 import { DocLangSwitch, DocumentCard } from "@/components/document";
-import { PageHeader, Screen, SuccessScreen, Title, btnLime, btnPrimary } from "@/components/ui";
+import { PageHeader, Screen, SuccessScreen, Title, btnPrimary } from "@/components/ui";
+import { ShareEstimate } from "@/components/share-estimate";
 import { canSendInvoice, firstName, getJob, invoiceNo, sendInvoice, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
@@ -32,7 +33,8 @@ export default function Factura() {
         title={t.sentTitle}
         body={`${job.invoice_number ? `${invoiceNo(job.invoice_number)} · ` : ""}${t.sentInvoiceBody(firstName(job.customer_name))}`}
       >
-        <Link href="/inicio" className={btnLime}>
+        <ShareEstimate job={job} dark />
+        <Link href="/inicio" className="mt-4 flex h-[48px] w-full items-center justify-center rounded-[20px] text-sm font-semibold text-lime">
           {t.backHome}
         </Link>
       </SuccessScreen>

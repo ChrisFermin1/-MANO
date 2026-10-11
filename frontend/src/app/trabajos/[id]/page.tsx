@@ -658,9 +658,10 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </div>
       </section>
 
-      {job.status === "QUOTE_SENT" && (
+      {(job.status === "QUOTE_SENT" || job.status === "PAYMENT_PENDING") && job.public_token && (
         <div className="mt-4">
-          <ShareEstimate job={job} quiet={quoteStale} />
+          {/* estimate out: send it · invoice unpaid: the same box sends the invoice link */}
+          <ShareEstimate job={job} quiet={job.status === "QUOTE_SENT" ? quoteStale : true} />
         </div>
       )}
 

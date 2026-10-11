@@ -450,12 +450,16 @@ export async function sendInvoice(id: number): Promise<Job> {
   const job = (await getJob(id))!;
   if (!canSendInvoice(job)) throw new Error("This job can't be invoiced yet");
   const now = new Date();
-  return updateJob(id, {
+  const sent = await updateJob(id, {
     status: "PAYMENT_PENDING",
     invoice_number: job.invoice_number ?? nextNumber("invoice_number"),
     invoice_sent_at: now.toISOString(),
     invoice_due_at: new Date(now.getTime() + INVOICE_DUE_DAYS * DAY).toISOString(),
+    // the same customer link shows the invoice now (a job invoiced without an estimate gets one here)
+    public_token: job.public_token ?? newToken(),
   });
+  void publishEstimate(sent, loadBusiness());
+  return sent;
 }
 
 // POST /jobs/:id/invoice/paid
@@ -505,7 +509,9 @@ export async function reactivateJob(id: number): Promise<Job> {
 }
 
 export async function markPaid(id: number): Promise<Job> {
-  return updateJob(id, { status: "PAID", paid_at: new Date().toISOString() });
+  const paid = await updateJob(id, { status: "PAID", paid_at: new Date().toISOString() });
+  if (paid.public_token && paid.invoice_number) void publishEstimate(paid, loadBusiness()); // customer link shows "Paid"
+  return paid;
 }
 
 export type InvoiceState = "unpaid" | "overdue" | "paid";
