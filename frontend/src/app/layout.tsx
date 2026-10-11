@@ -13,6 +13,8 @@ const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["lati
 export const metadata: Metadata = {
   title: "MANO",
   description: "Tú hablas, Mano escribe.",
+  // iPhone "Add to Home Screen": opens full screen with its own name
+  appleWebApp: { capable: true, title: "mano", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

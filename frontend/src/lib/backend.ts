@@ -34,6 +34,7 @@ export function backendFields(job: Job) {
     job_price: total > 0 ? total.toFixed(2) : null,
     job_title: job.service_es || job.service || null,
     job_address: job.address?.trim() || null,
+    start_date: job.scheduled_for || null,
     line_items: job.line_items
       .filter((i) => (i.description || i.description_es || "").trim())
       .map((i) => ({
@@ -44,8 +45,11 @@ export function backendFields(job: Job) {
   };
 }
 
-export const createRemoteJob = (job: Job) =>
-  call<{ job_id: string; status: string }>("POST", "/jobs", { business_id: BUSINESS_ID, ...backendFields(job) });
+export const createRemoteJob = (job: Job) => {
+  const { start_date: _start, ...fields } = backendFields(job); // a new job isn't scheduled yet
+  void _start;
+  return call<{ job_id: string; status: string }>("POST", "/jobs", { business_id: BUSINESS_ID, ...fields });
+};
 
 // PATCH names the description field job_description (POST calls it description)
 export const updateRemoteJob = (backendId: string, job: Job) => {

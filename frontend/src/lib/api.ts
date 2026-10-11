@@ -90,6 +90,7 @@ export type Job = {
   ojo_skipped?: boolean;
   ojo_ai?: OjoAiQuestion[] | null;
   // Copy in Josh's backend (Postgres). Only jobs made with "Nuevo trabajo" are sent (not the samples).
+  scheduled_for?: string | null; // "2026-10-14": the day the work is scheduled (set when Carlos taps "Agendar")
   backend_sync?: "pending" | "ok" | "error";
   backend_id?: string; // the database's job_id
   backend_sent?: string; // what was last sent (to skip sending the same thing twice)

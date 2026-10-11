@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Eye, FileText, PartyPopper, Plus, Sparkles } from "lucide-react";
+import { ChevronRight, Eye, FileText, PartyPopper, Plus, Sparkles, Users } from "lucide-react";
 import { firstName, getJobs, onJobsChange, invoiceNo, invoiceState, jobBadge, jobTotal, moneySummary, money, type Job, type JobBadge } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness } from "@/lib/business";
 import { useLang, type Strings } from "@/lib/i18n";
@@ -230,6 +230,13 @@ export default function Inicio() {
           <Link href="/documentos" className="mt-3 flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99]">
             <FileText className="size-5 text-forest" strokeWidth={2} />
             <span className="flex-1 text-base font-semibold">{t.docsTitle}</span>
+            <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
+          </Link>
+        )}
+        {jobs && (
+          <Link href="/clientes" className="mt-3 flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99]">
+            <Users className="size-5 text-forest" strokeWidth={2} />
+            <span className="flex-1 text-base font-semibold">{t.clientsTitle}</span>
             <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
           </Link>
         )}

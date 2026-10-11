@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Archive, Check, Database, Ellipsis, Eye, PartyPopper, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X } from "lucide-react";
+import { Archive, CalendarDays, Check, Database, Ellipsis, Eye, PartyPopper, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X } from "lucide-react";
 import { AutoTextarea, DocStateBadge, OjoNote, PageHeader, Screen, Sheet, StatusBadge, Title, btnDanger, btnGhost, btnLime, btnPrimary, btnSecondary } from "@/components/ui";
 import {
   CANCEL_REASONS,
@@ -547,6 +547,13 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   const advance = async () => {
     if (next) setJob(await setStatus(job.id, next));
   };
+  // Accepted → pick the day, then it's scheduled
+  const [day, setDay] = useState(job.scheduled_for ?? "");
+  const schedule = async () => {
+    if (!day) return;
+    await updateJob(job.id, { scheduled_for: day });
+    setJob(await setStatus(job.id, "SCHEDULED"));
+  };
 
   return (
     <Screen>
@@ -597,6 +604,11 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
       <section className="mt-6 rounded-[20px] glass p-5">
         {job.address && <p className="text-sm text-muted">{job.address}</p>}
+        {job.scheduled_for && job.status !== "CANCELLED" && (
+          <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-forest">
+            <CalendarDays className="size-4" strokeWidth={2} /> {t.scheduledFor(fmtDay(job.scheduled_for, lang))}
+          </p>
+        )}
         {/* phone can still be added after sending (for reminders) */}
         {job.status !== "CANCELLED" && job.status !== "PAID" && (
           <label className="mt-2 flex items-center gap-2 rounded-[10px] bg-white/60 px-3 py-2 text-sm">
@@ -699,6 +711,24 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
               <button type="button" onClick={async () => setJob(await markPaid(job.id))} className={btnPrimary}>
                 {t.markPaid} →
               </button>
+            ) : job.status === "ACCEPTED" ? (
+              <div className="space-y-2">
+                <label htmlFor="f-schedule-day" className="block text-sm font-semibold">
+                  {t.pickDay}
+                </label>
+                <input
+                  id="f-schedule-day"
+                  type="date"
+                  value={day}
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => setDay(e.target.value)}
+                  className="h-[52px] w-full rounded-[14px] glass-field px-4 text-base outline-none ring-forest/60 focus:ring-2"
+                />
+                <button type="button" onClick={schedule} disabled={!day} className={btnPrimary}>
+                  <CalendarDays className="size-5" strokeWidth={2.25} />
+                  {day ? t.scheduleOn(fmtDay(day, lang)) : t.nextStep.ACCEPTED} →
+                </button>
+              </div>
             ) : (
               next &&
               t.nextStep[job.status] && (
@@ -917,4 +947,10 @@ function SyncNote({ job }: { job: Job }) {
       <Database className="size-3" strokeWidth={2} aria-hidden /> {text}
     </p>
   );
+}
+
+/** "2026-10-14" → "mar 14 oct" / "Tue, Oct 14" (a calendar day: no time zone shift) */
+function fmtDay(day: string, lang: "es" | "en") {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(lang === "es" ? "es-US" : "en-US", { weekday: "short", month: "short", day: "numeric" });
 }
