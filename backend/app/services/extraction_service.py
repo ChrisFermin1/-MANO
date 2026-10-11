@@ -1,9 +1,16 @@
 """Mano extraction: candidate values from a free-text job description (English or Spanish).
 
-Interface agreed with job_service (Joshua): no Gemini calls, no database access.
-This version uses deterministic rules so POST /jobs works end to end today. When the
-Gemini integration exists, it can fill the same fields behind this same function,
-with these rules kept as the fallback.
+Interface agreed with job_service (Joshua): text in, candidate customer_name / job_price out.
+No database access.
+
+How it works:
+1. Gemini reads the description (when GEMINI_API_KEY is set). It understands messy real notes:
+   a company client alone on the last line ("ATL Homeiker"), "Total 1200$", misspellings.
+2. Every Gemini answer is checked against the text before it is used: the name must appear in
+   the description, and the price must be a number that was actually said (so a made-up value
+   or an added-up total is rejected).
+3. If there is no key, Gemini fails or times out, or an answer fails the check, the
+   deterministic rules below are used instead. They are also the whole behavior in tests.
 
 Principles:
 - Candidates only. job_service owns explicit-value precedence, customer resolution,
@@ -13,9 +20,13 @@ Principles:
   (adding them up would be a business decision, not extraction).
 """
 
+import logging
+import os
 import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -38,10 +49,107 @@ def extract_job_information(
     service owns explicit-value precedence, customer resolution, and completeness.
     """
     text = description or ""
+    if not (extract_customer_name or extract_job_price):
+        return ExtractedJobInformation()
+
+    # When Gemini answers, its (checked) answer is final, including "not stated": e.g. "250 and 80"
+    # has no single total, and the rules would wrongly pick 250. The rules are the fallback only.
+    ai = _ask_gemini(text) if _gemini_configured() else None
+    if ai is not None:
+        name, price = ai.customer_name, ai.job_price
+    else:
+        name, price = _find_customer_name(text), _find_job_price(text)
     return ExtractedJobInformation(
-        customer_name=_find_customer_name(text) if extract_customer_name else None,
-        job_price=_find_job_price(text) if extract_job_price else None,
+        customer_name=name if extract_customer_name else None,
+        job_price=price if extract_job_price else None,
     )
+
+
+# ───────────────────────── Gemini ─────────────────────────
+
+_GEMINI_TIMEOUT_MS = 20_000  # usually ~1s; past this it's hung and the rules take over
+
+_PROMPT = """You extract two values from a contractor's job note. It can be Spanish, English,
+or both, written fast, with misspellings. Return JSON only.
+
+customer_name: the client. A person OR a company (property manager, builder, realtor),
+e.g. "Maria Lopez" or "ATL Homes". It can appear anywhere, including alone on the first or
+last line with no word like "para"/"for". Copy it exactly as written; do not fix its spelling.
+Never use a title ("Estimado de trabajo"), a greeting ("Gracias"), a street, or the work as a
+name. null if there is no client in the text.
+
+job_price: the price for the WHOLE job, as a number, ONLY if the note states it: one total
+("Total 1200$", "son 800 dolares") or a single price. If it lists prices per item without a
+total, or only a unit price ("150 por puerta"), return null. Never add numbers up.
+
+Job note:
+"""
+
+
+def _gemini_configured() -> bool:
+    return bool(os.getenv("GEMINI_API_KEY", "").strip())
+
+
+def _ask_gemini(text: str) -> ExtractedJobInformation | None:
+    """Gemini's answer, or None when it can't be used (the caller falls back to the rules)."""
+    try:
+        from google import genai
+        from google.genai import types
+        from pydantic import BaseModel
+
+        class _Answer(BaseModel):
+            customer_name: str | None = None
+            job_price: float | None = None
+
+        client = genai.Client(
+            api_key=os.environ["GEMINI_API_KEY"].strip(),
+            http_options=types.HttpOptions(timeout=_GEMINI_TIMEOUT_MS),
+        )
+        response = client.models.generate_content(
+            model=os.getenv("GEMINI_MODEL", "").strip() or "gemini-flash-lite-latest",
+            contents=_PROMPT + text,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=_Answer,
+                temperature=0.1,
+            ),
+        )
+        answer = _Answer.model_validate_json(response.text or "{}")
+    except Exception as error:  # network, quota (429), timeout, bad JSON: rules take over
+        logger.warning("Gemini extraction unavailable (%s); using rules.", type(error).__name__)
+        return None
+
+    return ExtractedJobInformation(
+        customer_name=_checked_name(answer.customer_name, text),
+        job_price=_checked_price(answer.job_price, text),
+    )
+
+
+def _norm(s: str) -> str:
+    return re.sub(r"\s+", " ", s).strip().lower()
+
+
+def _checked_name(name: str | None, text: str) -> str | None:
+    """Keep Gemini's name only if those words are really in the description."""
+    if not name or not name.strip():
+        return None
+    name = re.sub(r"\s+", " ", name).strip()
+    return name if _norm(name) in _norm(text) else None
+
+
+def _checked_price(price: float | None, text: str) -> Decimal | None:
+    """Keep Gemini's price only if that amount was actually said (no made-up or summed totals)."""
+    if price is None or price <= 0:
+        return None
+    try:
+        amount = Decimal(str(price))
+    except InvalidOperation:
+        return None
+    for m in re.finditer(rf"(?<![\d.,])({_NUM}{_MULT})", text, re.IGNORECASE):
+        said = _to_decimal(m.group(1))
+        if said is not None and said == amount:
+            return said  # the amount as written in the note ("1200", not 1.2E+3)
+    return None
 
 
 # ───────────────────────── customer name ─────────────────────────
@@ -119,6 +227,8 @@ _MONEY_RES = [
 ]
 # "... y 400 por la cocina" / "... and 300 for the trim": a second price in a list
 _LIST_PRICE_RE = re.compile(rf"\b(?:y|and)\s+\$?\s*({_NUM}{_MULT})\s+(?:por|for|en|on|para)\b", re.IGNORECASE)
+# "800 por la sala" / "300 for the trim": a price attached to one item (so a later "y 400 por…" makes two)
+_ITEM_PRICE_RE = re.compile(rf"(?<![\d.,])({_NUM}{_MULT})\s+(?:por|for)\s+(?:la|el|los|las|the)\b", re.IGNORECASE)
 _TOTAL_RE = re.compile(
     rf"\b(?:total|en\s+total|in\s+total|todo\s+por|all\s+for|everything\s+for)\b\s*(?:es\s+|de\s+|is\s+|of\s+|:\s*)?\$?\s*({_NUM}{_MULT})",
     re.IGNORECASE,
@@ -142,7 +252,7 @@ def _find_job_price(text: str) -> Decimal | None:
 
     # 2) otherwise only when exactly ONE distinct price was said
     found: dict[int, Decimal] = {}  # start position → amount (same amount matched by 2 rules counts once)
-    for regex in (*_MONEY_RES, _LIST_PRICE_RE):
+    for regex in (*_MONEY_RES, _LIST_PRICE_RE, _ITEM_PRICE_RE):
         for m in regex.finditer(text):
             if _PER_UNIT_RE.match(text, m.end(1)):
                 return None  # a per-unit price was said → the total isn't known; leave it for Ojo

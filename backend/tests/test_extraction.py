@@ -3,10 +3,24 @@
 Run from backend/:  python -m unittest discover -s tests -v
 """
 
+import os
 import unittest
 from decimal import Decimal
+from unittest import mock
 
+from app.services import extraction_service
 from app.services.extraction_service import ExtractedJobInformation, extract_job_information
+
+# The rule tests must never call Gemini, even on a machine that has a key set.
+_no_key = mock.patch.dict(os.environ, {"GEMINI_API_KEY": ""})
+
+
+def setUpModule():
+    _no_key.start()
+
+
+def tearDownModule():
+    _no_key.stop()
 
 
 def both(text: str) -> ExtractedJobInformation:
@@ -134,6 +148,81 @@ class BothFieldsTest(unittest.TestCase):
     def test_full_english_description(self):
         result = both("Drywall patch in the bedroom for Luis Gomez, charge 350")
         self.assertEqual(result, ExtractedJobInformation(customer_name="Luis Gomez", job_price=Decimal("350")))
+
+
+ATL_NOTE = "636 Wite\nPlantar pasto\nArreglar siding\nPoner Zinc\nTotal 1200$\nATL Homeiker"
+
+
+class GeminiTest(unittest.TestCase):
+    """Gemini's answer is used when it checks out against the text; otherwise the rules take over."""
+
+    def ask(self, name, price):
+        return mock.patch.object(
+            extraction_service,
+            "_ask_gemini",
+            lambda text: ExtractedJobInformation(
+                customer_name=extraction_service._checked_name(name, text),
+                job_price=extraction_service._checked_price(price, text),
+            ),
+        )
+
+    def setUp(self):
+        key = mock.patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})
+        key.start()
+        self.addCleanup(key.stop)
+
+    def test_gemini_finds_company_on_its_own_line(self):
+        # the rules can't see "ATL Homeiker" (no "para"/"for" before it); Gemini can
+        self.assertIsNone(extraction_service._find_customer_name(ATL_NOTE))
+        with self.ask("ATL Homeiker", 1200):
+            self.assertEqual(both(ATL_NOTE), ExtractedJobInformation("ATL Homeiker", Decimal("1200")))
+
+    def test_made_up_name_is_rejected(self):
+        with self.ask("ATL Homemaker", 1200):  # spelling "fixed" by the model: not in the text
+            self.assertIsNone(both(ATL_NOTE).customer_name)
+
+    def test_summed_price_is_rejected(self):
+        # 800 + 400 was never said; adding prices up is not extraction
+        with self.ask("Ana Ruiz", 1200):
+            result = both("Pintar la sala para Ana Ruiz, 800 por la sala y 400 por la cocina")
+        self.assertEqual(result.customer_name, "Ana Ruiz")
+        self.assertIsNone(result.job_price)
+
+    def test_spoken_formats_are_accepted(self):
+        for text, said in [("le cobro $1,420", 1420), ("son 2.5k", 2500), ("Total 1400$ only Leibor", 1400)]:
+            with self.subTest(text=text):
+                self.assertEqual(extraction_service._checked_price(said, text), Decimal(said))
+
+    def test_gemini_not_stated_is_final(self):
+        # "250 ... y ... por 80" has no single total; Gemini says so and the rules must not override it
+        text = "Instalar un ventilador para José Martínez, son 250 dólares, y cambiar dos enchufes por 80"
+        self.assertEqual(extraction_service._find_job_price(text), Decimal("250"))  # what the rules alone would say
+        with self.ask("José Martínez", None):
+            self.assertEqual(both(text), ExtractedJobInformation("José Martínez", None))
+
+    def test_price_comes_back_as_written(self):
+        self.assertEqual(str(extraction_service._checked_price(1200.0, "Total 1200$")), "1200")
+
+    def test_gemini_failure_falls_back_to_rules(self):
+        with mock.patch.object(extraction_service, "_ask_gemini", return_value=None):
+            result = both("Pintar la sala para Maria Lopez, le cobro $1,200")
+        self.assertEqual(result, ExtractedJobInformation("Maria Lopez", Decimal("1200")))
+
+    def test_real_call_errors_fall_back_to_rules(self):
+        # no network or library here: _ask_gemini must swallow the error, not crash POST /jobs
+        with mock.patch("builtins.__import__", side_effect=ImportError("no google-genai")):
+            self.assertIsNone(extraction_service._ask_gemini("Pintar para Maria Lopez"))
+
+    def test_flags_still_respected_with_gemini(self):
+        with self.ask("ATL Homeiker", 1200):
+            result = extract_job_information(ATL_NOTE, extract_customer_name=False, extract_job_price=True)
+        self.assertEqual(result, ExtractedJobInformation(None, Decimal("1200")))
+
+    def test_no_key_means_no_gemini_call(self):
+        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": ""}), \
+             mock.patch.object(extraction_service, "_ask_gemini") as ask:
+            both("Pintar para Maria Lopez")
+        ask.assert_not_called()
 
 
 if __name__ == "__main__":

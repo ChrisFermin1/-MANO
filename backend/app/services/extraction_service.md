@@ -7,10 +7,28 @@ extract_job_information(description, *, extract_customer_name: bool, extract_job
     -> ExtractedJobInformation(customer_name: str | None, job_price: Decimal | None)
 ```
 
-- **No Gemini, no database.** Pure Python, deterministic rules, so `POST /jobs` can work today.
+- **Gemini first, rules as backup. No database.**
 - **Candidates only.** It fills a field only when its flag is `True`. `job_service` keeps owning explicit-value precedence, customer resolution, and completeness (Ojo).
 
-## Rules
+## Gemini
+
+Used when `GEMINI_API_KEY` is set (docker-compose already passes it to the backend). Model: `GEMINI_MODEL`, default `gemini-flash-lite-latest` (about 1 second, bigger free quota). 20-second limit.
+
+Every answer is checked against the note before it's used:
+- the **name must appear in the note** (a "corrected" or invented name is dropped);
+- the **price must be a number that was said** (an added-up or invented total is dropped).
+
+When Gemini answers, its checked answer is final, including "no single total". If there's no key, the call fails (network, quota 429, timeout), the rules below are used. `POST /jobs` never fails because of Gemini.
+
+Real notes it handles that the rules can't:
+
+| Note | customer_name | job_price |
+|---|---|---|
+| "636 Wite / Plantar pasto / Arreglar siding / Poner Zinc / Total 1200$ / ATL Homeiker" | ATL Homeiker | 1200 |
+| "…poner stein en el porche… Total 1400$ only Leibor… Gracias" | None | 1400 |
+| "ventilador para José Martínez, son 250 dólares, y cambiar dos enchufes por 80" | José Martínez | None (no single total) |
+
+## Rules (fallback)
 
 | Field | Found when… | Examples |
 |---|---|---|
@@ -21,22 +39,18 @@ extract_job_information(description, *, extract_customer_name: bool, extract_job
 - Several prices and no total ("sala $600 y cocina $400") → `None`. Adding them up is a business decision.
 - A unit price ("$150 each", "600 por cuarto", "$3 per sq ft") → `None`.
 - Lowercase words, days, months and a few brands are never names ("para el lunes", "Home Depot").
-- Spelled-out numbers ("ochocientos") aren't handled yet → `None`. Gemini will cover these.
+- Spelled-out numbers ("ochocientos") aren't handled by the rules → `None` (Gemini handles them).
 
 ## Tests
 
-From `backend/` (stdlib `unittest`, no extra dependencies):
+From `backend/` (stdlib `unittest`, no extra dependencies; Gemini is mocked, so tests never call the network):
 
 ```sh
 python -m unittest discover -s tests -v
 ```
 
-## Plugging in Gemini (AI integration)
-
-Keep this function's signature. Inside it, call the Gemini client for the flags that are `True`, validate what comes back (same types), and fall back to these rules if the call fails or returns nothing.
-
 ## Open questions for the team
 
 `docs/technical-design.md` §9 says the exact fields are still to be defined. The frontend currently also uses **address**, **service**, and **line items** (each with its own price and English/Spanish text). Decide:
-1. One `job_price` (total), or line items?
+1. One `job_price` (total), or line items? The frontend now supports both: one job total, or a price per item.
 2. Should extraction also return `address` / `service` / `scope` / `start_date` / `notes` (FR-06)?
