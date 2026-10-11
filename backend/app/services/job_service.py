@@ -11,7 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.db import Business, Customer, Job
-from app.schemas import JobCreateRequest, JobCreateResponse
+from app.schemas import JobCreateRequest, JobCreateResponse, JobStatusRequest, JobUpdateRequest
 from app.services.extraction_service import (
     ExtractedJobInformation,
     extract_job_information,
@@ -150,9 +150,134 @@ def create_job(session: Session, request: JobCreateRequest) -> JobCreateResponse
         session.add(job)
         session.commit()
         session.refresh(job)
-        return JobCreateResponse.model_validate(job).model_copy(
-            update={"missing_fields": missing_fields}
+        return job_response(job, missing_fields)
+    except SQLAlchemyError:
+        session.rollback()
+        raise
+
+
+# ───────────────────────── reading and updating jobs ─────────────────────────
+
+# Canonical job states (docs/technical-design.md §4), in workflow order
+JOB_STATES = (
+    "NEW",
+    "NEEDS_INFORMATION",
+    "READY_FOR_QUOTE",
+    "QUOTE_SENT",
+    "ACCEPTED",
+    "SCHEDULED",
+    "IN_PROGRESS",
+    "COMPLETED",
+    "PAYMENT_PENDING",
+    "PAID",
+)
+# Before the quote is sent, Ojo sets the status from completeness and the job can be deleted
+PRE_QUOTE_STATES = ("NEW", "NEEDS_INFORMATION", "READY_FOR_QUOTE")
+
+
+class JobNotFoundError(ValueError):
+    """The job does not exist or belongs to another business."""
+
+
+class InvalidStatusChangeError(ValueError):
+    """Unknown status, or a move backwards in the workflow."""
+
+
+class JobLockedError(ValueError):
+    """The job can't be deleted once a quote was sent."""
+
+
+def job_response(job: Job, missing_fields: list[str]) -> JobCreateResponse:
+    return JobCreateResponse.model_validate(job).model_copy(
+        update={
+            "missing_fields": missing_fields,
+            "customer_name": job.customer.customer_name if job.customer is not None else None,
+        }
+    )
+
+
+def _missing_fields(job: Job) -> list[str]:
+    _, missing = evaluate_completeness(job.customer, job.job_description or "", job.job_price)
+    return missing
+
+
+def _get_job(session: Session, job_id: UUID) -> Job:
+    job = session.get(Job, job_id)
+    if job is None:
+        raise JobNotFoundError("Trabajo no encontrado.")
+    return job
+
+
+def list_jobs(session: Session, business_id: UUID) -> list[JobCreateResponse]:
+    validate_business(session, business_id)
+    jobs = session.scalars(
+        select(Job).where(Job.business_id == business_id).order_by(Job.created_at.desc())
+    ).all()
+    return [job_response(job, _missing_fields(job)) for job in jobs]
+
+
+def get_job(session: Session, job_id: UUID) -> JobCreateResponse:
+    job = _get_job(session, job_id)
+    return job_response(job, _missing_fields(job))
+
+
+def update_job(session: Session, job_id: UUID, request: JobUpdateRequest) -> JobCreateResponse:
+    """Change only the fields that were sent; before the quote, Ojo re-checks completeness."""
+    try:
+        job = _get_job(session, job_id)
+        changes = request.model_dump(exclude_unset=True)
+
+        if "customer_id" in changes or "customer_name" in changes:
+            job.customer = resolve_customer(
+                session,
+                job.business_id,
+                customer_id=changes.pop("customer_id", None),
+                customer_name=changes.pop("customer_name", None),
+            )
+        for field, value in changes.items():
+            setattr(job, field, value)
+
+        status, missing_fields = evaluate_completeness(
+            job.customer, job.job_description or "", job.job_price
         )
+        if job.status in PRE_QUOTE_STATES:
+            job.status = status
+        session.commit()
+        session.refresh(job)
+        return job_response(job, missing_fields)
+    except SQLAlchemyError:
+        session.rollback()
+        raise
+
+
+def change_status(session: Session, job_id: UUID, request: JobStatusRequest) -> JobCreateResponse:
+    """Move a job forward in the workflow (skipping steps is allowed, going back is not)."""
+    try:
+        job = _get_job(session, job_id)
+        target = request.status.strip().upper()
+        if target not in JOB_STATES:
+            raise InvalidStatusChangeError(f"Estado desconocido: {request.status}.")
+        if JOB_STATES.index(target) < JOB_STATES.index(job.status):
+            raise InvalidStatusChangeError(f"No se puede volver de {job.status} a {target}.")
+        job.status = target
+        session.commit()
+        session.refresh(job)
+        return job_response(job, _missing_fields(job))
+    except SQLAlchemyError:
+        session.rollback()
+        raise
+
+
+def delete_job(session: Session, job_id: UUID) -> None:
+    """Only before anything was sent to the customer."""
+    try:
+        job = _get_job(session, job_id)
+        if job.status not in PRE_QUOTE_STATES:
+            raise JobLockedError("Este trabajo ya se envió al cliente; no se puede borrar.")
+        for row in [*job.quotes, *job.actions]:
+            session.delete(row)
+        session.delete(job)
+        session.commit()
     except SQLAlchemyError:
         session.rollback()
         raise
