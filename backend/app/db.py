@@ -68,8 +68,8 @@ class Job(Base):
     business_id: Mapped[UUIDValue] = mapped_column(
         UUID(as_uuid=True), ForeignKey("businesses.business_id"), nullable=False
     )
-    customer_id: Mapped[UUIDValue] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("customers.customer_id"), nullable=False
+    customer_id: Mapped[UUIDValue | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("customers.customer_id"), nullable=True
     )
     job_title: Mapped[str | None] = mapped_column(String(), nullable=True)
     job_description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -85,7 +85,7 @@ class Job(Base):
     )
 
     business: Mapped[Business] = relationship(back_populates="jobs")
-    customer: Mapped[Customer] = relationship(back_populates="jobs")
+    customer: Mapped[Customer | None] = relationship(back_populates="jobs")
     quotes: Mapped[list[Quote]] = relationship(back_populates="job")
     actions: Mapped[list[Action]] = relationship(back_populates="job")
 
