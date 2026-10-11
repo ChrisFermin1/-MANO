@@ -99,3 +99,19 @@ class JobStatusRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     status: str
+
+
+class ReadNoteRequest(BaseModel):
+    """A photo of a job note, base64 without the "data:" prefix (same shape the app already sends)."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    image: str
+    mime_type: str = Field(alias="mimeType")
+
+
+class ReadNoteResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    text: str
+    is_job_note: bool = Field(serialization_alias="isJobNote")
