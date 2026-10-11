@@ -6,7 +6,10 @@ import type { Job, LineItem } from "@/lib/api";
 import type { OtherTrade } from "@/lib/business";
 import { toEnglish } from "@/lib/translate";
 
-type Interpreted = Pick<Job, "customer_name" | "customer_phone" | "address" | "service" | "service_es" | "line_items">;
+type Interpreted = Pick<
+  Job,
+  "customer_name" | "customer_phone" | "address" | "service" | "service_es" | "job_total" | "price_note" | "price_note_es" | "line_items"
+>;
 
 // Thrown only when Mano is busy (rate limit) — worth telling Carlos to wait a moment
 export class ManoBusyError extends Error {}
@@ -16,8 +19,8 @@ export async function interpret(description: string, otherTrade?: OtherTrade | n
   let status = 0;
   try {
     const response = await fetch("/api/extract", {
-      // a hung request would freeze the "organizando" screen; after 15s the built-in extractor takes over
-      signal: AbortSignal.timeout(15_000),
+      // a hung request would freeze the "organizando" screen; after 30s the built-in extractor takes over
+      signal: AbortSignal.timeout(30_000),
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ description, otherTrade: otherTrade?.name ?? null }),
@@ -39,6 +42,9 @@ export async function interpret(description: string, otherTrade?: OtherTrade | n
       address: d.address ?? null,
       service: d.service,
       service_es: d.service_es ?? null,
+      job_total: d.job_total ?? null,
+      price_note: d.price_note ?? null,
+      price_note_es: d.price_note_es ?? null,
       line_items: d.line_items.map((i) => ({ ...i, translation_pending: !i.description })),
     };
   }

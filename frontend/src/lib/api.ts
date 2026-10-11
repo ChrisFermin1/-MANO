@@ -52,7 +52,12 @@ export type Job = {
   customer_phone?: string | null; // optional — never required by Ojo; enables one-tap WhatsApp / SMS
   address: string | null;
   service: string;
-  service_es?: string | null; // Spanish name for Carlos (from Gemini). The built-in job types have fixed names in services.ts
+  service_es?: string | null;
+  // One price for the whole job ("Total 1400$ only labor"): items list the work, no per-item prices.
+  // Set → the job total is this; null/absent → the total is the sum of the items.
+  job_total?: number | null;
+  price_note?: string | null; // what the price covers, for the customer ("Labor only")
+  price_note_es?: string | null; // same note, for Carlos ("Solo mano de obra") // Spanish name for Carlos (from Gemini). The built-in job types have fixed names in services.ts
   description: string;
   line_items: LineItem[];
   status: JobStatus;
@@ -97,7 +102,8 @@ const DAY = 86_400_000;
 
 const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
 export const uid = () => Math.random().toString(36).slice(2, 9);
-export const jobTotal = (job: Job) => job.line_items.reduce((s, i) => s + (i.amount ?? 0), 0);
+export const isLumpSum = (job: Pick<Job, "job_total">) => job.job_total != null;
+export const jobTotal = (job: Job) => (isLumpSum(job) ? job.job_total! : job.line_items.reduce((s, i) => s + (i.amount ?? 0), 0));
 export const money = (n: number) => `$${n.toLocaleString("en-US")}`;
 export const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / DAY);
 export const firstName = (name: string | null) => (name ?? "").split(" ")[0] || "—";

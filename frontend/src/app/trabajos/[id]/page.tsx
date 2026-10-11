@@ -21,6 +21,7 @@ import {
   invoiceNo,
   invoiceState,
   jobTotal,
+  isLumpSum,
   markPaid,
   money,
   nextStatus,
@@ -108,8 +109,9 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
     }`;
   const flag = (on: boolean) => (on ? "ring-2 ring-flag" : "");
   const firstMissingPrice = job.line_items.find((i) => i.amount == null)?.id;
+  const lump = isLumpSum(job); // one price for the whole job: items list the work, the total is typed once
   const jumpTo = (m: (typeof missing)[number]) => {
-    const id = m === "price" ? `f-price-${firstMissingPrice}` : m === "items" ? "f-add-line" : `f-${m}`;
+    const id = m === "price" ? (lump ? "f-job-total" : `f-price-${firstMissingPrice}`) : m === "items" ? "f-add-line" : `f-${m}`;
     const el = document.getElementById(id);
     el?.scrollIntoView({ block: "center", behavior: "smooth" });
     el?.focus({ preventScroll: true });
@@ -220,6 +222,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                   />
                 )}
               </div>
+              {!lump && (
               <label className={`flex h-10 w-[96px] shrink-0 items-center rounded-[10px] bg-white/70 px-2 ${flag(item.amount == null)}`}>
                 <span className="text-sm font-bold text-muted">$</span>
                 <input
@@ -235,6 +238,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                   placeholder="0"
                 />
               </label>
+              )}
               <button type="button" onClick={() => removeItem(item.id)} aria-label={t.removeLine} className="mt-2.5 p-1 text-muted">
                 <X className="size-4" />
               </button>
@@ -244,10 +248,45 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
             <Plus className="size-4" strokeWidth={2.5} /> {t.addLine}
           </button>
         </div>
-        <div className="mt-3 flex items-center justify-between px-2">
-          <span className="text-base">{t.total}</span>
-          <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
-        </div>
+        {lump ? (
+          <div className="mt-3 px-2">
+            <div className="flex items-center justify-between gap-3">
+              <label htmlFor="f-job-total" className="text-base">{t.jobTotal}</label>
+              <span className={`flex h-12 w-[140px] items-center rounded-[12px] bg-white/70 px-3 ${flag(!(job.job_total! > 0))}`}>
+                <span className="font-bold text-muted">$</span>
+                <input
+                  id="f-job-total"
+                  className="w-full bg-transparent text-right text-2xl font-bold outline-none"
+                  inputMode="decimal"
+                  value={job.job_total || ""}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^\d.]/g, "");
+                    patch({ job_total: v === "" ? 0 : Number(v) });
+                  }}
+                  placeholder="0"
+                />
+              </span>
+            </div>
+            {(spanish ? job.price_note_es || job.price_note : job.price_note) && (
+              <p className="mt-1 text-right text-sm text-muted">{spanish ? job.price_note_es || job.price_note : job.price_note}</p>
+            )}
+            <button type="button" onClick={() => patch({ job_total: null })} className="mt-2 text-sm font-semibold text-forest underline underline-offset-4">
+              {t.pricePerLine}
+            </button>
+          </div>
+        ) : (
+          <div className="mt-3 px-2">
+            <div className="flex items-center justify-between">
+              <span className="text-base">{t.total}</span>
+              <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
+            </div>
+            {job.line_items.length > 1 && (
+              <button type="button" onClick={() => patch({ job_total: jobTotal(job) })} className="mt-2 text-sm font-semibold text-forest underline underline-offset-4">
+                {t.useOneTotal}
+              </button>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Carlos skipped Ojo's questions for this job — one quiet line to bring them back */}
@@ -457,10 +496,13 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           {job.line_items.map((i) => (
             <li key={i.id} className="flex justify-between gap-4">
               <span>{lang === "es" ? (i.description_es ?? i.description) : i.description}</span>
-              <span className="font-bold">{money(i.amount ?? 0)}</span>
+              {!isLumpSum(job) && <span className="font-bold">{money(i.amount ?? 0)}</span>}
             </li>
           ))}
         </ul>
+        {isLumpSum(job) && (lang === "es" ? job.price_note_es || job.price_note : job.price_note) && (
+          <p className="mt-3 text-sm text-muted">{lang === "es" ? job.price_note_es || job.price_note : job.price_note}</p>
+        )}
         <hr className="my-4 border-black/10" />
         <div className="flex items-center justify-between">
           <span>{t.total}</span>
