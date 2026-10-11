@@ -28,6 +28,17 @@ Real notes it handles that the rules can't:
 | "…poner stein en el porche… Total 1400$ only Leibor… Gracias" | None | 1400 |
 | "ventilador para José Martínez, son 250 dólares, y cambiar dos enchufes por 80" | José Martínez | None (no single total) |
 
+## Work items (line items)
+
+With `extract_work_items=True` (job_service always asks), Gemini also lists the work in the note: each item in Spanish (for Carlos) and English (for the customer), with a price only if that item has one. Items that share no real word with the note are dropped. `work_items` is `None` when Gemini wasn't used (the rules can't list work) and `()` when Gemini found no work.
+
+job_service saves them in `job_line_items`, and a job counts as having a description when Gemini found work **or** the word lists recognize it. A price on every item counts as priced (the total is their sum).
+
+| Note | Line items (es / en) |
+|---|---|
+| "Plantar pasto / Arreglar siding / Poner Zinc / Total 1200$ / ATL Homeiker" | Plantar pasto / Plant grass · Arreglar siding / Repair siding · Poner zinc / Install metal roofing |
+| "Hola, gracias" | none, so `job_description` is missing |
+
 ## Rules (fallback)
 
 | Field | Found when… | Examples |

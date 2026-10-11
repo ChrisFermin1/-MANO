@@ -10,10 +10,11 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.db import Business, Customer, Job
+from app.db import Business, Customer, Job, LineItem
 from app.schemas import JobCreateRequest, JobCreateResponse, JobStatusRequest, JobUpdateRequest
 from app.services.extraction_service import (
     ExtractedJobInformation,
+    WorkItem,
     extract_job_information,
 )
 
@@ -113,13 +114,17 @@ def evaluate_completeness(
     customer: Customer | None,
     description: str,
     job_price: Decimal | None,
+    has_work_items: bool = False,
+    items_all_priced: bool = False,
 ) -> tuple[str, list[str]]:
     missing_fields = []
     if customer is None:
         missing_fields.append("customer_name")
-    if not is_meaningful_description(description):
+    # Gemini found work in the note (saved as line items), or the word lists recognize it
+    if not (has_work_items or is_meaningful_description(description)):
         missing_fields.append("job_description")
-    if job_price is None:
+    # priced with one total for the job, or a price on every line item (the total is their sum)
+    if job_price is None and not items_all_priced:
         missing_fields.append("job_price")
     status = "NEEDS_INFORMATION" if missing_fields else "NEW"
     return status, missing_fields
@@ -135,15 +140,17 @@ def create_job(session: Session, request: JobCreateRequest) -> JobCreateResponse
         extract_name = request.customer_id is None and customer_name is None
         extract_price = job_price is None
 
+        # Always ask for the work in the note (line items); it also decides whether the
+        # description is a real job. One Gemini call covers name, price and work.
         extracted = ExtractedJobInformation()
-        if extract_name or extract_price:
-            try:
-                extracted = extract_job_information(
-                    request.description,
-                    extract_customer_name=extract_name,
-                    extract_job_price=extract_price,
-                )
-            except Exception:
+        try:
+            extracted = extract_job_information(
+                request.description,
+                extract_customer_name=extract_name,
+                extract_job_price=extract_price,
+                extract_work_items=True,
+            )
+        except Exception:
                 # Extraction is optional assistance; explicit input remains usable.
                 logger.warning("Job extraction failed; continuing with explicit inputs.")
 
@@ -158,8 +165,13 @@ def create_job(session: Session, request: JobCreateRequest) -> JobCreateResponse
             customer_id=request.customer_id,
             customer_name=customer_name,
         )
+        work_items = extracted.work_items or ()
         status, missing_fields = evaluate_completeness(
-            customer, request.description, job_price
+            customer,
+            request.description,
+            job_price,
+            has_work_items=bool(work_items),
+            items_all_priced=bool(work_items) and all(w.amount is not None for w in work_items),
         )
 
         job = Job(
@@ -168,6 +180,7 @@ def create_job(session: Session, request: JobCreateRequest) -> JobCreateResponse
             job_description=request.description,
             job_price=job_price,
             status=status,
+            line_items=_line_items(work_items),
         )
         session.add(job)
         session.commit()
@@ -209,6 +222,13 @@ class JobLockedError(ValueError):
     """The job can't be deleted once a quote was sent."""
 
 
+def _line_items(work_items: tuple[WorkItem, ...]) -> list[LineItem]:
+    return [
+        LineItem(position=i, description=w.description, description_es=w.description_es, amount=w.amount)
+        for i, w in enumerate(work_items)
+    ]
+
+
 def job_response(job: Job, missing_fields: list[str]) -> JobCreateResponse:
     return JobCreateResponse.model_validate(job).model_copy(
         update={
@@ -218,8 +238,18 @@ def job_response(job: Job, missing_fields: list[str]) -> JobCreateResponse:
     )
 
 
+def _items_all_priced(job: Job) -> bool:
+    return bool(job.line_items) and all(item.amount is not None for item in job.line_items)
+
+
 def _missing_fields(job: Job) -> list[str]:
-    _, missing = evaluate_completeness(job.customer, job.job_description or "", job.job_price)
+    _, missing = evaluate_completeness(
+        job.customer,
+        job.job_description or "",
+        job.job_price,
+        has_work_items=bool(job.line_items),
+        items_all_priced=_items_all_priced(job),
+    )
     return missing
 
 
@@ -259,8 +289,27 @@ def update_job(session: Session, job_id: UUID, request: JobUpdateRequest) -> Job
         for field, value in changes.items():
             setattr(job, field, value)
 
+        # A new description before the quote: re-read the work in it
+        if "job_description" in changes and job.status in PRE_QUOTE_STATES:
+            try:
+                work = extract_job_information(
+                    job.job_description or "",
+                    extract_customer_name=False,
+                    extract_job_price=False,
+                    extract_work_items=True,
+                ).work_items
+            except Exception:
+                logger.warning("Job extraction failed; keeping the current line items.")
+                work = None
+            if work is not None:
+                job.line_items = _line_items(work)
+
         status, missing_fields = evaluate_completeness(
-            job.customer, job.job_description or "", job.job_price
+            job.customer,
+            job.job_description or "",
+            job.job_price,
+            has_work_items=bool(job.line_items),
+            items_all_priced=_items_all_priced(job),
         )
         if job.status in PRE_QUOTE_STATES:
             job.status = status
@@ -297,7 +346,7 @@ def delete_job(session: Session, job_id: UUID) -> None:
         if job.status not in PRE_QUOTE_STATES:
             raise JobLockedError("Este trabajo ya se envió al cliente; no se puede borrar.")
         for row in [*job.quotes, *job.actions]:
-            session.delete(row)
+            session.delete(row)  # line items go with the job (cascade)
         session.delete(job)
         session.commit()
     except SQLAlchemyError:

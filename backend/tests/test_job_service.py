@@ -65,5 +65,24 @@ class ResolveCustomerTest(unittest.TestCase):
         session.add.assert_not_called()
 
 
+
+class CompletenessTest(unittest.TestCase):
+    def test_work_found_by_gemini_counts_as_a_description(self):
+        # "Poner Zinc" alone isn't in the word lists, but Gemini found work in it
+        customer = object()
+        _, missing = job_service.evaluate_completeness(customer, "Poner Zinc", None, has_work_items=True)
+        self.assertNotIn("job_description", missing)
+
+    def test_a_price_on_every_item_counts_as_priced(self):
+        _, missing = job_service.evaluate_completeness(object(), "Cambiar dos enchufes", None, True, items_all_priced=True)
+        self.assertNotIn("job_price", missing)
+        _, missing = job_service.evaluate_completeness(object(), "Cambiar dos enchufes", None, True, items_all_priced=False)
+        self.assertIn("job_price", missing)
+
+    def test_no_work_and_no_known_words_is_flagged(self):
+        _, missing = job_service.evaluate_completeness(object(), "Hola, gracias", None, has_work_items=False)
+        self.assertIn("job_description", missing)
+
+
 if __name__ == "__main__":
     unittest.main()

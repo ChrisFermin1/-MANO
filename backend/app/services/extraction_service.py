@@ -23,10 +23,20 @@ Principles:
 import logging
 import os
 import re
+import unicodedata
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class WorkItem:
+    """One piece of work found in the note: Spanish for Carlos, English for the customer."""
+
+    description_es: str
+    description: str
+    amount: Decimal | None = None  # only when the note gives a price for this item
 
 
 @dataclass(frozen=True)
@@ -35,6 +45,8 @@ class ExtractedJobInformation:
 
     customer_name: str | None = None
     job_price: Decimal | None = None
+    # The work the note describes. None = not checked (no Gemini); () = Gemini found no work.
+    work_items: tuple[WorkItem, ...] | None = None
 
 
 def extract_job_information(
@@ -42,6 +54,7 @@ def extract_job_information(
     *,
     extract_customer_name: bool,
     extract_job_price: bool,
+    extract_work_items: bool = False,
 ) -> ExtractedJobInformation:
     """Return candidates for the values job_service marked as missing.
 
@@ -49,19 +62,21 @@ def extract_job_information(
     service owns explicit-value precedence, customer resolution, and completeness.
     """
     text = description or ""
-    if not (extract_customer_name or extract_job_price):
+    if not (extract_customer_name or extract_job_price or extract_work_items):
         return ExtractedJobInformation()
 
     # When Gemini answers, its (checked) answer is final, including "not stated": e.g. "250 and 80"
     # has no single total, and the rules would wrongly pick 250. The rules are the fallback only.
     ai = _ask_gemini(text) if _gemini_configured() else None
     if ai is not None:
-        name, price = ai.customer_name, ai.job_price
+        name, price, work = ai.customer_name, ai.job_price, ai.work_items
     else:
-        name, price = _find_customer_name(text), _find_job_price(text)
+        # the rules can't list the work; job_service falls back to its word lists
+        name, price, work = _find_customer_name(text), _find_job_price(text), None
     return ExtractedJobInformation(
         customer_name=name if extract_customer_name else None,
         job_price=price if extract_job_price else None,
+        work_items=work if extract_work_items else None,
     )
 
 
@@ -69,18 +84,24 @@ def extract_job_information(
 
 _GEMINI_TIMEOUT_MS = 20_000  # usually ~1s; past this it's hung and the rules take over
 
-_PROMPT = """You extract two values from a contractor's job note. It can be Spanish, English,
+_PROMPT = """You extract three things from a contractor's job note. It can be Spanish, English,
 or both, written fast, with misspellings. Return JSON only.
 
 customer_name: the client. A person OR a company (property manager, builder, realtor),
 e.g. "Maria Lopez" or "ATL Homes". It can appear anywhere, including alone on the first or
 last line with no word like "para"/"for". Copy it exactly as written; do not fix its spelling.
-Never use a title ("Estimado de trabajo"), a greeting ("Gracias"), a street, or the work as a
-name. null if there is no client in the text.
+Never use a title ("Estimado de trabajo"), a greeting ("Gracias"), a street, the work, or price
+words ("only labor", "Leibor" = labor, "materiales") as a name. null if there is no client in the text.
 
 job_price: the price for the WHOLE job, as a number, ONLY if the note states it: one total
 ("Total 1200$", "son 800 dolares") or a single price. If it lists prices per item without a
 total, or only a unit price ("150 por puerta"), return null. Never add numbers up.
+
+work_items: each distinct piece of work the note describes, in order. description_es is a short
+Spanish phrase for the contractor; description is the same in clear English for the customer.
+Understand misspellings and Spanglish (coquin = caulk, stein = stain, siding, zinc = metal
+roofing). amount only if the note gives a price for THAT item, else null. Never invent work;
+do not list the client, address, total, or greetings as work. [] if the note describes no work.
 
 Job note:
 """
@@ -97,9 +118,15 @@ def _ask_gemini(text: str) -> ExtractedJobInformation | None:
         from google.genai import types
         from pydantic import BaseModel
 
+        class _Item(BaseModel):
+            description_es: str
+            description: str
+            amount: float | None = None
+
         class _Answer(BaseModel):
             customer_name: str | None = None
             job_price: float | None = None
+            work_items: list[_Item] = []
 
         client = genai.Client(
             api_key=os.environ["GEMINI_API_KEY"].strip(),
@@ -122,7 +149,31 @@ def _ask_gemini(text: str) -> ExtractedJobInformation | None:
     return ExtractedJobInformation(
         customer_name=_checked_name(answer.customer_name, text),
         job_price=_checked_price(answer.job_price, text),
+        work_items=tuple(
+            WorkItem(
+                description_es=item.description_es.strip(),
+                description=item.description.strip(),
+                amount=_checked_price(item.amount, text),
+            )
+            for item in answer.work_items
+            if _item_is_in_note(item.description_es, item.description, text)
+        ),
     )
+
+
+def _plain_words(s: str) -> set[str]:
+    """Lowercase words of 4+ letters without accents: "Baño" -> "bano"."""
+    s = unicodedata.normalize("NFKD", s.lower())
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return {w for w in re.findall(r"[a-z]+", s) if len(w) >= 4}
+
+
+def _item_is_in_note(description_es: str, description: str, text: str) -> bool:
+    """A work item must share at least one real word with the note (drops invented work)."""
+    if not description_es.strip() or not description.strip():
+        return False
+    note = _plain_words(text)
+    return bool((_plain_words(description_es) | _plain_words(description)) & note)
 
 
 def _norm(s: str) -> str:

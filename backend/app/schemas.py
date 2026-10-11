@@ -17,6 +17,16 @@ class JobCreateRequest(BaseModel):
     job_price: Decimal | None = Field(default=None, max_digits=12, decimal_places=2)
 
 
+class LineItemResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    line_item_id: UUID
+    position: int
+    description: str
+    description_es: str | None
+    amount: Decimal | None
+
+
 class JobCreateResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -33,6 +43,7 @@ class JobCreateResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     missing_fields: list[str] = Field(default_factory=list)
+    line_items: list[LineItemResponse] = Field(default_factory=list)
 
 
 class BusinessCreateRequest(BaseModel):
