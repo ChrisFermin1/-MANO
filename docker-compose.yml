@@ -44,6 +44,7 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-lite-latest}
       BACKEND_URL: http://backend:8000
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
     ports:
       - "3000:3000"
     depends_on:

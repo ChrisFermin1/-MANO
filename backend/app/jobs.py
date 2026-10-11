@@ -8,8 +8,16 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.database import get_session
-from app.schemas import JobCreateRequest, JobCreateResponse, JobResponse, JobStatusRequest, JobUpdateRequest
-from app.services import job_service
+from app.schemas import (
+    JobCreateRequest,
+    JobCreateResponse,
+    JobResponse,
+    JobStatusRequest,
+    JobUpdateRequest,
+    ReadNoteRequest,
+    ReadNoteResponse,
+)
+from app.services import job_service, note_reading_service
 
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -33,6 +41,25 @@ def create_job_endpoint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="No se pudo guardar el trabajo.",
         ) from error
+
+
+# "Escanear una nota": photo in, the note's text out. Doesn't save anything; the app sends the
+# checked text to POST /jobs afterwards.
+@router.post("/read-note", response_model=ReadNoteResponse)
+def read_note_endpoint(request: ReadNoteRequest) -> ReadNoteResponse:
+    try:
+        reading = note_reading_service.read_note(request.image, request.mime_type)
+    except note_reading_service.InvalidImageError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+    except note_reading_service.ImageTooLargeError as error:
+        raise HTTPException(status_code=status.HTTP_413_CONTENT_TOO_LARGE, detail=str(error)) from error
+    except note_reading_service.NotConfiguredError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(error)) from error
+    except note_reading_service.GeminiBusyError as error:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(error)) from error
+    except note_reading_service.GeminiUnavailableError as error:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(error)) from error
+    return ReadNoteResponse(text=reading.text, is_job_note=reading.is_job_note)
 
 
 _DB_ERROR = HTTPException(

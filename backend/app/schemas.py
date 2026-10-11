@@ -7,6 +7,16 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class LineItemInput(BaseModel):
+    """A line the app already has (e.g. Mano in the frontend organized the job)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    description: str = Field(min_length=1)  # English, for the customer
+    description_es: str | None = None  # Spanish, for Carlos
+    amount: Decimal | None = Field(default=None, max_digits=12, decimal_places=2)
+
+
 class JobCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -15,6 +25,10 @@ class JobCreateRequest(BaseModel):
     customer_id: UUID | None = None
     customer_name: str | None = None
     job_price: Decimal | None = Field(default=None, max_digits=12, decimal_places=2)
+    job_title: str | None = None
+    job_address: str | None = None
+    # Sent by the app when it already has the line items: then the backend doesn't ask Gemini for them
+    line_items: list[LineItemInput] | None = None
 
 
 class LineItemResponse(BaseModel):
@@ -93,9 +107,26 @@ class JobUpdateRequest(BaseModel):
     job_address: str | None = None
     job_price: Decimal | None = Field(default=None, max_digits=12, decimal_places=2)
     start_date: date | None = None
+    line_items: list[LineItemInput] | None = None  # replaces all line items
 
 
 class JobStatusRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     status: str
+
+
+class ReadNoteRequest(BaseModel):
+    """A photo of a job note, base64 without the "data:" prefix (same shape the app already sends)."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    image: str
+    mime_type: str = Field(alias="mimeType")
+
+
+class ReadNoteResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    text: str
+    is_job_note: bool = Field(serialization_alias="isJobNote")
