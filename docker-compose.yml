@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:17-bookworm
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:?Copy .env.example to .env first}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      POSTGRES_USER: mano_local
+      POSTGRES_PASSWORD: manoProject2006
+      POSTGRES_DB: mano_local
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     environment:
-      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      DATABASE_URL: postgresql+psycopg://mano_local:manoProject2006@postgres:5432/mano_local
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "127.0.0.1:8000:8000"
