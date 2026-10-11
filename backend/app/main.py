@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 
 from app.config import Settings
+from app.jobs import router as jobs_router
 from app.voice.service import transcribe_audio
 
 
@@ -15,12 +16,14 @@ async def lifespan(app: FastAPI):
     try:
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
+        app.state.engine = engine
         yield
     finally:
         engine.dispose()
 
 
 app = FastAPI(title="Mano foundation", lifespan=lifespan)
+app.include_router(jobs_router)
 
 # Add CORS middleware
 app.add_middleware(
