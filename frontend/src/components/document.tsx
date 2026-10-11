@@ -1,4 +1,4 @@
-import { estimateNo, fmtDate, invoiceNo, money, type Job } from "@/lib/api";
+import { estimateNo, fmtDate, invoiceNo, isLumpSum, jobTotal, money, type Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
 
 // Estimate / invoice document. The CUSTOMER always gets `view="en"`.
@@ -81,14 +81,18 @@ export function DocumentCard({
         {job.line_items.map((i) => (
           <li key={i.id} className="flex justify-between gap-4">
             <span>{es ? i.description_es || i.description : i.description}</span>
-            <span className="font-bold">{money(i.amount)}</span>
+            {/* one price for the whole job → the items are the scope; the price is the total below */}
+            {!isLumpSum(job) && <span className="font-bold">{i.amount === 0 ? L("Included", "Incluido") : money(i.amount ?? 0)}</span>}
           </li>
         ))}
       </ul>
       <hr className="mt-5 border-black/10" />
+      {isLumpSum(job) && (es ? job.price_note_es || job.price_note : job.price_note) && (
+        <p className="mt-3 text-sm text-muted">{es ? job.price_note_es || job.price_note : job.price_note}</p>
+      )}
       <div className="mt-3 flex items-center justify-between">
         <span className="text-sm">{isInvoice ? (job.paid_at ? L("Total paid", "Total pagado") : L("Amount due", "Total a pagar")) : "Total"}</span>
-        <span className="text-2xl font-bold">{money(job.job_price)}</span>
+        <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
       </div>
 
       <p className="mt-5 text-xs leading-4 text-muted">{terms}</p>

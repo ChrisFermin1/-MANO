@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Height-based variants: Welcome must fit one phone screen (Safari's bars take ~180px).
+   short: most phones in Safari · tiny: iPhone SE / small Androids in Safari */
+@custom-variant short (@media (max-height: 820px));
+@custom-variant tiny (@media (max-height: 620px));
+
 /* MANO design tokens (from Figma) */
 @theme inline {
   --color-forest: #0f3d2e;

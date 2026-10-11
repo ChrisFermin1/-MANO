@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Eye, Loader2, MessageCircle, RotateCcw, Send, Smartphone, Sparkles } from "lucide-react";
 import { PageHeader, Screen, SuccessScreen, Title, btnLime, btnPrimary } from "@/components/ui";
-import { firstName, getJob, isLiveJob, jobTotal, money, sendMessage, smsLink, whatsappLink, type Job } from "@/lib/api";
+import { firstName, getJob, jobTotal, money, sendMessage, smsLink, whatsappLink, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 import { followUpMessage } from "@/lib/mano";
@@ -16,7 +16,6 @@ type EnState = "ok" | "stale" | "translating" | "pending";
 export default function Seguimiento() {
   const { t, lang } = useLang();
   const { id } = useParams<{ id: string }>();
-  const [error, setError] = useState("");
   const [job, setJob] = useState<Job | null>(null);
   const mano = useRef<{ en: string; es: string }>({ en: "", es: "" }); // what Mano wrote, to restore
   const [es, setEs] = useState(""); // Carlos edits THIS (Spanish)
@@ -27,21 +26,18 @@ export default function Seguimiento() {
   const spanish = lang === "es";
 
   useEffect(() => {
-    getJob(id).then(async (j) => {
+    getJob(Number(id)).then(async (j) => {
       if (!j) return;
-      if (isLiveJob(j)) { setJob(j); return; }
       const biz = { ...DEMO_BUSINESS, ...loadBusiness() };
       const msg = await followUpMessage(j, biz.ownerName || DEMO_BUSINESS.ownerName, biz.businessName || DEMO_BUSINESS.businessName, money(jobTotal(j)));
       mano.current = msg;
       setJob(j);
       setEs(msg.es);
       setEn(msg.en);
-    }).catch((e: Error) => setError(e.message));
+    });
   }, [id]);
 
-  if (error) return <Screen><PageHeader backHref="/inicio" /><p role="alert" className="mt-6 text-[#8a2a17]">{error}</p></Screen>;
   if (!job) return <Screen>{null}</Screen>;
-  if (isLiveJob(job)) return <Screen><PageHeader backHref={`/trabajos/${job.job_id}`} /><Title>{t.followTitle(firstName(job.customer_name))}</Title><p className="mt-5 rounded-[14px] glass-peach p-4">{lang === "es" ? "La generación y el envío de seguimientos aún no están conectados para trabajos reales." : "Follow-up generation and sending are not connected for live jobs yet."}</p></Screen>;
 
   const name = firstName(job.customer_name);
 

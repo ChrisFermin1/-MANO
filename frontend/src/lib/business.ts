@@ -1,18 +1,12 @@
 import type { TradeId } from "@/lib/i18n";
-import { apiRequest } from "@/lib/http";
-
-export const DEMO_BUSINESS_ID = "00000000-0000-4000-8000-00000000ca71";
 
 export type PriceUnit = "hour" | "project" | "sqft" | "room";
 
 // When Carlos picks "Otro", he names the work himself (e.g. "Techos") and how he charges for it
 export type OtherTrade = { name: string; unit: PriceUnit };
 
-// Shared presentation shape. Live profiles come from FastAPI; legacy demo preferences stay local.
+// Single-business MVP: no accounts. Stored locally until the backend has POST /business.
 export type Business = {
-  business_id?: string;
-  business_type?: string | null;
-  business_address?: string | null;
   ownerName: string;
   businessName: string;
   phone: string;
@@ -20,6 +14,10 @@ export type Business = {
   otherTrade?: OtherTrade | null;
   // Ojo checklist items Carlos said he always includes in his price ("Ya lo incluyo siempre")
   ojoIgnore?: string[];
+  // Labels for silenced questions that came from Gemini (built-in questions have their own labels)
+  ojoIgnoreLabels?: Record<string, { es: string; en: string }>;
+  // Client names Carlos corrected once ("atl homeiker" → "ATL Homemaker"), fixed automatically on new jobs
+  nameFixes?: Record<string, string>;
 };
 
 const KEY = "mano.business";
@@ -32,23 +30,6 @@ export const DEMO_BUSINESS: Business = {
   ojoIgnore: [],
 };
 
-/** Authoritative demo profile; local onboarding preferences cannot override it. */
-export async function fetchBusiness(): Promise<Business> {
-  const data = await apiRequest<{
-    business_id: string; owner_name: string | null; business_name: string | null;
-    business_type: string | null; business_address: string | null; phone_number: string | null;
-  }>(`/business/${DEMO_BUSINESS_ID}`);
-  return {
-    business_id: data.business_id,
-    ownerName: data.owner_name ?? "",
-    businessName: data.business_name ?? "",
-    phone: data.phone_number ?? "",
-    business_type: data.business_type,
-    business_address: data.business_address,
-    trades: [],
-  };
-}
-
 export function loadBusiness(): Business | null {
   try {
     const raw = localStorage.getItem(KEY);
@@ -57,6 +38,15 @@ export function loadBusiness(): Business | null {
     return null;
   }
 }
+
+const nameKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, " ");
+
+export function rememberNameFix(heard: string | null | undefined, fixed: string | null | undefined) {
+  if (!heard?.trim() || !fixed?.trim() || nameKey(heard) === nameKey(fixed)) return;
+  saveBusiness({ nameFixes: { ...(loadBusiness()?.nameFixes ?? {}), [nameKey(heard)]: fixed.trim() } });
+}
+
+export const knownNameFix = (name: string | null | undefined) => (name ? loadBusiness()?.nameFixes?.[nameKey(name)] ?? null : null);
 
 export function saveBusiness(patch: Partial<Business>) {
   try {

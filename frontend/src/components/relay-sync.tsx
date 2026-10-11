@@ -5,7 +5,7 @@
 // Real backend version: poll GET /jobs (docs/BACKEND_HANDOFF.md §7) and delete this component.
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { getDemoJobs as getJobs, updateJob } from "@/lib/api";
+import { getJobs, updateJob } from "@/lib/api";
 import { loadBusiness } from "@/lib/business";
 import { fetchEstimate, publishEstimate } from "@/lib/relay";
 

@@ -89,8 +89,10 @@ See `.env.example`:
 - `SEED_DEMO_BUSINESS`: enables the existing demo Business initializer.
 - `CORS_ORIGINS`: JSON array of allowed browser origins. Localhost and private
   network origins are also allowed by the backend's local-demo regex.
-- `NEXT_PUBLIC_API_BASE_URL`: browser-facing FastAPI URL, embedded at frontend
-  build time. Currently used by the existing transcription upload.
+- `BACKEND_URL`: where the frontend's `/backend` route forwards to FastAPI
+  (default `http://127.0.0.1:8000`; `http://backend:8000` inside Docker Compose).
+- `NEXT_PUBLIC_VOICE_URL`: optional override for the voice transcription upload
+  (default: port 8000 on the same host).
 - `GEMINI_API_KEY`: optional for existing extraction. The backend falls back to
   deterministic extraction without it.
 - `GEMINI_MODEL`: backend extraction model.
@@ -142,6 +144,5 @@ npm run build
 ```
 
 For frontend development, run `npm run dev` from `frontend/` on port 3000 while
-FastAPI is running. To override its browser-facing backend URL outside Docker,
-set `NEXT_PUBLIC_API_BASE_URL` in an ignored `frontend/.env.local` and restart
-Next.js. Both development and production frontend servers use port 3000.
+FastAPI is running. To point it at a different FastAPI outside Docker,
+set `BACKEND_URL` in an ignored `frontend/.env.local` and restart Next.js. Both development and production frontend servers use port 3000.

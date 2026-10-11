@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { Check, Copy, MessageCircle, QrCode, Share2, Smartphone } from "lucide-react";
-import { estimateLink, firstName, smsLink, whatsappLink, type Job } from "@/lib/api";
+import { estimateLink, firstName, fmtDate, jobTotal, money, smsLink, whatsappLink, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 import { shareOrigin } from "@/lib/relay";
 
@@ -16,10 +16,19 @@ export function ShareEstimate({ job, dark = false, quiet = false }: { job: Job; 
   const [showQr, setShowQr] = useState(false);
   const [canShare, setCanShare] = useState(false);
   const n = firstName(job.customer_name);
-  const msg = {
-    en: `Hi ${n}, here's your estimate. You can review and approve it here:`,
-    es: `Hola ${n}, aquí está tu estimado. Lo puedes revisar y aprobar aquí:`,
-  };
+  // once there's an invoice, the same link shows the invoice
+  const invoice = !!job.invoice_number;
+  const due = job.invoice_due_at ? fmtDate(job.invoice_due_at, "en") : "";
+  const dueEs = job.invoice_due_at ? fmtDate(job.invoice_due_at, "es") : "";
+  const msg = invoice
+    ? {
+        en: `Hi ${n}, here's your invoice for ${money(jobTotal(job))}${due ? `, due ${due}` : ""}. You can see it here:`,
+        es: `Hola ${n}, aquí está tu factura por ${money(jobTotal(job))}${dueEs ? `, vence el ${dueEs}` : ""}. La puedes ver aquí:`,
+      }
+    : {
+        en: `Hi ${n}, here's your estimate. You can review and approve it here:`,
+        es: `Hola ${n}, aquí está tu estimado. Lo puedes revisar y aprobar aquí:`,
+      };
 
   useEffect(() => {
     // on "localhost" this swaps in the Mac's Wi-Fi address, so the QR/link opens on a phone
@@ -47,7 +56,7 @@ export function ShareEstimate({ job, dark = false, quiet = false }: { job: Job; 
 
   const share = async () => {
     try {
-      await navigator.share({ title: "Estimate", text: msg.en, url: link });
+      await navigator.share({ title: invoice ? "Invoice" : "Estimate", text: msg.en, url: link });
     } catch {
       // user closed the share sheet — nothing to do
     }
@@ -63,7 +72,7 @@ export function ShareEstimate({ job, dark = false, quiet = false }: { job: Job; 
 
   return (
     <div className={`rounded-[20px] p-4 ${dark ? "glass-dark" : "glass"}`}>
-      <p className={`text-sm font-semibold ${dark ? "text-white" : ""}`}>{t.shareWith(firstName(job.customer_name))}</p>
+      <p className={`text-sm font-semibold ${dark ? "text-white" : ""}`}>{(invoice ? t.shareInvoiceWith : t.shareWith)(firstName(job.customer_name))}</p>
       <p className={`mt-1 truncate font-mono text-xs ${dark ? "text-white/60" : "text-muted"}`}>{link}</p>
 
       {/* The text that goes with the link — English for the customer; Spanish meaning for Carlos */}

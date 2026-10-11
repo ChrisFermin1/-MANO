@@ -119,3 +119,12 @@ export function checklistFor(trades: TradeId[]): ChecklistItem[] {
   }
   return out;
 }
+
+/** A checklist question by its key, from any trade (for "Ojo no te pregunta por…" in Tu negocio). */
+export function checklistItemByKey(key: string): ChecklistItem | null {
+  for (const list of Object.values(CHECKLISTS)) {
+    const found = list.items.find((c) => c.key === key);
+    if (found) return found;
+  }
+  return null;
+}

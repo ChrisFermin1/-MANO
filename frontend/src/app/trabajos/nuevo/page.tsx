@@ -2,14 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Mic, RotateCcw, Sparkles, Trash2, Undo2 } from "lucide-react";
-import { PageHeader, Screen, Title, btnPrimary, input } from "@/components/ui";
-import { createJob, getCustomers, type Customer } from "@/lib/api";
-import { DEMO_BUSINESS_ID, fetchBusiness } from "@/lib/business";
+import { Camera, Loader2, Mic, RotateCcw, Sparkles, Trash2, Undo2 } from "lucide-react";
+import { PageHeader, Screen, Title, btnPrimary } from "@/components/ui";
+import { createJob } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
+import { ManoBusyError, ManoBusyReadingError, organizeAhead, readNote } from "@/lib/mano";
+import { loadBusiness } from "@/lib/business";
+import { NoteScanner, canUseLiveCamera } from "@/components/note-scanner";
 
+// ElevenLabs voice (backend). Default: port 8000 on the same machine that serves this page,
+// so it also works from a phone on the Wi-Fi. If it fails, the phone's own speech recognition takes over.
+const voiceUrl = () =>
+  process.env.NEXT_PUBLIC_VOICE_URL || `${window.location.protocol}//${window.location.hostname}:8000/api/voice/transcribe`;
+
+// Equal-width buttons in one row (2 or 3 of them), icon above the label so long Spanish labels fit on a phone
 const chip =
-  "flex h-10 items-center gap-1.5 rounded-full glass px-4 text-sm font-semibold text-forest transition active:scale-[0.97]";
+  "flex h-[60px] flex-col items-center justify-center gap-1 rounded-[16px] glass px-1 text-[13px] font-semibold leading-4 text-balance transition active:scale-[0.97]";
 
 const EXAMPLE ="Pintar la sala y cocina para Maria Lopez, dos manos, y reparar una grieta en la pared.";
 
@@ -45,26 +53,18 @@ export default function NuevoTrabajo() {
   const [justCleared, setJustCleared] = useState(false);
   const [voiceError, setVoiceError] = useState("");
   const [submitError, setSubmitError] = useState("");
-  const [customers, setCustomers] = useState<Customer[] | null>(null);
-  const [customerId, setCustomerId] = useState("");
-  const [customerName, setCustomerName] = useState("");
-  const [jobPrice, setJobPrice] = useState("");
-  const [contextError, setContextError] = useState("");
-  const [businessReady, setBusinessReady] = useState(false);
+  // "Escanear una nota": a photo of a paper estimate or a WhatsApp screenshot → its text in the box
+  const [reading, setReading] = useState(false);
+  const [scanMessage, setScanMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const photoInput = useRef<HTMLInputElement>(null);
+  const [scanning, setScanning] = useState(false); // live camera with the paper outline (https only)
+  // what Carlos is writing: an estimate (before the work) or an invoice (work already done)
+  const [docKind, setDocKind] = useState<"estimate" | "invoice">("estimate");
   const rec = useRef<Recognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const useBrowserSpeech = useRef(false);
   const textRef = useRef("");
-
-  useEffect(() => {
-    let active = true;
-    fetchBusiness().then(() => { if (active) setBusinessReady(true); })
-      .catch((error: Error) => { if (active) setContextError(error.message); });
-    getCustomers().then((data) => { if (active) setCustomers(data); })
-      .catch((error: Error) => { if (active) setContextError(error.message); });
-    return () => { active = false; };
-  }, []);
 
   useEffect(() => {
     setCanListen(typeof MediaRecorder !== "undefined" || getRecognition() !== null);
@@ -77,6 +77,28 @@ export default function NuevoTrabajo() {
     const id = setTimeout(() => setJustCleared(false), 6000);
     return () => clearTimeout(id);
   }, [justCleared]);
+
+  const scanNote = async (file: File | undefined) => {
+    if (!file) return;
+    setReading(true);
+    setScanMessage(null);
+    try {
+      const note = await readNote(file);
+      if (note === null) setScanMessage({ kind: "error", text: t.scanFailed });
+      else if (!note.trim()) setScanMessage({ kind: "error", text: t.scanNoNote });
+      else {
+        appendText(note);
+        setScanMessage({ kind: "ok", text: t.scanRead });
+        // start organizing now, while Carlos reads it; "Mano, organízalo" then has the answer ready
+        organizeAhead(textRef.current, loadBusiness()?.otherTrade);
+      }
+    } catch (error) {
+      setScanMessage({ kind: "error", text: error instanceof ManoBusyReadingError ? t.extractBusy : t.scanFailed });
+    } finally {
+      setReading(false);
+      if (photoInput.current) photoInput.current.value = ""; // same photo can be picked again
+    }
+  };
 
   const appendText = (addition: string) => {
     const previous = textRef.current;
@@ -144,8 +166,7 @@ export default function NuevoTrabajo() {
           const formData = new FormData();
           formData.append("file", audioBlob, "audio.webm");
 
-          const apiBase = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
-          const response = await fetch(`${apiBase}/api/voice/transcribe`, {
+          const response = await fetch(voiceUrl(), {
             method: "POST",
             body: formData,
           });
@@ -156,13 +177,12 @@ export default function NuevoTrabajo() {
           }
           if (data.text) appendText(data.text);
         } catch (err) {
-          console.error("Transcription failed:", err);
-          const message = err instanceof Error ? err.message : "Transcription failed";
+          console.warn("ElevenLabs transcription failed:", err);
           if (getRecognition()) {
             useBrowserSpeech.current = true;
-            setVoiceError(`${message}. Tap the mic again to use browser speech.`);
+            setVoiceError(t.voiceRetry);
           } else {
-            setVoiceError(message);
+            setVoiceError(t.voiceFailed);
           }
         } finally {
           setTranscribing(false);
@@ -173,7 +193,7 @@ export default function NuevoTrabajo() {
       setIsRecording(true);
     } catch (err) {
       console.error("Error accessing microphone:", err);
-      setVoiceError("Could not access the microphone.");
+      setVoiceError(t.micDenied);
     }
   };
 
@@ -215,19 +235,14 @@ export default function NuevoTrabajo() {
   };
 
   const submit = async () => {
-    if (!text.trim() || !businessReady || busy || isRecording || transcribing) return;
+    if (!text.trim() || busy || isRecording || transcribing) return;
     setBusy(true);
     setSubmitError("");
     try {
-      await createJob({
-        business_id: DEMO_BUSINESS_ID,
-        description: text.trim(),
-        ...(customerId ? { customer_id: customerId } : customerName.trim() ? { customer_name: customerName.trim() } : {}),
-        ...(jobPrice.trim() !== "" ? { job_price: jobPrice.trim() } : {}),
-      });
-      router.push("/inicio");
+      const job = await createJob(text.trim(), { docIntent: docKind });
+      router.push(`/trabajos/${job.id}`);
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : t.extractError);
+      setSubmitError(err instanceof ManoBusyError ? t.extractBusy : t.extractError);
       setBusy(false);
     }
   };
@@ -246,6 +261,21 @@ export default function NuevoTrabajo() {
       <PageHeader backHref="/inicio" />
       <Title>{t.newJob}</Title>
       <p className="mt-2 text-base leading-5">{t.newJobBody}</p>
+
+      <div role="tablist" aria-label={t.docKindLabel} className="glass mt-5 grid grid-cols-2 rounded-[14px] p-1 text-sm font-semibold">
+        {(["estimate", "invoice"] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={docKind === k}
+            onClick={() => setDocKind(k)}
+            className={`min-h-10 rounded-[10px] px-2 py-1.5 leading-4 transition ${docKind === k ? "bg-forest text-lime" : "text-black/60"}`}
+          >
+            {k === "estimate" ? t.docEstimate : t.docInvoice}
+          </button>
+        ))}
+      </div>
 
       {canListen && (
         <button
@@ -272,6 +302,47 @@ export default function NuevoTrabajo() {
         </button>
       )}
 
+      {/* Escanear una nota: camera or photo library (no "capture" attribute, so WhatsApp screenshots work too) */}
+      <input
+        ref={photoInput}
+        id="f-note-photo"
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={(e) => void scanNote(e.target.files?.[0])}
+        disabled={reading}
+      />
+      <button
+        type="button"
+        onClick={() => (canUseLiveCamera() ? setScanning(true) : photoInput.current?.click())}
+        disabled={reading || isRecording || transcribing}
+        className="mt-4 flex h-11 items-center justify-center gap-2 self-center rounded-full glass px-5 text-sm font-semibold text-forest transition active:scale-[0.97] disabled:opacity-50"
+      >
+        {reading ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" strokeWidth={2.25} />}
+        {reading ? t.scanReading : t.scanNote}
+      </button>
+      {scanning && (
+        <NoteScanner
+          onCapture={(photo) => {
+            setScanning(false);
+            void scanNote(photo);
+          }}
+          onClose={() => setScanning(false)}
+          onPickPhoto={() => {
+            setScanning(false);
+            photoInput.current?.click();
+          }}
+        />
+      )}
+      {scanMessage && (
+        <p
+          role={scanMessage.kind === "error" ? "alert" : "status"}
+          className={`mt-2 text-center text-sm font-semibold ${scanMessage.kind === "error" ? "text-[#8a2a17]" : "text-forest"}`}
+        >
+          {scanMessage.text}
+        </p>
+      )}
+
       {voiceError && (
         <p role="alert" className="mt-3 text-center text-sm font-semibold text-[#8a2a17]">
           {voiceError}
@@ -286,25 +357,28 @@ export default function NuevoTrabajo() {
             setText(e.target.value);
           }}
           placeholder={t.newJobPlaceholder}
-          rows={6}
-          className="w-full resize-none rounded-[20px] glass-field p-5 text-base leading-6 outline-none ring-forest/60 placeholder:text-muted focus:ring-2"
+          rows={5}
+          className="block min-h-[148px] w-full resize-none rounded-[16px] glass-field px-4 py-3.5 text-base leading-6 outline-none ring-forest/60 placeholder:text-muted focus:ring-2"
         />
       </div>
 
       {text && !isRecording && !transcribing && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 grid auto-cols-fr grid-flow-col gap-2">
           {history.length > 0 && (
-            <button type="button" onClick={removeLast} className={chip}>
-              <Undo2 className="size-4" strokeWidth={2.25} /> {t.removeLast}
+            <button type="button" onClick={removeLast} className={`${chip} text-forest`}>
+              <Undo2 className="size-[18px]" strokeWidth={2.25} />
+              {t.removeLast}
             </button>
           )}
           {canListen && (
-            <button type="button" onClick={recordAgain} className={chip}>
-              <RotateCcw className="size-4" strokeWidth={2.25} /> {t.recordAgain}
+            <button type="button" onClick={recordAgain} className={`${chip} text-forest`}>
+              <RotateCcw className="size-[18px]" strokeWidth={2.25} />
+              {t.recordAgain}
             </button>
           )}
           <button type="button" onClick={clearAll} className={`${chip} text-[#8a2a17]`}>
-            <Trash2 className="size-4" strokeWidth={2.25} /> {t.clearAll}
+            <Trash2 className="size-[18px]" strokeWidth={2.25} />
+            {t.clearAll}
           </button>
         </div>
       )}
@@ -326,35 +400,15 @@ export default function NuevoTrabajo() {
             setHistory((items) => [...items, text]);
             setText(EXAMPLE);
           }}
-          className="mt-2 self-start text-sm font-semibold text-forest underline underline-offset-4"
+          className="mt-3 self-start text-sm font-semibold text-forest underline underline-offset-4"
         >
           {t.tryExample}
         </button>
       )}
 
-      <div className="mt-6 space-y-3">
-        <label className="block text-sm font-semibold">
-          {lang === "es" ? "Cliente (opcional)" : "Customer (optional)"}
-          <select aria-label={lang === "es" ? "Cliente" : "Customer"} value={customerId} onChange={(e) => setCustomerId(e.target.value)} className={`${input} mt-1 w-full`}>
-            <option value="">{customers === null ? (lang === "es" ? "Cargando clientes…" : "Loading customers…") : (lang === "es" ? "Sin selección" : "No selection")}</option>
-            {(customers ?? []).map((customer) => <option key={customer.customer_id} value={customer.customer_id}>
-              {customer.customer_name || "—"}{` · ${customer.phone_number || customer.customer_id.slice(-8)}`}
-            </option>)}
-          </select>
-        </label>
-        {!customerId && <label className="block text-sm font-semibold">
-          {lang === "es" ? "Nombre del cliente (opcional)" : "Customer name (optional)"}
-          <input aria-label={lang === "es" ? "Nombre del cliente" : "Customer name"} value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={`${input} mt-1 w-full`} />
-        </label>}
-        <label className="block text-sm font-semibold">
-          {lang === "es" ? "Precio del trabajo (opcional)" : "Job price (optional)"}
-          <input aria-label={lang === "es" ? "Precio del trabajo" : "Job price"} inputMode="decimal" placeholder="2500.00" value={jobPrice} onChange={(e) => setJobPrice(e.target.value)} className={`${input} mt-1 w-full`} />
-        </label>
-      </div>
-
-      {(contextError || submitError) && (
+      {submitError && (
         <p role="alert" className="mt-4 rounded-[14px] bg-[#fff0ed] px-4 py-3 text-sm font-semibold text-[#8a2a17]">
-          {[contextError, submitError].filter(Boolean).join(" · ")}
+          {submitError}
         </p>
       )}
 
@@ -362,7 +416,7 @@ export default function NuevoTrabajo() {
         <button
           type="button"
           onClick={submit}
-          disabled={!businessReady || !text.trim() || isRecording || transcribing}
+          disabled={!text.trim() || isRecording || transcribing}
           className={btnPrimary}
         >
           <Sparkles className="size-5" strokeWidth={2.5} />

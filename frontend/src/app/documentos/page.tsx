@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { DocStateBadge, PageHeader, Screen, Title, type DocState } from "@/components/ui";
-import { estimateNo, fmtDate, getDemoJobs as getJobs, onJobsChange, invoiceNo, invoiceState, jobTotal, money, STATUS_FLOW, type Job } from "@/lib/api";
+import { estimateNo, fmtDate, getJobs, onJobsChange, invoiceNo, invoiceState, jobTotal, money, STATUS_FLOW, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 
 type Tab = "estimates" | "invoices";
@@ -60,7 +60,6 @@ export default function Documentos() {
     <Screen>
       <PageHeader backHref="/inicio" />
       <Title>{t.docsTitle}</Title>
-      <p className="mt-2 text-sm text-muted">{lang === "es" ? "Demostración: estos documentos no se guardan en PostgreSQL." : "Demo: these documents are not saved in PostgreSQL."}</p>
 
       <div className="glass mt-6 grid grid-cols-2 rounded-[14px] p-1" role="tablist">
         {(["estimates", "invoices"] as Tab[]).map((k) => (

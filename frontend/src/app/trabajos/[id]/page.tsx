@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Archive, Check, Ellipsis, Eye, PartyPopper, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X } from "lucide-react";
+import { Archive, CalendarDays, Check, Database, Ellipsis, Eye, PartyPopper, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X } from "lucide-react";
 import { AutoTextarea, DocStateBadge, OjoNote, PageHeader, Screen, Sheet, StatusBadge, Title, btnDanger, btnGhost, btnLime, btnPrimary, btnSecondary } from "@/components/ui";
 import {
   CANCEL_REASONS,
@@ -21,6 +21,7 @@ import {
   invoiceNo,
   invoiceState,
   jobTotal,
+  isLumpSum,
   markPaid,
   money,
   nextStatus,
@@ -29,48 +30,31 @@ import {
   updateJob,
   type InvoiceState,
   type Job,
-  isLiveJob,
-  missingFieldLabel,
-  getCustomers,
-  patchJob,
-  type Customer,
-  type JobReviewInput,
   type LineItem,
   daysSince,
 } from "@/lib/api";
 import { ShareEstimate } from "@/components/share-estimate";
-import { loadBusiness, saveBusiness, type Business } from "@/lib/business";
+import { loadBusiness, rememberNameFix, saveBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 import { toEnglish } from "@/lib/translate";
 import { serviceLabel } from "@/lib/services";
-import { silencedFor, suggestions, validate } from "@/lib/ojo";
-import { ApiError } from "@/lib/http";
+import { needsAiQuestions, silencedFor, suggestions, validate } from "@/lib/ojo";
+import { ojoQuestions } from "@/lib/mano";
 
 const EDITABLE = ["NEW", "NEEDS_INFORMATION", "READY_FOR_QUOTE"];
 
 export default function Trabajo() {
-  const { t, lang } = useLang();
+  const { t } = useLang();
   const { id } = useParams<{ id: string }>();
   const [job, setJob] = useState<Job | null | undefined>(undefined);
-  const [error, setError] = useState("");
 
   useEffect(() => {
-    let active = true;
-    setJob(undefined);
-    setError("");
-    const refresh = () => getJob(id).then((data) => { if (active) setJob(data); })
-      .catch((e: Error) => {
-        if (!active) return;
-        if (e instanceof ApiError && e.status === 404) setJob(null);
-        else setError(e.message);
-      });
-    void refresh();
-    const unsubscribe = onJobsChange(() => void refresh());
-    return () => { active = false; unsubscribe(); };
+    getJob(Number(id)).then(setJob);
+    // Live update when the customer approves in another tab
+    return onJobsChange(() => void getJob(Number(id)).then(setJob));
   }, [id]);
 
-  if (error) return <Screen><PageHeader backHref="/trabajos" /><p role="alert" className="mt-6 text-[#8a2a17]">{error}</p></Screen>;
-  if (job === undefined) return <Screen><PageHeader backHref="/trabajos" /><p role="status" className="mt-6 text-muted">{lang === "es" ? "Cargando trabajo…" : "Loading job…"}</p></Screen>;
+  if (job === undefined) return <Screen>{null}</Screen>;
   if (job === null)
     return (
       <Screen>
@@ -79,103 +63,7 @@ export default function Trabajo() {
       </Screen>
     );
 
-  if (isLiveJob(job)) return <LiveJob key={job.job_id} job={job} setJob={setJob} />;
   return EDITABLE.includes(job.status) ? <ReviewJob job={job} setJob={setJob} /> : <TrackJob job={job} setJob={setJob} />;
-}
-
-/** Revisar edits the existing Job and displays the server's completeness result. */
-function LiveJob({ job, setJob }: { job: Job; setJob: (job: Job) => void }) {
-  const { t, lang } = useLang();
-  const [customerId, setCustomerId] = useState(job.customer_id ?? "");
-  const [description, setDescription] = useState(job.job_description ?? "");
-  const [jobPrice, setJobPrice] = useState(job.job_price ?? "");
-  const [customers, setCustomers] = useState<Customer[] | null>(null);
-  const [customerError, setCustomerError] = useState("");
-  const [saveError, setSaveError] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const reviewing = job.status === "NEEDS_INFORMATION";
-  useEffect(() => {
-    if (!reviewing) return;
-    let active = true;
-    getCustomers(job.business_id).then((data) => { if (active) setCustomers(data); })
-      .catch((error: Error) => { if (active) setCustomerError(error.message); });
-    return () => { active = false; };
-  }, [reviewing, job.business_id]);
-
-  const save = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (saving) return;
-    const changes: JobReviewInput = {};
-    if (customerId !== (job.customer_id ?? "")) changes.customer_id = customerId || null;
-    if (description !== (job.job_description ?? "")) changes.job_description = description;
-    if (jobPrice !== (job.job_price ?? "")) changes.job_price = jobPrice.trim() || null;
-    setSaving(true);
-    setSaved(false);
-    setSaveError("");
-    try {
-      const updated = await patchJob(job.job_id, changes);
-      setCustomerId(updated.customer_id ?? "");
-      setDescription(updated.job_description ?? "");
-      setJobPrice(updated.job_price ?? "");
-      setJob(updated);
-      setSaved(true);
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "No se pudieron guardar los cambios.");
-    } finally {
-      setSaving(false);
-    }
-  };
-  const fieldClass = (key: string) => `w-full rounded-[14px] glass-field px-4 text-base outline-none placeholder:text-muted ${job.missing_fields.includes(key) ? "ring-2 ring-flag" : "focus:ring-2 focus:ring-forest/60"}`;
-  const missingTag = (key: string) => job.missing_fields.includes(key) && <span className="ml-2 text-xs font-semibold text-ojo-ink">{lang === "es" ? "Falta" : "Missing"}</span>;
-
-  return <Screen>
-    <PageHeader backHref="/inicio" />
-    <Title>{job.customer_name || t.newJob}</Title>
-    <p className="mt-1 text-sm text-muted">{job.job_title || job.job_description || "—"}</p>
-    <div className="mt-4"><StatusBadge status={job.status} /></div>
-    {job.status === "NEEDS_INFORMATION" && <section className="mt-5 rounded-[14px] glass border-flag/60! p-4 text-ojo-ink">
-      <p className="flex items-center gap-2 font-semibold"><Eye className="size-5" />{t.review}</p>
-      <ul className="mt-2 space-y-1">{job.missing_fields.map((key) => <li key={key}>{missingFieldLabel(key, lang)}</li>)}</ul>
-    </section>}
-    {saved && <div role="status" className="mt-5 rounded-[14px] glass-lime p-4 text-forest">
-      <p className="font-semibold">{lang === "es" ? "Cambios guardados." : "Changes saved."}</p>
-      <Link href="/inicio" className="mt-2 inline-block font-bold underline underline-offset-4">{t.backHome}</Link>
-    </div>}
-    {(customerError || saveError) && <p role="alert" className="mt-4 rounded-[14px] bg-[#fff0ed] p-4 text-sm text-[#8a2a17]">{[customerError, saveError].filter(Boolean).join(" · ")}</p>}
-    {reviewing ? <form onSubmit={save} className="mt-6 space-y-4 rounded-[20px] glass p-5">
-      <label htmlFor="review-customer" className="block text-sm font-semibold">
-        {missingFieldLabel("customer_name", lang)}{missingTag("customer_name")}
-        <select id="review-customer" value={customerId} onChange={(event) => setCustomerId(event.target.value)} disabled={saving || customers === null} aria-invalid={job.missing_fields.includes("customer_name")} className={`${fieldClass("customer_name")} mt-2 h-[52px]`}>
-          <option value="">{lang === "es" ? "Sin selección" : "No selection"}</option>
-          {job.customer_id && !customers?.some((customer) => customer.customer_id === job.customer_id) && <option value={job.customer_id}>{job.customer_name || "—"}</option>}
-          {(customers ?? []).map((customer) => <option key={customer.customer_id} value={customer.customer_id}>{customer.customer_name || "—"} · {customer.phone_number || customer.customer_id.slice(-8)}</option>)}
-        </select>
-      </label>
-      {customers === null && !customerError && <p role="status" className="text-sm text-muted">{lang === "es" ? "Cargando clientes…" : "Loading customers…"}</p>}
-      <label htmlFor="review-description" className="block text-sm font-semibold">
-        {missingFieldLabel("job_description", lang)}{missingTag("job_description")}
-        <textarea id="review-description" value={description} onChange={(event) => setDescription(event.target.value)} disabled={saving} rows={5} aria-invalid={job.missing_fields.includes("job_description")} className={`${fieldClass("job_description")} mt-2 resize-none py-4 leading-6`} />
-      </label>
-      <label htmlFor="review-price" className="block text-sm font-semibold">
-        {missingFieldLabel("job_price", lang)}{missingTag("job_price")}
-        <input id="review-price" value={jobPrice} onChange={(event) => setJobPrice(event.target.value)} disabled={saving} inputMode="decimal" placeholder="2500.00" aria-invalid={job.missing_fields.includes("job_price")} className={`${fieldClass("job_price")} mt-2 h-[52px]`} />
-      </label>
-      <button type="submit" disabled={saving} className={btnPrimary}>{saving ? (lang === "es" ? "Guardando…" : "Saving…") : (lang === "es" ? "Guardar cambios" : "Save changes")}</button>
-    </form> : <section className="mt-6 space-y-4 rounded-[20px] glass p-5">
-      <div><p className="text-sm text-muted">{lang === "es" ? "Cliente" : "Customer"}</p><p>{job.customer_name || "—"}</p></div>
-      <div><p className="text-sm text-muted">{lang === "es" ? "Descripción del trabajo" : "Job description"}</p><p className="whitespace-pre-wrap">{job.job_description || "—"}</p></div>
-      <div><p className="text-sm text-muted">{lang === "es" ? "Dirección" : "Address"}</p><p>{job.job_address || "—"}</p></div>
-      <div><p className="text-sm text-muted">{lang === "es" ? "Precio del trabajo" : "Job price"}</p><p className="text-2xl font-bold">{money(job.job_price)}</p></div>
-    </section>}
-    {job.line_items.length > 0 && <section className="mt-4 rounded-[20px] glass p-5">
-      <ul className="space-y-3">{job.line_items.map((item) => <li key={item.id} className="flex justify-between gap-3"><span>{lang === "es" ? item.description_es || item.description : item.description}</span><span className="font-semibold">{money(item.amount)}</span></li>)}</ul>
-    </section>}
-    <div className="mt-6 space-y-2">
-      <Link href={`/trabajos/${job.job_id}/estimado`} className={btnSecondary}><FileText className="size-4" />{lang === "es" ? "Vista previa del estimado" : "Estimate preview"}</Link>
-      <Link href={`/trabajos/${job.job_id}/factura`} className={btnSecondary}><Receipt className="size-4" />{lang === "es" ? "Vista previa de factura" : "Invoice preview"}</Link>
-    </div>
-  </Screen>;
 }
 
 /* ───────── Before the quote: Ojo checks, Carlos fills gaps ───────── */
@@ -186,6 +74,17 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   const missing = validate(job);
   const [biz, setBiz] = useState<Business | null>(null);
   useEffect(() => setBiz(loadBusiness()), []);
+  // Trades without a built-in checklist: ask Gemini once for this job, then keep the answer on the job
+  const askedAi = useRef(false);
+  useEffect(() => {
+    if (!biz || askedAi.current || job.ojo_ai !== undefined || job.ojo_skipped || !needsAiQuestions(job, biz)) return;
+    if (!job.line_items.length && !job.description.trim()) return;
+    askedAi.current = true;
+    const trade = biz.otherTrade?.name || biz.trades.map((id) => t.trades[id]).join(", ");
+    ojoQuestions(job, trade).then((questions) => {
+      if (questions) updateJob(job.id, { ojo_ai: questions }).then(setJob);
+    });
+  }, [biz, job, setJob, t]);
   const asks = suggestions(job, biz);
   const silenced = silencedFor(job, biz);
   const ask = asks[0]; // one question at a time
@@ -201,17 +100,33 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   const setItem = (itemId: string, p: Partial<LineItem>) =>
     patch({ line_items: job.line_items.map((i) => (i.id === itemId ? { ...i, ...p } : i)) });
   const addItem = () => patch({ line_items: [...job.line_items, { id: uid(), description: "", description_es: "", amount: null }] });
-  const acceptAsk = (key: string, description: string, description_es: string) =>
+  // "Sí, agregar" opens a price step in the same card: an amount, or "ya está incluido"
+  const [pricing, setPricing] = useState<{ key: string; item: string; item_es: string } | null>(null);
+  const [extra, setExtra] = useState("");
+  const extraAmount = Number(extra) > 0 ? Number(extra) : null;
+  const acceptAsk = (key: string, description: string, description_es: string, amount: number | null) => {
+    const lump = isLumpSum(job);
     patch({
-      line_items: [...job.line_items, { id: uid(), description, description_es, amount: null }],
+      // one total: the item has no own price and the amount is added to the total;
+      // price per line: the item gets the amount (0 = included, shown as "Incluido")
+      line_items: [...job.line_items, { id: uid(), description, description_es, amount: lump ? null : (amount ?? 0) }],
+      ...(lump && amount ? { job_total: (job.job_total ?? 0) + amount } : {}),
       ojo_dismissed: [...(job.ojo_dismissed ?? []), key],
     });
+    setPricing(null);
+    setExtra("");
+  };
   const dismissAsk = (key: string) => patch({ ojo_dismissed: [...(job.ojo_dismissed ?? []), key] });
   const setIgnore = (ojoIgnore: string[]) => {
     saveBusiness({ ojoIgnore });
     setBiz((b) => (b ? { ...b, ojoIgnore } : b));
   };
-  const alwaysIncluded = (key: string) => setIgnore([...(biz?.ojoIgnore ?? []), key]);
+  const alwaysIncluded = (key: string) => {
+    // Gemini's questions have no built-in label: keep one so "Tu negocio" can list it
+    const ai = job.ojo_ai?.find((q) => q.key === key);
+    if (ai) saveBusiness({ ojoIgnoreLabels: { ...(biz?.ojoIgnoreLabels ?? {}), [key]: { es: ai.item_es, en: ai.item } } });
+    setIgnore([...(biz?.ojoIgnore ?? []), key]);
+  };
   const askAgain = (key: string) => setIgnore((biz?.ojoIgnore ?? []).filter((k) => k !== key));
   const removeItem = (itemId: string) => patch({ line_items: job.line_items.filter((i) => i.id !== itemId) });
 
@@ -222,8 +137,9 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
     }`;
   const flag = (on: boolean) => (on ? "ring-2 ring-flag" : "");
   const firstMissingPrice = job.line_items.find((i) => i.amount == null)?.id;
+  const lump = isLumpSum(job); // one price for the whole job: items list the work, the total is typed once
   const jumpTo = (m: (typeof missing)[number]) => {
-    const id = m === "price" ? `f-price-${firstMissingPrice}` : m === "items" ? "f-add-line" : `f-${m}`;
+    const id = m === "price" ? (lump ? "f-job-total" : `f-price-${firstMissingPrice}`) : m === "items" ? "f-add-line" : `f-${m}`;
     const el = document.getElementById(id);
     el?.scrollIntoView({ block: "center", behavior: "smooth" });
     el?.focus({ preventScroll: true });
@@ -233,7 +149,8 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
     <Screen>
       <PageHeader backHref="/inicio" right={<JobActions job={job} setJob={setJob} />} />
       <Title>{job.customer_name || t.newJob}</Title>
-      <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang)}</p>
+      <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang, job.service_es)}</p>
+      <SyncNote job={job} />
 
       {/* Ojo verdict — light; the missing FIELDS carry the highlight, tap an item to jump to it */}
       {missing.length ? (
@@ -253,7 +170,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </div>
       ) : (
         <p className="mt-5 flex items-center gap-2 rounded-[14px] glass-lime px-4 py-3 text-sm font-bold text-forest">
-          <Check className="size-4" strokeWidth={3} /> {t.ojoReady}
+          <Check className="size-4" strokeWidth={3} /> {job.doc_intent === "invoice" ? t.ojoReadyInvoice : t.ojoReady}
         </p>
       )}
 
@@ -266,9 +183,32 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
             className={field(missing.includes("customer"))}
             value={job.customer_name ?? ""}
             onChange={(e) => patch({ customer_name: e.target.value })}
+            // Carlos fixed the name by hand → next time Mano hears it the same way, use his spelling
+            onBlur={(e) => rememberNameFix(job.customer_name_heard, e.currentTarget.value)}
             placeholder={t.namePlaceholder}
           />
         </label>
+        {/* Mano's spelling fix — only a suggestion; one tap to accept, and it's remembered */}
+        {job.customer_name_suggested && job.customer_name_suggested !== job.customer_name && (
+          <div className="-mt-1 flex items-center gap-2 rounded-[12px] glass-peach px-3 py-2 text-sm">
+            <span className="min-w-0 flex-1">
+              {t.didYouMean} <b>{job.customer_name_suggested}</b>?
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                rememberNameFix(job.customer_name_heard ?? job.customer_name, job.customer_name_suggested);
+                patch({ customer_name: job.customer_name_suggested, customer_name_suggested: null });
+              }}
+              className="shrink-0 rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-lime"
+            >
+              {t.yesChange}
+            </button>
+            <button type="button" onClick={() => patch({ customer_name_suggested: null })} aria-label={t.close} className="shrink-0 p-1 text-ojo-ink">
+              <X className="size-4" />
+            </button>
+          </div>
+        )}
         <label className="block">
           <FieldLabel text={t.address} missingTag={missing.includes("address") ? t.missingTag : null} />
           <input
@@ -334,6 +274,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                   />
                 )}
               </div>
+              {!lump && (
               <label className={`flex h-10 w-[96px] shrink-0 items-center rounded-[10px] bg-white/70 px-2 ${flag(item.amount == null)}`}>
                 <span className="text-sm font-bold text-muted">$</span>
                 <input
@@ -349,6 +290,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                   placeholder="0"
                 />
               </label>
+              )}
               <button type="button" onClick={() => removeItem(item.id)} aria-label={t.removeLine} className="mt-2.5 p-1 text-muted">
                 <X className="size-4" />
               </button>
@@ -358,10 +300,45 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
             <Plus className="size-4" strokeWidth={2.5} /> {t.addLine}
           </button>
         </div>
-        <div className="mt-3 flex items-center justify-between px-2">
-          <span className="text-base">{t.total}</span>
-          <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
-        </div>
+        {lump ? (
+          <div className="mt-3 px-2">
+            <div className="flex items-center justify-between gap-3">
+              <label htmlFor="f-job-total" className="text-base">{t.jobTotal}</label>
+              <span className={`flex h-12 w-[140px] items-center rounded-[12px] bg-white/70 px-3 ${flag(!(job.job_total! > 0))}`}>
+                <span className="font-bold text-muted">$</span>
+                <input
+                  id="f-job-total"
+                  className="w-full bg-transparent text-right text-2xl font-bold outline-none"
+                  inputMode="decimal"
+                  value={job.job_total || ""}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^\d.]/g, "");
+                    patch({ job_total: v === "" ? 0 : Number(v) });
+                  }}
+                  placeholder="0"
+                />
+              </span>
+            </div>
+            {(spanish ? job.price_note_es || job.price_note : job.price_note) && (
+              <p className="mt-1 text-right text-sm text-muted">{spanish ? job.price_note_es || job.price_note : job.price_note}</p>
+            )}
+            <button type="button" onClick={() => patch({ job_total: null })} className="mt-2 text-sm font-semibold text-forest underline underline-offset-4">
+              {t.pricePerLine}
+            </button>
+          </div>
+        ) : (
+          <div className="mt-3 px-2">
+            <div className="flex items-center justify-between">
+              <span className="text-base">{t.total}</span>
+              <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
+            </div>
+            {job.line_items.length > 1 && (
+              <button type="button" onClick={() => patch({ job_total: jobTotal(job) })} className="mt-2 text-sm font-semibold text-forest underline underline-offset-4">
+                {t.useOneTotal}
+              </button>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Carlos skipped Ojo's questions for this job — one quiet line to bring them back */}
@@ -399,7 +376,58 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
             )}
           </div>
 
-          {ask && (
+          {ask && pricing?.key === ask.key && (
+            <div key={`${ask.key}-price`} className="motion-safe:animate-[pop-in_200ms_ease-out]">
+              <p className="mt-3 text-sm font-semibold text-ojo-ink">{lang === "es" ? ask.item_es : ask.item}</p>
+              <label htmlFor="f-ojo-price" className="mt-1 block font-serif text-[22px] leading-7">
+                {t.howMuch}
+              </label>
+              <span className="mt-3 flex h-12 items-center rounded-[14px] bg-white/80 px-3 ring-forest/60 focus-within:ring-2">
+                <span className="font-bold text-muted">$</span>
+                <input
+                  id="f-ojo-price"
+                  autoFocus
+                  inputMode="decimal"
+                  value={extra}
+                  onChange={(e) => setExtra(e.target.value.replace(/[^\d.]/g, ""))}
+                  placeholder="0"
+                  className="w-full bg-transparent text-right text-xl font-bold outline-none"
+                />
+              </span>
+              {isLumpSum(job) && extraAmount && (
+                <p className="mt-1.5 text-right text-xs text-black/60">{t.newTotal(money((job.job_total ?? 0) + extraAmount))}</p>
+              )}
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => acceptAsk(ask.key, ask.item, ask.item_es, null)}
+                  className="h-12 rounded-[14px] bg-white/70 px-2 text-sm font-bold leading-4 text-black/70 transition active:scale-[0.97]"
+                >
+                  {t.alreadyIncluded}
+                </button>
+                <button
+                  type="button"
+                  disabled={!extraAmount}
+                  onClick={() => acceptAsk(ask.key, ask.item, ask.item_es, extraAmount)}
+                  className="h-12 rounded-[14px] bg-forest text-base font-bold text-lime transition active:scale-[0.97] disabled:opacity-40"
+                >
+                  {t.add}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setPricing(null);
+                  setExtra("");
+                }}
+                className="mx-auto mt-2 block px-2 py-1.5 text-xs font-semibold text-ojo-ink/70"
+              >
+                {t.back}
+              </button>
+            </div>
+          )}
+
+          {ask && pricing?.key !== ask.key && (
             <div key={ask.key} className="motion-safe:animate-[pop-in_200ms_ease-out]">
               <p className="mt-3 font-serif text-[22px] leading-7">{ask[lang]}</p>
               <div className="mt-4 grid grid-cols-2 gap-2">
@@ -412,7 +440,10 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => acceptAsk(ask.key, ask.item, ask.item_es)}
+                  onClick={() => {
+                    setExtra("");
+                    setPricing({ key: ask.key, item: ask.item, item_es: ask.item_es });
+                  }}
                   className="h-12 rounded-[14px] bg-peach text-base font-bold text-ojo-ink transition active:scale-[0.97]"
                 >
                   {t.yesAdd}
@@ -463,25 +494,41 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         {missing.length > 0 && (
           <p className="mb-2 text-center text-sm font-semibold text-ojo-ink">{t.completeFirst(missing.map((m) => t.missing[m]))}</p>
         )}
-        <button
-          type="button"
-          disabled={missing.length > 0}
-          onClick={() => router.push(`/trabajos/${job.id}/estimado`)}
-          className={btnPrimary}
-        >
-          <FileText className="size-5" strokeWidth={2.25} />
-          {t.generateQuote} →
-        </button>
-        {/* quick jobs / work already done: skip the estimate */}
-        <button
-          type="button"
-          disabled={missing.length > 0}
-          onClick={() => router.push(`/trabajos/${job.id}/factura`)}
-          className={`${btnGhost} disabled:opacity-40`}
-        >
-          <Receipt className="size-4" strokeWidth={2.25} />
-          {t.invoiceWithoutEstimate}
-        </button>
+        {/* Main button follows what Carlos picked on Nuevo trabajo; the other document stays one tap away */}
+        {job.doc_intent === "invoice" ? (
+          <>
+            <button type="button" disabled={missing.length > 0} onClick={() => router.push(`/trabajos/${job.id}/factura`)} className={btnPrimary}>
+              <Receipt className="size-5" strokeWidth={2.25} />
+              {t.generateInvoice} →
+            </button>
+            <button
+              type="button"
+              disabled={missing.length > 0}
+              onClick={() => router.push(`/trabajos/${job.id}/estimado`)}
+              className={`${btnGhost} disabled:opacity-40`}
+            >
+              <FileText className="size-4" strokeWidth={2.25} />
+              {t.estimateInstead}
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" disabled={missing.length > 0} onClick={() => router.push(`/trabajos/${job.id}/estimado`)} className={btnPrimary}>
+              <FileText className="size-5" strokeWidth={2.25} />
+              {t.generateQuote} →
+            </button>
+            {/* quick jobs / work already done: skip the estimate */}
+            <button
+              type="button"
+              disabled={missing.length > 0}
+              onClick={() => router.push(`/trabajos/${job.id}/factura`)}
+              className={`${btnGhost} disabled:opacity-40`}
+            >
+              <Receipt className="size-4" strokeWidth={2.25} />
+              {t.invoiceWithoutEstimate}
+            </button>
+          </>
+        )}
       </div>
     </Screen>
   );
@@ -500,12 +547,20 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   const advance = async () => {
     if (next) setJob(await setStatus(job.id, next));
   };
+  // Accepted → pick the day, then it's scheduled
+  const [day, setDay] = useState(job.scheduled_for ?? "");
+  const schedule = async () => {
+    if (!day) return;
+    await updateJob(job.id, { scheduled_for: day });
+    setJob(await setStatus(job.id, "SCHEDULED"));
+  };
 
   return (
     <Screen>
       <PageHeader backHref="/trabajos" right={<JobActions job={job} setJob={setJob} />} />
       <Title>{job.customer_name}</Title>
-      <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang)}</p>
+      <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang, job.service_es)}</p>
+      <SyncNote job={job} />
 
       {job.status === "ACCEPTED" && (
         <section className="mt-5 rounded-[24px] glass-lime p-5 motion-safe:animate-[pop-in_300ms_ease-out]">
@@ -549,6 +604,11 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
       <section className="mt-6 rounded-[20px] glass p-5">
         {job.address && <p className="text-sm text-muted">{job.address}</p>}
+        {job.scheduled_for && job.status !== "CANCELLED" && (
+          <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-forest">
+            <CalendarDays className="size-4" strokeWidth={2} /> {t.scheduledFor(fmtDay(job.scheduled_for, lang))}
+          </p>
+        )}
         {/* phone can still be added after sending (for reminders) */}
         {job.status !== "CANCELLED" && job.status !== "PAID" && (
           <label className="mt-2 flex items-center gap-2 rounded-[10px] bg-white/60 px-3 py-2 text-sm">
@@ -571,10 +631,13 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           {job.line_items.map((i) => (
             <li key={i.id} className="flex justify-between gap-4">
               <span>{lang === "es" ? (i.description_es ?? i.description) : i.description}</span>
-              <span className="font-bold">{money(i.amount ?? 0)}</span>
+              {!isLumpSum(job) && <span className="font-bold">{i.amount === 0 ? t.included : money(i.amount ?? 0)}</span>}
             </li>
           ))}
         </ul>
+        {isLumpSum(job) && (lang === "es" ? job.price_note_es || job.price_note : job.price_note) && (
+          <p className="mt-3 text-sm text-muted">{lang === "es" ? job.price_note_es || job.price_note : job.price_note}</p>
+        )}
         <hr className="my-4 border-black/10" />
         <div className="flex items-center justify-between">
           <span>{t.total}</span>
@@ -595,9 +658,10 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </div>
       </section>
 
-      {job.status === "QUOTE_SENT" && (
+      {(job.status === "QUOTE_SENT" || job.status === "PAYMENT_PENDING") && job.public_token && (
         <div className="mt-4">
-          <ShareEstimate job={job} quiet={quoteStale} />
+          {/* estimate out: send it · invoice unpaid: the same box sends the invoice link */}
+          <ShareEstimate job={job} quiet={job.status === "QUOTE_SENT" ? quoteStale : true} />
         </div>
       )}
 
@@ -648,6 +712,24 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
               <button type="button" onClick={async () => setJob(await markPaid(job.id))} className={btnPrimary}>
                 {t.markPaid} →
               </button>
+            ) : job.status === "ACCEPTED" ? (
+              <div className="space-y-2">
+                <label htmlFor="f-schedule-day" className="block text-sm font-semibold">
+                  {t.pickDay}
+                </label>
+                <input
+                  id="f-schedule-day"
+                  type="date"
+                  value={day}
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => setDay(e.target.value)}
+                  className="h-[52px] w-full rounded-[14px] glass-field px-4 text-base outline-none ring-forest/60 focus:ring-2"
+                />
+                <button type="button" onClick={schedule} disabled={!day} className={btnPrimary}>
+                  <CalendarDays className="size-5" strokeWidth={2.25} />
+                  {day ? t.scheduleOn(fmtDay(day, lang)) : t.nextStep.ACCEPTED} →
+                </button>
+              </div>
             ) : (
               next &&
               t.nextStep[job.status] && (
@@ -699,7 +781,7 @@ function JobActions({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
   return (
     <div className="relative flex items-center gap-2">
-      <StatusBadge status={job.status} />
+      <StatusBadge status={job.status} invoice={job.doc_intent === "invoice"} />
       {(deletable || cancellable) && (
         <button
           type="button"
@@ -854,4 +936,22 @@ function EnglishPreview({
       <span lang="en">{item.description}</span>
     </p>
   );
+}
+
+/** Quiet line under the title: is this job saved in the backend's database? (only jobs made with Nuevo trabajo) */
+function SyncNote({ job }: { job: Job }) {
+  const { t } = useLang();
+  if (!job.backend_sync) return null;
+  const text = job.backend_sync === "ok" ? t.syncedDb : job.backend_sync === "error" ? t.syncFailedDb : t.syncingDb;
+  return (
+    <p role="status" className={`mt-1 flex items-center gap-1 text-xs ${job.backend_sync === "ok" ? "text-forest/70" : "text-muted"}`}>
+      <Database className="size-3" strokeWidth={2} aria-hidden /> {text}
+    </p>
+  );
+}
+
+/** "2026-10-14" → "mar 14 oct" / "Tue, Oct 14" (a calendar day: no time zone shift) */
+function fmtDay(day: string, lang: "es" | "en") {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(lang === "es" ? "es-US" : "en-US", { weekday: "short", month: "short", day: "numeric" });
 }

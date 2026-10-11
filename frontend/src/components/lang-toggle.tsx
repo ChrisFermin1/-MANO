@@ -2,12 +2,13 @@
 
 import { useLang, type Lang } from "@/lib/i18n";
 
-export function LangToggle() {
+// dark: on the Welcome photo · light: on cream pages (Tu negocio)
+export function LangToggle({ light = false }: { light?: boolean }) {
   const { lang, setLang } = useLang();
   const options: Lang[] = ["es", "en"];
 
   return (
-    <div className="glass-dark flex h-[35px] rounded-full p-0" role="group" aria-label="Idioma / Language">
+    <div className={`${light ? "glass" : "glass-dark"} flex h-[35px] rounded-full p-0`} role="group" aria-label="Idioma / Language">
       {options.map((l) => (
         <button
           key={l}
@@ -15,7 +16,7 @@ export function LangToggle() {
           onClick={() => setLang(l)}
           aria-pressed={lang === l}
           className={`h-full w-[52px] rounded-full text-sm font-medium uppercase transition-colors ${
-            lang === l ? "bg-white text-black shadow-sm" : "text-white/85"
+            lang === l ? (light ? "bg-forest text-lime" : "bg-white text-black shadow-sm") : light ? "text-black/60" : "text-white/85"
           }`}
         >
           {l}

@@ -40,7 +40,21 @@ PriceUnit = "hour" | "project" | "sqft" | "room"
   customer_name: string | null
   customer_phone?: string | null  // OPTIONAL — never required by Ojo; enables one-tap WhatsApp / SMS
   address: string | null
-  service: string                 // "Interior Painting"
+  service: string                 // "Interior Painting" (English: estimates, backend)
+  service_es?: string | null      // OPTIONAL — "Pintura interior": what Carlos sees. Returned by Gemini (/api/extract);
+                                  // the 6 built-in job types have fixed Spanish names in services.ts. Job LISTS show the
+                                  // address instead (one job can mix several kinds of work); the job page shows this.
+  job_total?: number | null       // OPTIONAL — ONE price for the whole job ("Total 1400$ only labor"). Set → items list the
+                                  // work with no per-item prices and the job total is this (same idea as Josh's job_price).
+                                  // null → total = sum of line_items. Ojo accepts either: job_total > 0, or every item priced.
+  price_note?: string | null      // OPTIONAL — what the price covers, as said ("Labor only"); price_note_es for Carlos
+  price_note_es?: string | null
+  doc_intent?: "invoice" | null   // OPTIONAL — Carlos picked "Factura" on Nuevo trabajo (work already done): the job screen,
+                                  // badge ("Listo para facturar") and dashboard lead with the invoice instead of the estimate
+  customer_name_heard?: string | null     // OPTIONAL — the name exactly as Mano read it ("ATL Homeiker")
+  customer_name_suggested?: string | null // OPTIONAL — Mano's spelling fix ("ATL Homemaker"), shown as "¿Quisiste decir…?";
+                                          // never applied by itself. When Carlos accepts or edits the name, the app remembers
+                                          // heard → fixed (Business.nameFixes) and applies it to future jobs automatically.
   description: string             // what Carlos said/typed (raw transcript)
   line_items: { id: string;
                 description: string;            // ENGLISH — what the customer sees on estimate/invoice
@@ -127,7 +141,7 @@ The UI hides buttons, but **the backend must reject** invalid requests too.
 - **Input:** `description` (text, or audio if we do the audio-to-Gemini option), business `trades`, `otherTrade`, language.
 - **Output (current shape the UI needs):**
   ```ts
-  { customer_name, address, service, line_items: [{ id, description, amount }] }
+  { customer_name, address, service, service_es, job_total, price_note, price_note_es, line_items: [{ id, description, description_es, amount }] }
   ```
 - Return **both** `description` (customer-facing English, e.g. "Interior painting – kitchen, 2 coats") and `description_es` (the same line in Carlos's Spanish, e.g. "Pintura interior – cocina, 2 manos") for every line. Ambiguous words need context: for a roofer "techos" = roofs, for a painter = ceilings.
 - **Prices:** Gemini returns **only prices Carlos said** (`price_source: "spoken"`). Everything else → `null` (Ojo flags "falta precio"). **Never invent or suggest prices** — product decision: job sizes vary too much (a 100 vs 600 sq ft patio) for past prices to be safe defaults. Do any math in Python, not in the LLM.
