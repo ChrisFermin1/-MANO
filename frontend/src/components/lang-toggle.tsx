@@ -2,7 +2,7 @@
 
 import { useLang, type Lang } from "@/lib/i18n";
 
-// dark: on the Welcome photo · light: on cream pages (Tu negocio)
+// dark: on dark/photo backgrounds · light: on cream pages (Welcome, Tu negocio)
 export function LangToggle({ light = false }: { light?: boolean }) {
   const { lang, setLang } = useLang();
   const options: Lang[] = ["es", "en"];

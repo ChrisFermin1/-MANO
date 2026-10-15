@@ -20,7 +20,7 @@ function Wave({ bars, delay = 0, side }: { bars: number[]; delay?: number; side:
       {bars.map((h, i) => (
         <span
           key={i}
-          className="w-[2.5px] rounded-full bg-white/80"
+          className="w-[2.5px] rounded-full bg-forest/60"
           style={{ height: `${h * 100}%`, animation: `wave 1.1s ease-in-out ${delay + i * 0.08}s infinite` }}
         />
       ))}
@@ -34,11 +34,11 @@ export default function Welcome() {
   return (
     // One screen, no scrolling: the gaps (flex-1 spacers) shrink to fit the visible height. min-h (not h) so a
     // phone shorter than planned for can still scroll to the buttons instead of cutting them off
-    <main className="min-h-dvh bg-mano-dark bg-mano-photo bg-welcome text-white">
+    <main className="min-h-dvh bg-mano-light text-black">
       <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[27px] pb-[max(20px,env(safe-area-inset-bottom))] tiny:pb-[max(12px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] short:pt-[max(16px,env(safe-area-inset-top))] tiny:pt-[max(8px,env(safe-area-inset-top))]">
         <header className="flex items-center justify-between">
           <span className="font-logo text-[32px] leading-none tracking-[-0.96px] short:text-[28px]">mano</span>
-          <LangToggle />
+          <LangToggle light />
         </header>
 
         {/* Hierarchy: promise first → the voice demo → the result (estimate) → buttons */}
@@ -47,9 +47,9 @@ export default function Welcome() {
           <h1 className="font-serif text-[48px] leading-[47px] tracking-[-0.96px] short:text-[38px] short:leading-[38px] tiny:text-[28px] tiny:leading-[28px]">
             {t.headline1}
             <br />
-            <span className="text-lime">{t.headline2}</span>
+            <span className="text-forest">{t.headline2}</span>
           </h1>
-          <p className="mt-4 text-base leading-5 short:mt-2 short:text-[15px] tiny:text-[13px] tiny:leading-[17px]">{t.welcomeBody}</p>
+          <p className="mt-4 text-base leading-5 text-black/70 short:mt-2 short:text-[15px] tiny:text-[13px] tiny:leading-[17px]">{t.welcomeBody}</p>
         </section>
 
         {/* Demo: voice → estimate */}
@@ -57,14 +57,14 @@ export default function Welcome() {
         <section className="flex flex-col items-center" aria-hidden>
           <div className="flex w-full items-center justify-center gap-4 short:gap-3">
             <Wave bars={[...WAVE].reverse()} side="left" />
-            <div className="glass-dark flex size-[84px] shrink-0 items-center justify-center rounded-full short:size-[64px] tiny:size-[40px]">
+            <div className="glass flex size-[84px] shrink-0 items-center justify-center rounded-full short:size-[64px] tiny:size-[40px]">
               <div className="glow-lime flex size-[50px] items-center justify-center rounded-full bg-lime short:size-[40px] tiny:size-[30px]">
                 <Mic className="size-[25px] text-forest short:size-5 tiny:size-4" strokeWidth={2} />
               </div>
             </div>
             <Wave bars={WAVE} delay={0.4} side="right" />
           </div>
-          <p className="mt-3 text-center text-[15px] font-medium leading-5 text-white/85 short:mt-2 tiny:mt-1 tiny:text-[13px] tiny:leading-4">{t.welcomeQuote}</p>
+          <p className="mt-3 text-center text-[15px] font-medium leading-5 text-black/70 short:mt-2 tiny:mt-1 tiny:text-[13px] tiny:leading-4">{t.welcomeQuote}</p>
 
           <div className="glass-paper mt-[18px] w-full max-w-[340px] rounded-[20px] px-[17px] pb-4 pt-[22px] text-black short:mt-2.5 short:pb-3 short:pt-3.5 tiny:mt-2 tiny:pb-2.5 tiny:pt-3">
             <div className="flex items-center justify-between">
@@ -103,14 +103,14 @@ export default function Welcome() {
         <div>
           <Link
             href="/onboarding/oficio"
-            className="glow-lime flex h-[53px] short:h-[48px] tiny:h-[44px] w-full items-center justify-center rounded-[20px] bg-lime text-sm font-bold text-forest transition active:scale-[0.98]"
+            className="flex h-[53px] short:h-[48px] tiny:h-[44px] w-full items-center justify-center rounded-[20px] bg-forest text-sm font-bold text-lime shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98]"
           >
             {t.start} →
           </Link>
           <Link
             href="/inicio"
             onClick={() => resetJobs({ demo: true })}
-            className="mt-1 block py-3 text-center text-sm font-medium leading-4 short:py-2 tiny:py-1.5"
+            className="mt-1 block py-3 text-center text-sm font-semibold leading-4 text-forest short:py-2 tiny:py-1.5"
           >
             {t.haveAccount}
           </Link>
