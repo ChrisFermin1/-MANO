@@ -24,13 +24,39 @@ export function validate(job: Job): MissingKey[] {
 // "Did you forget to charge for…?" — from the checklists of the trades Carlos picked on Paso 1
 export type Suggestion = { key: string; es: string; en: string; item: string; item_es: string };
 
+type BuiltInTrade = Exclude<TradeId, "other">;
+
+// The job's own type (the label Mano puts on it: "Interior Painting", "Hardscapes", "Auto Repair") decides
+// first. Loose words in the note don't: "two coats of sealer" on a patio is not a painting job, and a
+// "retaining wall" is not drywall.
+const JOB_TYPE: Record<BuiltInTrade, RegExp> = {
+  painting: /paint|pintur/i,
+  drywall: /drywall|tablaroca|sheetrock/i,
+  flooring: /floor|piso|tile|azulejo|laminate|laminado|vinyl|vinil/i,
+  bathKitchen: /bath|baño|cabinet|gabinete|countertop|vanity|plumb|plomer|kitchen remodel|remodelación de cocina/i,
+  remodel: /remodel|renovat/i,
+};
+const isGeneral = (job: Job) => !job.service?.trim() || /^general$/i.test(job.service.trim());
+
 function involvedChecklist(job: Job, business: Pick<Business, "trades"> | null) {
   const text = `${job.description} ${job.line_items.map((i) => `${i.description} ${i.description_es ?? ""}`).join(" ")}`;
-  // His trades (or all, if he skipped Paso 1) that this job actually involves
+  // His trades (or all, if he skipped Paso 1) that this job's words mention
   const mine = (business?.trades?.length ? business.trades : (Object.keys(CHECKLISTS) as TradeId[])).filter(
-    (t): t is Exclude<TradeId, "other"> => t !== "other",
+    (t): t is BuiltInTrade => t !== "other",
   );
-  return { text, items: checklistFor(mine.filter((t) => CHECKLISTS[t].detect.test(text))) };
+  const mentioned = mine.filter((t) => CHECKLISTS[t].detect.test(text));
+  if (isGeneral(job)) return { text, items: checklistFor(mentioned) }; // type unclear: words only, as before
+  const label = `${job.service} ${job.service_es ?? ""}`;
+  const byType = (Object.keys(JOB_TYPE) as BuiltInTrade[]).filter((t) => JOB_TYPE[t].test(label));
+  // A built-in trade's job (plus his other trades it mentions, e.g. a crack on a painting job).
+  // Any other job type (hardscapes, auto repair, junk removal): no built-in checklist → Gemini's questions.
+  return { text, items: byType.length ? checklistFor([...new Set([...byType, ...mentioned])]) : [] };
+}
+
+/** What Ojo tells Gemini this job is: the job's own type, or the business's trade when it's unclear. */
+export function ojoTradeFor(job: Job, business: Pick<Business, "trades" | "otherTrade"> | null, tradeNames: Record<TradeId, string>) {
+  if (!isGeneral(job)) return job.service;
+  return business?.otherTrade?.name || (business?.trades ?? []).map((id) => tradeNames[id]).join(", ");
 }
 
 export function suggestions(job: Job, business: Pick<Business, "trades" | "ojoIgnore"> | null): Suggestion[] {

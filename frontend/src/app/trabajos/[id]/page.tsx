@@ -39,7 +39,7 @@ import { loadBusiness, rememberNameFix, saveBusiness, type Business } from "@/li
 import { useLang } from "@/lib/i18n";
 import { toEnglish } from "@/lib/translate";
 import { serviceLabel } from "@/lib/services";
-import { needsAiQuestions, silencedFor, suggestions, validate } from "@/lib/ojo";
+import { needsAiQuestions, ojoTradeFor, silencedFor, suggestions, validate } from "@/lib/ojo";
 import { ojoQuestions } from "@/lib/mano";
 
 const EDITABLE = ["NEW", "NEEDS_INFORMATION", "READY_FOR_QUOTE"];
@@ -81,7 +81,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
     if (!biz || askedAi.current || job.ojo_ai !== undefined || job.ojo_skipped || !needsAiQuestions(job, biz)) return;
     if (!job.line_items.length && !job.description.trim()) return;
     askedAi.current = true;
-    const trade = biz.otherTrade?.name || biz.trades.map((id) => t.trades[id]).join(", ");
+    const trade = ojoTradeFor(job, biz, t.trades); // the job's own type, so a junk-removal or auto job gets its own questions
     ojoQuestions(job, trade).then((questions) => {
       if (questions) updateJob(job.id, { ojo_ai: questions }).then(setJob);
     });
