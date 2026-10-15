@@ -37,7 +37,7 @@ export default function Welcome() {
     <main className="min-h-dvh bg-mano-light text-black">
       <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[27px] pb-[max(20px,env(safe-area-inset-bottom))] tiny:pb-[max(12px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] short:pt-[max(16px,env(safe-area-inset-top))] tiny:pt-[max(8px,env(safe-area-inset-top))]">
         <header className="flex items-center justify-between">
-          <span className="font-logo text-[32px] leading-none tracking-[-0.96px] short:text-[28px]">mano</span>
+          <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest short:text-[28px]">mano</span>
           <LangToggle light />
         </header>
 
