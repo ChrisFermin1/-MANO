@@ -59,6 +59,7 @@ export type Job = {
   // One price for the whole job ("Total 1400$ only labor"): items list the work, no per-item prices.
   // Set → the job total is this; null/absent → the total is the sum of the items.
   job_total?: number | null;
+  note_totals?: number[]; // "Total" amounts written on a scanned/typed note, to check against the item prices (app only)
   price_note?: string | null; // what the price covers, for the customer ("Labor only")
   price_note_es?: string | null; // same note, for Carlos ("Solo mano de obra")
   doc_intent?: "invoice" | null;

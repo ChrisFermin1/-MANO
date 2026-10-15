@@ -14,6 +14,7 @@ const responseSchema: Schema = {
     service: { type: SchemaType.STRING },
     service_es: { type: SchemaType.STRING, nullable: true },
     job_total: { type: SchemaType.NUMBER, nullable: true },
+    note_totals: { type: SchemaType.ARRAY, items: { type: SchemaType.NUMBER } },
     price_note: { type: SchemaType.STRING, nullable: true },
     price_note_es: { type: SchemaType.STRING, nullable: true },
     line_items: {
@@ -29,7 +30,7 @@ const responseSchema: Schema = {
       },
     },
   },
-  required: ["customer_name", "customer_name_suggested", "address", "service", "service_es", "job_total", "price_note", "price_note_es", "line_items"] as string[],
+  required: ["customer_name", "customer_name_suggested", "address", "service", "service_es", "job_total", "note_totals", "price_note", "price_note_es", "line_items"] as string[],
 };
 
 export async function POST(request: NextRequest) {
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
       },
     }); // speed: see generateWithRetry (2nd request after 4s, stops at 20s); then the built-in extractor takes over
 
-    const result = await generateWithRetry(model, `You are Mano, an assistant that extracts residential service job details. The input can be English, Spanish, or a mixture. Return exactly the requested JSON schema. Never make up a customer name, street address, price, or work detail. customer_name is the client: a person OR a company (a property manager, builder, realtor, e.g. "ATL Homes"). It can appear anywhere in the text, including alone on the first or last line with no word like "para" or "for". Copy names exactly as written, without correcting their spelling. If a word in a company name is clearly a misspelled common English word (e.g. "ATL Homeiker" -> "ATL Homemaker", "Roofin Pros" -> "Roofing Pros"), put the corrected full name in customer_name_suggested; otherwise null. Never "correct" people's first or last names. Never use a title like "Estimado de trabajo" or a greeting as a name. address: copy any street address as written, even if short or misspelled (e.g. "636 Wite"). Use null for customer_name and address if they are not in the text. Keep each distinct task or scope detail as a line item, with its price only when explicitly stated; never suggest prices. If the speaker gives ONE total for the whole job instead of a price per item (e.g. "Total 1400$"), put it in job_total and leave every item amount null; otherwise job_total is null. price_note is a short English note about what the price covers ONLY if the speaker said so (e.g. "Labor only", "Materials included"); price_note_es is the same in Spanish; both null if not said. The speaker may misspell trade words or mix English into Spanish (coquin = caulk, stein = stain, leibor = labor); interpret them. Set description to a concise, accurate English translation suitable for a customer estimate, and description_es to a concise Spanish version of the same work (use null only if the work itself cannot be understood). service is a short trade/project label such as Interior Painting or Drywall Repair; if no work is described use an empty string. service_es is the same label in natural Spanish, as a Latino contractor in the US would say it (e.g. Pintura interior, Instalación de ventilador de techo); null if service is empty. Do not include a person’s name or address as work. ${otherTrade ? `The business's other trade is ${otherTrade}.` : ""}\n\nJob description:\n${description}`);
+    const result = await generateWithRetry(model, `You are Mano, an assistant that extracts residential service job details. The input can be English, Spanish, or a mixture. Return exactly the requested JSON schema. Never make up a customer name, street address, price, or work detail. customer_name is the client: a person OR a company (a property manager, builder, realtor, e.g. "ATL Homes"). It can appear anywhere in the text, including alone on the first or last line with no word like "para" or "for". Copy names exactly as written, without correcting their spelling. If a word in a company name is clearly a misspelled common English word (e.g. "ATL Homeiker" -> "ATL Homemaker", "Roofin Pros" -> "Roofing Pros"), put the corrected full name in customer_name_suggested; otherwise null. Never "correct" people's first or last names. Never use a title like "Estimado de trabajo" or a greeting as a name. address: copy any street address as written, even if short or misspelled (e.g. "636 Wite"). Use null for customer_name and address if they are not in the text. Keep each distinct task, extra, or material cost as its own line item, with its price only when explicitly stated; never suggest prices. Materials with a price (e.g. "Material de piso 1550$") are line items too. A line labeled Total or Subtotal is never a line item. Use job_total ONLY when the speaker gives one price for the whole job and NO item has its own price (e.g. a list of tasks, then "Total 1400$"): then put it in job_total and leave every item amount null. If any item has its own price, job_total is null and every item keeps its own price, even when the text also has one or more Total lines. note_totals: every amount written as a Total or Subtotal in the text, in order (e.g. [5400, 2308]); [] if there are none. price_note is a short English note about what the price covers ONLY if the speaker said so (e.g. "Labor only", "Materials included"); price_note_es is the same in Spanish; both null if not said. The speaker may misspell trade words or mix English into Spanish (coquin = caulk, stein = stain, leibor = labor); interpret them. Set description to a concise, accurate English translation suitable for a customer estimate, and description_es to a concise Spanish version of the same work (use null only if the work itself cannot be understood). service is a short trade/project label such as Interior Painting or Drywall Repair; if no work is described use an empty string. service_es is the same label in natural Spanish, as a Latino contractor in the US would say it (e.g. Pintura interior, Instalación de ventilador de techo); null if service is empty. Do not include a person’s name or address as work. ${otherTrade ? `The business's other trade is ${otherTrade}.` : ""}\n\nJob description:\n${description}`);
 
     const data = JSON.parse(result.response.text()) as {
       customer_name: string | null;
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
       service: string;
       service_es: string | null;
       job_total: number | null;
+      note_totals: number[] | null;
       price_note: string | null;
       price_note_es: string | null;
       line_items: { description: string; description_es: string | null; amount: number | null }[];
@@ -77,6 +79,8 @@ export async function POST(request: NextRequest) {
       throw new Error("Gemini returned an invalid job structure");
     }
 
+    // Prices written on each line always win over a "Total" line: one total only when no item has a price
+    const itemHasPrice = data.line_items.some((item) => typeof item.amount === "number" && item.amount > 0);
     const normalized = {
       customer_name: typeof data.customer_name === "string" && data.customer_name.trim() ? data.customer_name.trim() : null,
       customer_name_suggested:
@@ -88,7 +92,12 @@ export async function POST(request: NextRequest) {
       address: typeof data.address === "string" && data.address.trim() ? data.address.trim() : null,
       service: data.service.trim() || "General",
       service_es: typeof data.service_es === "string" && data.service_es.trim() ? data.service_es.trim() : null,
-      job_total: typeof data.job_total === "number" && Number.isFinite(data.job_total) && data.job_total > 0 ? data.job_total : null,
+      job_total:
+        !itemHasPrice && typeof data.job_total === "number" && Number.isFinite(data.job_total) && data.job_total > 0 ? data.job_total : null,
+      // the note's own "Total" lines, kept only to check them against the item prices
+      note_totals: itemHasPrice && Array.isArray(data.note_totals)
+        ? data.note_totals.filter((n) => typeof n === "number" && Number.isFinite(n) && n > 0)
+        : [],
       price_note: typeof data.price_note === "string" && data.price_note.trim() ? data.price_note.trim() : null,
       price_note_es: typeof data.price_note_es === "string" && data.price_note_es.trim() ? data.price_note_es.trim() : null,
       line_items: data.line_items

@@ -8,7 +8,7 @@ import { toEnglish } from "@/lib/translate";
 
 type Interpreted = Pick<
   Job,
-  "customer_name" | "customer_name_suggested" | "customer_phone" | "address" | "service" | "service_es" | "job_total" | "price_note" | "price_note_es" | "line_items"
+  "customer_name" | "customer_name_suggested" | "customer_phone" | "address" | "service" | "service_es" | "job_total" | "note_totals" | "price_note" | "price_note_es" | "line_items"
 >;
 
 // Thrown only when Mano is busy (rate limit) — worth telling Carlos to wait a moment
@@ -64,6 +64,7 @@ export async function interpret(description: string, otherTrade?: OtherTrade | n
       service: d.service,
       service_es: d.service_es ?? null,
       job_total: d.job_total ?? null,
+      note_totals: d.note_totals ?? [],
       price_note: d.price_note ?? null,
       price_note_es: d.price_note_es ?? null,
       line_items: d.line_items.map((i) => ({ ...i, translation_pending: !i.description })),

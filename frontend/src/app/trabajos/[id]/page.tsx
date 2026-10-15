@@ -138,6 +138,10 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   const flag = (on: boolean) => (on ? "ring-2 ring-flag" : "");
   const firstMissingPrice = job.line_items.find((i) => i.amount == null)?.id;
   const lump = isLumpSum(job); // one price for the whole job: items list the work, the total is typed once
+  // The note's own "Total" lines vs. the item prices: fine if they match the grand total or one of the totals
+  const noteTotals = lump ? [] : (job.note_totals ?? []);
+  const noteSum = noteTotals.reduce((s, n) => s + n, 0);
+  const totalsOff = noteTotals.length > 0 && jobTotal(job) !== noteSum && !noteTotals.includes(jobTotal(job));
   const jumpTo = (m: (typeof missing)[number]) => {
     const id = m === "price" ? (lump ? "f-job-total" : `f-price-${firstMissingPrice}`) : m === "items" ? "f-add-line" : `f-${m}`;
     const el = document.getElementById(id);
@@ -332,6 +336,12 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
               <span className="text-base">{t.total}</span>
               <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
             </div>
+            {totalsOff && (
+              <p role="status" className="mt-2 flex items-start gap-1.5 rounded-[12px] bg-flag/15 px-3 py-2 text-sm text-ojo-ink">
+                <Eye className="mt-0.5 size-4 shrink-0 text-ojo" strokeWidth={1.75} />
+                {t.totalsOff(money(jobTotal(job)), noteTotals.map(money).join(" + "))}
+              </p>
+            )}
             {job.line_items.length > 1 && (
               <button type="button" onClick={() => patch({ job_total: jobTotal(job) })} className="mt-2 text-sm font-semibold text-forest underline underline-offset-4">
                 {t.useOneTotal}
