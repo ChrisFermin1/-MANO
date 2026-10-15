@@ -44,7 +44,7 @@ Welcome screen loads sample jobs. The backend (port 8000) doesn't need to run; t
 | 6 | Create from every list ("+") | ✅ Done | `a8793de` |
 | 7 | Search | ✅ Done | `3009856` |
 | 8 | Mark as paid: method and partial payments | ✅ Done (needs Josh later) | `67d2a8a` |
-| 9 | Edit contact details after sending | ⏭ Next | |
+| 9 | Edit contact details after sending | ✅ Done | `8476b3c` |
 
 Update this table (status + commit) after each task.
 
@@ -106,8 +106,14 @@ Update this table (status + commit) after each task.
 - "Revise estimate" (a v2 when price or work changes) is a separate, bigger task for later.
 - **Done when:** fixing a name on a sent estimate updates the job, the documents list, and the customer's
   link; price and lines still can't be edited.
+- **Built:** `updateContact` in `src/lib/api.ts` (keeps `updated_at`, re-publishes the link) and
+  `ContactSheet` on the job page. Backend: the existing job update already takes `customer_name`, phone and
+  address; when the backend becomes the source of truth, a contact fix shouldn't bump `updated_at`.
 
 ## After this list
+All 10 tasks (0–9) are done on `abe/experiments`. Next step: a pull request into `dev` when Abe says so.
+
+
 The rest of the MVP (hosting, logins, the database as the source of truth, PDF and email, deposits,
 change orders, notifications, sales tax) needs team decisions and Josh's backend. See section 3 of
 "Mano: Vision & Roadmap": https://claude.ai/code/artifact/91e04b3e-6600-4d5d-9cdf-191a2acebb0c
