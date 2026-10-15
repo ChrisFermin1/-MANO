@@ -18,9 +18,10 @@ function estimateRows(jobs: Job[]): Row[] {
     .map((j) => ({
       job: j,
       number: estimateNo(j.estimate_number!),
-      date: j.estimate_sent_at!,
-      state:
-        j.status === "CANCELLED" ? "declined" : STATUS_FLOW.indexOf(j.status) > STATUS_FLOW.indexOf("QUOTE_SENT") ? "accepted" : "sent",
+      date: j.estimate_sent_at ?? j.updated_at,
+      state: !j.estimate_sent_at
+        ? "ready"
+        : j.status === "CANCELLED" ? "declined" : STATUS_FLOW.indexOf(j.status) > STATUS_FLOW.indexOf("QUOTE_SENT") ? "accepted" : "sent",
       href: `/trabajos/${j.id}/estimado`,
     }));
 }
@@ -32,10 +33,10 @@ function invoiceRows(jobs: Job[]): Row[] {
     .map((j) => ({
       job: j,
       number: invoiceNo(j.invoice_number!),
-      date: j.invoice_sent_at!,
+      date: j.invoice_sent_at ?? j.updated_at,
       state: invoiceState(j)!,
       href: `/trabajos/${j.id}/factura`,
-      due: j.invoice_due_at ?? undefined,
+      due: j.invoice_sent_at ? (j.invoice_due_at ?? undefined) : undefined,
     }));
 }
 
@@ -53,7 +54,7 @@ export default function Documentos() {
 
   const rows = jobs ? (tab === "estimates" ? estimateRows(jobs) : invoiceRows(jobs)) : [];
   const invoices = jobs ? invoiceRows(jobs) : [];
-  const outstanding = invoices.filter((r) => r.state !== "paid").reduce((s, r) => s + jobTotal(r.job), 0);
+  const outstanding = invoices.filter((r) => r.state !== "paid" && r.state !== "ready").reduce((s, r) => s + jobTotal(r.job), 0);
   const collected = invoices.filter((r) => r.state === "paid").reduce((s, r) => s + jobTotal(r.job), 0);
 
   return (

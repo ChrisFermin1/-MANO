@@ -425,18 +425,34 @@ function nextNumber(field: "estimate_number" | "invoice_number") {
   return Math.max(0, ...read().map((j) => j[field] ?? 0)) + 1;
 }
 
-// POST /jobs/:id/estimate/send
-export async function sendEstimate(id: number): Promise<Job> {
+// Preparing ≠ sending: "Preparar" gives the document its number and the customer link, but the job only
+// counts as sent once Carlos actually shares it (WhatsApp, text, copy, QR) — see markSent().
+export const isUnsent = (j: Job) => (j.invoice_number ? !j.invoice_sent_at : !!j.estimate_number && !j.estimate_sent_at);
+
+export async function prepareEstimate(id: number): Promise<Job> {
   await wait(600);
   const job = (await getJob(id))!;
-  const now = new Date().toISOString();
-  const sent = await updateJob(id, {
-    status: "QUOTE_SENT",
+  const ready = await updateJob(id, {
     estimate_number: job.estimate_number ?? nextNumber("estimate_number"),
-    estimate_sent_at: now,
     public_token: job.public_token ?? newToken(),
   });
-  void publishEstimate(sent, loadBusiness()); // demo relay: lets a phone on the Wi-Fi open & approve it
+  void publishEstimate(ready, loadBusiness()); // demo relay: lets a phone on the Wi-Fi open & approve it
+  return ready;
+}
+
+// POST /jobs/:id/estimate/send · /invoice/send — the first time Carlos shares the link
+export async function markSent(id: number): Promise<Job> {
+  const job = (await getJob(id))!;
+  if (!isUnsent(job)) return job;
+  const now = new Date();
+  const sent = job.invoice_number
+    ? await updateJob(id, {
+        status: "PAYMENT_PENDING",
+        invoice_sent_at: now.toISOString(),
+        invoice_due_at: new Date(now.getTime() + INVOICE_DUE_DAYS * DAY).toISOString(),
+      })
+    : await updateJob(id, { status: "QUOTE_SENT", estimate_sent_at: now.toISOString() });
+  void publishEstimate(sent, loadBusiness());
   return sent;
 }
 
@@ -446,21 +462,20 @@ export async function sendEstimate(id: number): Promise<Job> {
 export const canInvoiceDirectly = (j: Job) => canDelete(j) && validate(j).length === 0;
 export const canSendInvoice = (j: Job) => !j.invoice_number && (j.status === "COMPLETED" || canInvoiceDirectly(j));
 
-export async function sendInvoice(id: number): Promise<Job> {
+export async function prepareInvoice(id: number): Promise<Job> {
   await wait(600);
   const job = (await getJob(id))!;
   if (!canSendInvoice(job)) throw new Error("This job can't be invoiced yet");
   const now = new Date();
-  const sent = await updateJob(id, {
-    status: "PAYMENT_PENDING",
+  const ready = await updateJob(id, {
     invoice_number: job.invoice_number ?? nextNumber("invoice_number"),
-    invoice_sent_at: now.toISOString(),
+    // a due date so the customer page reads right; markSent() restarts it from the day it's really sent
     invoice_due_at: new Date(now.getTime() + INVOICE_DUE_DAYS * DAY).toISOString(),
     // the same customer link shows the invoice now (a job invoiced without an estimate gets one here)
     public_token: job.public_token ?? newToken(),
   });
-  void publishEstimate(sent, loadBusiness());
-  return sent;
+  void publishEstimate(ready, loadBusiness());
+  return ready;
 }
 
 // POST /jobs/:id/invoice/paid
@@ -515,10 +530,11 @@ export async function markPaid(id: number): Promise<Job> {
   return paid;
 }
 
-export type InvoiceState = "unpaid" | "overdue" | "paid";
+export type InvoiceState = "ready" | "unpaid" | "overdue" | "paid";
 export function invoiceState(job: Job): InvoiceState | null {
   if (!job.invoice_number) return null;
   if (job.paid_at) return "paid";
+  if (!job.invoice_sent_at) return "ready"; // prepared, not shared with the customer yet
   return job.invoice_due_at && new Date(job.invoice_due_at) < new Date() ? "overdue" : "unpaid";
 }
 
@@ -526,7 +542,8 @@ export function invoiceState(job: Job): InvoiceState | null {
 // Dashboard money card: what Carlos is owed (sent invoices not paid), how much is late, and paid this month.
 export function moneySummary(jobs: Job[]) {
   const now = new Date();
-  const invoiced = jobs.filter((j) => j.invoice_number && j.status !== "CANCELLED");
+  // an invoice only counts once it was actually sent (a prepared one isn't owed yet)
+  const invoiced = jobs.filter((j) => j.invoice_number && j.invoice_sent_at && j.status !== "CANCELLED");
   const unpaid = invoiced.filter((j) => !j.paid_at);
   const sum = (list: Job[]) => list.reduce((s, j) => s + jobTotal(j), 0);
   return {

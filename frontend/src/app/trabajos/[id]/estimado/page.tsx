@@ -7,7 +7,7 @@ import { Loader2, Pencil, Send } from "lucide-react";
 import { DocLangSwitch, DocumentCard } from "@/components/document";
 import { ShareEstimate } from "@/components/share-estimate";
 import { PageHeader, Screen, SuccessScreen, Title, btnGhost, btnPrimary } from "@/components/ui";
-import { estimateNo, firstName, getJob, sendEstimate, type Job } from "@/lib/api";
+import { estimateNo, firstName, getJob, isUnsent, prepareEstimate, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 import { validate } from "@/lib/ojo";
@@ -31,10 +31,12 @@ export default function Estimado() {
   if (sent) {
     return (
       <SuccessScreen
-        title={t.sentTitle}
-        body={`${job.estimate_number ? `${estimateNo(job.estimate_number)} · ` : ""}${t.sentQuoteBody(firstName(job.customer_name))}`}
+        title={isUnsent(job) ? t.readyTitle : t.sentTitle}
+        body={`${job.estimate_number ? `${estimateNo(job.estimate_number)} · ` : ""}${
+          isUnsent(job) ? t.readyBody(firstName(job.customer_name)) : t.sentQuoteBody(firstName(job.customer_name))
+        }`}
       >
-        <ShareEstimate job={job} dark />
+        <ShareEstimate job={job} dark onSent={setJob} />
         <Link href="/inicio" className="mt-4 flex h-[48px] w-full items-center justify-center rounded-[20px] text-sm font-semibold text-lime">
           {t.backHome}
         </Link>
@@ -47,7 +49,7 @@ export default function Estimado() {
 
   const approve = async () => {
     setSending(true);
-    setJob(await sendEstimate(job.id));
+    setJob(await prepareEstimate(job.id));
     setSent(true);
   };
 
@@ -67,7 +69,7 @@ export default function Estimado() {
         <div className="mt-auto space-y-1 pt-8">
           <button type="button" onClick={approve} disabled={!ready || sending} className={btnPrimary}>
             {sending ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" strokeWidth={2.25} />}
-            {t.approveSend}
+            {t.prepareSend}
           </button>
           <Link href={`/trabajos/${job.id}`} className={btnGhost}>
             <Pencil className="size-4" /> {t.edit}

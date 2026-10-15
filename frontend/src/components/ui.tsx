@@ -92,9 +92,10 @@ export function SuccessScreen({ title, body, children }: { title: string; body: 
   );
 }
 
-export type DocState = "sent" | "accepted" | "declined" | "unpaid" | "overdue" | "paid";
+export type DocState = "ready" | "sent" | "accepted" | "declined" | "unpaid" | "overdue" | "paid";
 
 const DOC_STATE_STYLE: Record<DocState, string> = {
+  ready: "border border-dashed border-forest/40 text-forest",
   sent: "bg-forest/10 text-forest",
   accepted: "bg-lime/50 text-forest",
   declined: "bg-black/10 text-black/60",

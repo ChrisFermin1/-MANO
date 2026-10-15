@@ -7,7 +7,7 @@ import { Loader2, Send } from "lucide-react";
 import { DocLangSwitch, DocumentCard } from "@/components/document";
 import { PageHeader, Screen, SuccessScreen, Title, btnPrimary } from "@/components/ui";
 import { ShareEstimate } from "@/components/share-estimate";
-import { canSendInvoice, firstName, getJob, invoiceNo, sendInvoice, type Job } from "@/lib/api";
+import { canSendInvoice, firstName, getJob, invoiceNo, isUnsent, prepareInvoice, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 
@@ -30,10 +30,12 @@ export default function Factura() {
   if (sent) {
     return (
       <SuccessScreen
-        title={t.sentTitle}
-        body={`${job.invoice_number ? `${invoiceNo(job.invoice_number)} · ` : ""}${t.sentInvoiceBody(firstName(job.customer_name))}`}
+        title={isUnsent(job) ? t.readyTitle : t.sentTitle}
+        body={`${job.invoice_number ? `${invoiceNo(job.invoice_number)} · ` : ""}${
+          isUnsent(job) ? t.readyBody(firstName(job.customer_name)) : t.sentInvoiceBody(firstName(job.customer_name))
+        }`}
       >
-        <ShareEstimate job={job} dark />
+        <ShareEstimate job={job} dark onSent={setJob} />
         <Link href="/inicio" className="mt-4 flex h-[48px] w-full items-center justify-center rounded-[20px] text-sm font-semibold text-lime">
           {t.backHome}
         </Link>
@@ -46,7 +48,7 @@ export default function Factura() {
 
   const send = async () => {
     setSending(true);
-    setJob(await sendInvoice(job.id));
+    setJob(await prepareInvoice(job.id));
     setSent(true);
   };
 
@@ -66,7 +68,7 @@ export default function Factura() {
         <div className="mt-auto pt-8">
           <button type="button" onClick={send} disabled={sending} className={btnPrimary}>
             {sending ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" strokeWidth={2.25} />}
-            {t.approveSend}
+            {t.prepareSend}
           </button>
         </div>
       )}

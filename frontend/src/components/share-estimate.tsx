@@ -3,12 +3,22 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { Check, Copy, MessageCircle, QrCode, Share2, Smartphone } from "lucide-react";
-import { estimateLink, firstName, fmtDate, jobTotal, money, smsLink, whatsappLink, type Job } from "@/lib/api";
+import { estimateLink, firstName, fmtDate, isUnsent, jobTotal, markSent, money, smsLink, whatsappLink, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 import { shareOrigin } from "@/lib/relay";
 
 // Carlos sends the homeowner a link (WhatsApp/SMS via the phone's share sheet). No app needed on their side.
-export function ShareEstimate({ job, dark = false, quiet = false }: { job: Job; dark?: boolean; quiet?: boolean }) {
+export function ShareEstimate({
+  job,
+  dark = false,
+  quiet = false,
+  onSent,
+}: {
+  job: Job;
+  dark?: boolean;
+  quiet?: boolean;
+  onSent?: (job: Job) => void; // the first share marks the estimate/invoice as sent
+}) {
   const { t, lang } = useLang();
   const [link, setLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -46,19 +56,26 @@ export function ShareEstimate({ job, dark = false, quiet = false }: { job: Job; 
 
   if (!link) return null;
 
+  // Prepared but not sent yet: sharing it (any way) is what makes it "sent"
+  const sharing = () => {
+    if (isUnsent(job)) void markSent(job.id).then((j) => onSent?.(j));
+  };
+
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      sharing();
     } catch {}
   };
 
   const share = async () => {
     try {
       await navigator.share({ title: invoice ? "Invoice" : "Estimate", text: msg.en, url: link });
+      sharing();
     } catch {
-      // user closed the share sheet — nothing to do
+      // user closed the share sheet — not sent
     }
   };
 
@@ -91,10 +108,10 @@ export function ShareEstimate({ job, dark = false, quiet = false }: { job: Job; 
           `quiet` (customer hasn't replied, follow-up is the main job now): no solid button here. */}
       {wa && sms ? (
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <a href={wa} target="_blank" rel="noopener" className={quiet ? outline : solid}>
+          <a href={wa} target="_blank" rel="noopener" onClick={sharing} className={quiet ? outline : solid}>
             <MessageCircle className="size-4" strokeWidth={2.5} /> {t.sendWhatsApp}
           </a>
-          <a href={sms} className={outline}>
+          <a href={sms} onClick={sharing} className={outline}>
             <Smartphone className="size-4" strokeWidth={2.5} /> {t.sendSms}
           </a>
         </div>
@@ -112,7 +129,15 @@ export function ShareEstimate({ job, dark = false, quiet = false }: { job: Job; 
           {copied ? t.copied : t.copyLink}
         </button>
         <span aria-hidden className={dark ? "text-white/30" : "text-black/20"}>·</span>
-        <button type="button" onClick={() => setShowQr((v) => !v)} aria-expanded={showQr} className="flex items-center gap-1.5 py-1">
+        <button
+          type="button"
+          onClick={() => {
+            if (!showQr) sharing(); // the customer scans it from Carlos's screen
+            setShowQr((v) => !v);
+          }}
+          aria-expanded={showQr}
+          className="flex items-center gap-1.5 py-1"
+        >
           <QrCode className="size-4" /> QR
         </button>
       </div>

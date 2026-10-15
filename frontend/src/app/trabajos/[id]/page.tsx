@@ -22,6 +22,7 @@ import {
   invoiceState,
   jobTotal,
   isLumpSum,
+  isUnsent,
   markPaid,
   money,
   nextStatus,
@@ -500,6 +501,13 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </section>
       )}
 
+      {/* Prepared but not shared yet: the link is ready, sending it is one tap away */}
+      {isUnsent(job) && job.public_token && (
+        <div className="mt-6">
+          <ShareEstimate job={job} onSent={setJob} />
+        </div>
+      )}
+
       <div className="mt-auto pt-8">
         {missing.length > 0 && (
           <p className="mb-2 text-center text-sm font-semibold text-ojo-ink">{t.completeFirst(missing.map((m) => t.missing[m]))}</p>
@@ -668,10 +676,10 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </div>
       </section>
 
-      {(job.status === "QUOTE_SENT" || job.status === "PAYMENT_PENDING") && job.public_token && (
+      {(job.status === "QUOTE_SENT" || job.status === "PAYMENT_PENDING" || isUnsent(job)) && job.public_token && (
         <div className="mt-4">
-          {/* estimate out: send it · invoice unpaid: the same box sends the invoice link */}
-          <ShareEstimate job={job} quiet={job.status === "QUOTE_SENT" ? quoteStale : true} />
+          {/* estimate out: send it · invoice unpaid: the same box sends the invoice link · prepared: send it now */}
+          <ShareEstimate job={job} quiet={isUnsent(job) ? false : job.status === "QUOTE_SENT" ? quoteStale : true} onSent={setJob} />
         </div>
       )}
 
@@ -713,7 +721,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                 {job.status === "PAYMENT_PENDING" ? t.sendReminder : t.followUp}
               </Link>
             )}
-            {job.status === "COMPLETED" ? (
+            {job.status === "COMPLETED" && !job.invoice_number ? (
               <Link href={`/trabajos/${job.id}/factura`} className={btnPrimary}>
                 <Receipt className="size-5" strokeWidth={2.25} />
                 {t.sendInvoice} →
