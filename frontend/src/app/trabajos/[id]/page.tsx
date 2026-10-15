@@ -780,27 +780,32 @@ const today = () => {
 
 function PaymentsSummary({ job }: { job: Job }) {
   const { t, lang } = useLang();
+  const paid = paidSoFar(job);
   const left = balanceDue(job);
+  const pct = Math.min(100, Math.round((paid / (jobTotal(job) || 1)) * 100));
   return (
-    <div className="mt-3 rounded-[14px] bg-white/60 px-3 py-2.5 text-sm">
-      <p className="font-semibold text-forest">
-        {t.paidOf(money(paidSoFar(job)), money(jobTotal(job)))}
-        {left > 0 && <span className="text-black/70"> · {t.leftToPay(money(left))}</span>}
+    <div className="mt-3">
+      <div className="h-1.5 overflow-hidden rounded-full bg-black/10">
+        <div className="h-full rounded-full bg-forest" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="mt-2 flex justify-between text-sm font-semibold">
+        <span className="text-forest">{t.paidAmount(money(paid))}</span>
+        {left > 0 && <span>{t.leftToPay(money(left))}</span>}
       </p>
-      <ul className="mt-1.5 space-y-0.5 text-black/70">
+      <ul className="mt-1 space-y-0.5 text-xs text-muted">
         {job.payments!.map((p) => (
-          <li key={p.id} className="flex justify-between gap-3">
-            <span>
-              {fmtDate(p.date, lang)} · {t.payMethods[p.method]}
-              {p.check_number && ` #${p.check_number}`}
-            </span>
-            <span className="font-semibold text-black">{money(p.amount)}</span>
+          <li key={p.id}>
+            {shortDate(p.date, lang)} · {t.payMethods[p.method]}
+            {p.check_number && ` #${p.check_number}`} · {money(p.amount)}
           </li>
         ))}
       </ul>
     </div>
   );
 }
+
+const shortDate = (iso: string, lang: "es" | "en") =>
+  new Date(iso).toLocaleDateString(lang === "es" ? "es-US" : "en-US", { month: "short", day: "numeric" });
 
 function PaymentSheet({ open, job, onClose, onSaved }: { open: boolean; job: Job; onClose: () => void; onSaved: (j: Job) => void }) {
   const { t } = useLang();
@@ -819,18 +824,33 @@ function PaymentSheet({ open, job, onClose, onSaved }: { open: boolean; job: Job
 
   const value = Math.round(Number(amount) * 100) / 100;
   const valid = value > 0 && value <= owed && !!date;
+  const partial = value > 0 && value < owed;
   const save = async () => {
     if (!valid) return;
     // noon local time, so the date never slips a day in another timezone
     const at = new Date(`${date}T12:00:00`).toISOString();
     onSaved(await addPayment(job.id, { amount: value, method, date: at, check_number: method === "check" ? checkNo.trim() || null : null }));
   };
-  const field = "h-[52px] w-full rounded-[14px] glass-field px-4 text-base outline-none ring-forest/60 focus:ring-2";
+  const field = "h-[48px] w-full rounded-[14px] glass-field px-4 text-base outline-none ring-forest/60 focus:ring-2";
 
   return (
-    <Sheet open={open} onClose={onClose} title={t.markPaid}>
-      <p className="mt-1 text-sm text-black/70">{t.stillOwed(money(owed))}</p>
-      <div role="radiogroup" aria-label={t.payMethod} className="mt-4 flex flex-wrap gap-2">
+    <Sheet open={open} onClose={onClose} title={paidSoFar(job) > 0 ? t.addPayment : t.markPaid}>
+      {/* amount first, big: most of the time it's already right */}
+      <label className="mt-4 flex items-center gap-1 rounded-[16px] glass-field px-4 ring-forest/60 focus-within:ring-2">
+        <span className="text-3xl font-bold text-black/40">$</span>
+        <input
+          aria-label={t.payAmount}
+          className="h-[64px] min-w-0 flex-1 bg-transparent text-3xl font-bold outline-none"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
+          inputMode="decimal"
+        />
+      </label>
+      <p className={`mt-1.5 text-sm ${value > owed ? "font-semibold text-[#8a2a17]" : "text-black/60"}`}>
+        {value > owed ? t.tooMuch(money(owed)) : partial ? t.partialNote(money(owed - value)) : t.stillOwed(money(owed))}
+      </p>
+
+      <div role="radiogroup" aria-label={t.payMethod} className="mt-4 grid grid-cols-5 gap-1">
         {PAYMENT_METHODS.map((m) => (
           <button
             key={m}
@@ -838,40 +858,23 @@ function PaymentSheet({ open, job, onClose, onSaved }: { open: boolean; job: Job
             role="radio"
             aria-checked={method === m}
             onClick={() => setMethod(m)}
-            className={`h-10 rounded-full px-4 text-[15px] font-semibold transition ${method === m ? "bg-forest text-white" : "bg-white text-black"}`}
+            className={`h-10 rounded-[12px] px-0.5 text-[13px] font-semibold tracking-[-0.2px] transition ${method === m ? "bg-forest text-white" : "bg-white text-black"}`}
           >
             {t.payMethods[m]}
           </button>
         ))}
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-semibold">{t.payAmount}</span>
-          <input className={field} value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))} inputMode="decimal" />
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-sm font-semibold">{t.payDate}</span>
-          <input className={field} type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} />
-        </label>
+
+      <div className={`mt-3 grid gap-2 ${method === "check" ? "grid-cols-2" : "grid-cols-1"}`}>
+        <input aria-label={t.payDate} className={field} type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} />
+        {method === "check" && (
+          <input aria-label={t.checkNumber} placeholder={t.checkShort} className={field} value={checkNo} onChange={(e) => setCheckNo(e.target.value)} inputMode="numeric" />
+        )}
       </div>
-      {method === "check" && (
-        <label className="mt-3 block">
-          <span className="mb-1.5 block text-sm font-semibold">
-            {t.checkNumber} <span className="font-normal text-muted">· {t.optional}</span>
-          </span>
-          <input className={field} value={checkNo} onChange={(e) => setCheckNo(e.target.value)} inputMode="numeric" />
-        </label>
-      )}
-      {value > 0 && value < owed && <p className="mt-3 text-sm text-black/70">{t.partialNote(money(owed - value))}</p>}
-      {value > owed && <p className="mt-3 text-sm font-semibold text-[#8a2a17]">{t.tooMuch(money(owed))}</p>}
-      <div className="mt-5 space-y-1">
-        <button type="button" onClick={save} disabled={!valid} className={btnPrimary}>
-          <Check className="size-5" strokeWidth={2.5} /> {value > 0 && value < owed ? t.savePartial : t.savePaid}
-        </button>
-        <button type="button" onClick={onClose} className={btnGhost}>
-          {t.goBack}
-        </button>
-      </div>
+
+      <button type="button" onClick={save} disabled={!valid} className={`mt-5 ${btnPrimary}`}>
+        <Check className="size-5" strokeWidth={2.5} /> {partial ? t.savePartial : t.savePaid}
+      </button>
     </Sheet>
   );
 }
