@@ -43,8 +43,8 @@ Welcome screen loads sample jobs. The backend (port 8000) doesn't need to run; t
 | 5 | Invoice and estimate views: no dead end | ✅ Done | `675dccc` |
 | 6 | Create from every list ("+") | ✅ Done | `a8793de` |
 | 7 | Search | ✅ Done | `3009856` |
-| 8 | Mark as paid: method and partial payments | ⏭ Next (needs Josh later) | |
-| 9 | Edit contact details after sending | To do | |
+| 8 | Mark as paid: method and partial payments | ✅ Done (needs Josh later) | `67d2a8a` |
+| 9 | Edit contact details after sending | ⏭ Next | |
 
 Update this table (status + commit) after each task.
 
@@ -89,6 +89,13 @@ Update this table (status + commit) after each task.
   proposal in the Progress table.
 - **Done when:** a full payment marks it paid; a partial payment shows the balance and keeps it unpaid;
   money owed and "paid this month" on the home screen and Documents page stay correct.
+- **Built:** `Job.payments` (`{id, amount, method, date, check_number}`), `addPayment`, `paidSoFar`, `balanceDue`
+  in `src/lib/api.ts`. Older jobs with `paid_at` and no payments count as fully paid. The invoice, the
+  customer link, the share message and the reminder ask for the balance.
+- **Josh proposal:** table `payments` (id, job_id → jobs, amount numeric(10,2), method text
+  `zelle|bank|check|cash|card`, paid_on date, check_number text null, created_at) and
+  `POST /jobs/{id}/payments` → returns the job with its payments; the backend sets PAID + `paid_at` when the
+  sum reaches the total. `GET /jobs/{id}` includes `payments`.
 
 ### 9. Edit contact details after sending
 - **Problem:** once an estimate is sent, only the phone can be changed; a misspelled name or address
