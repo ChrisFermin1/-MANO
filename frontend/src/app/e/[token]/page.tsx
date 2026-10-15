@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { CheckCircle2, Loader2, MessageCircle, Phone } from "lucide-react";
 import { DocumentCard } from "@/components/document";
-import { approveEstimate, fmtDate, getJobByToken, jobTotal, money, type Job } from "@/lib/api";
+import { approveEstimate, balanceDue, fmtDate, getJobByToken, money, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { approveRemote, fetchEstimate, type RelayEntry } from "@/lib/relay";
 
@@ -158,7 +158,7 @@ export default function CustomerEstimate() {
               ) : (
                 <section className="mt-6">
                   <h1 className="font-serif text-[32px] leading-9">{c.hi((job.customer_name ?? "").split(" ")[0])}</h1>
-                  <p className="mt-2 text-base leading-6 text-black/75">{c.invoiceIntro(money(jobTotal(job)), due)}</p>
+                  <p className="mt-2 text-base leading-6 text-black/75">{c.invoiceIntro(money(balanceDue(job)), due)}</p>
                   {overdue && <p className="mt-2 text-sm font-semibold text-[#8a2a17]">{c.invoiceOverdue(due)}</p>}
                 </section>
               )

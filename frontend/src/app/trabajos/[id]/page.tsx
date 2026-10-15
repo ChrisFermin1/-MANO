@@ -23,7 +23,11 @@ import {
   jobTotal,
   isLumpSum,
   isUnsent,
-  markPaid,
+  addPayment,
+  balanceDue,
+  paidSoFar,
+  PAYMENT_METHODS,
+  type PaymentMethod,
   money,
   nextStatus,
   setStatus,
@@ -572,6 +576,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
     await updateJob(job.id, { scheduled_for: day });
     setJob(await setStatus(job.id, "SCHEDULED"));
   };
+  const [paying, setPaying] = useState(false);
 
   return (
     <Screen>
@@ -661,6 +666,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           <span>{t.total}</span>
           <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
         </div>
+        {(job.payments?.length ?? 0) > 0 && <PaymentsSummary job={job} />}
         <div className="mt-4 space-y-2">
           {job.estimate_number && (
             <DocLink href={`/trabajos/${job.id}/estimado`} label={t.viewQuote} number={estimateNo(job.estimate_number)} />
@@ -727,8 +733,8 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                 {t.sendInvoice} →
               </Link>
             ) : job.status === "PAYMENT_PENDING" ? (
-              <button type="button" onClick={async () => setJob(await markPaid(job.id))} className={btnPrimary}>
-                {t.markPaid} →
+              <button type="button" onClick={() => setPaying(true)} className={btnPrimary}>
+                {paidSoFar(job) > 0 ? t.addPayment : t.markPaid} →
               </button>
             ) : job.status === "ACCEPTED" ? (
               <div className="space-y-2">
@@ -759,7 +765,114 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           </>
         )}
       </div>
+
+      <PaymentSheet open={paying} job={job} onClose={() => setPaying(false)} onSaved={(j) => (setPaying(false), setJob(j))} />
     </Screen>
+  );
+}
+
+/* ───────── Payments: Zelle, bank, check, cash, card · full or partial ───────── */
+
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+function PaymentsSummary({ job }: { job: Job }) {
+  const { t, lang } = useLang();
+  const left = balanceDue(job);
+  return (
+    <div className="mt-3 rounded-[14px] bg-white/60 px-3 py-2.5 text-sm">
+      <p className="font-semibold text-forest">
+        {t.paidOf(money(paidSoFar(job)), money(jobTotal(job)))}
+        {left > 0 && <span className="text-black/70"> · {t.leftToPay(money(left))}</span>}
+      </p>
+      <ul className="mt-1.5 space-y-0.5 text-black/70">
+        {job.payments!.map((p) => (
+          <li key={p.id} className="flex justify-between gap-3">
+            <span>
+              {fmtDate(p.date, lang)} · {t.payMethods[p.method]}
+              {p.check_number && ` #${p.check_number}`}
+            </span>
+            <span className="font-semibold text-black">{money(p.amount)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PaymentSheet({ open, job, onClose, onSaved }: { open: boolean; job: Job; onClose: () => void; onSaved: (j: Job) => void }) {
+  const { t } = useLang();
+  const owed = balanceDue(job);
+  const [method, setMethod] = useState<PaymentMethod>("zelle");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(today());
+  const [checkNo, setCheckNo] = useState("");
+  // each time it opens: the full balance, today
+  useEffect(() => {
+    if (!open) return;
+    setAmount(String(owed));
+    setDate(today());
+    setCheckNo("");
+  }, [open, owed]);
+
+  const value = Math.round(Number(amount) * 100) / 100;
+  const valid = value > 0 && value <= owed && !!date;
+  const save = async () => {
+    if (!valid) return;
+    // noon local time, so the date never slips a day in another timezone
+    const at = new Date(`${date}T12:00:00`).toISOString();
+    onSaved(await addPayment(job.id, { amount: value, method, date: at, check_number: method === "check" ? checkNo.trim() || null : null }));
+  };
+  const field = "h-[52px] w-full rounded-[14px] glass-field px-4 text-base outline-none ring-forest/60 focus:ring-2";
+
+  return (
+    <Sheet open={open} onClose={onClose} title={t.markPaid}>
+      <p className="mt-1 text-sm text-black/70">{t.stillOwed(money(owed))}</p>
+      <div role="radiogroup" aria-label={t.payMethod} className="mt-4 flex flex-wrap gap-2">
+        {PAYMENT_METHODS.map((m) => (
+          <button
+            key={m}
+            type="button"
+            role="radio"
+            aria-checked={method === m}
+            onClick={() => setMethod(m)}
+            className={`h-10 rounded-full px-4 text-[15px] font-semibold transition ${method === m ? "bg-forest text-white" : "bg-white text-black"}`}
+          >
+            {t.payMethods[m]}
+          </button>
+        ))}
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold">{t.payAmount}</span>
+          <input className={field} value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))} inputMode="decimal" />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold">{t.payDate}</span>
+          <input className={field} type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} />
+        </label>
+      </div>
+      {method === "check" && (
+        <label className="mt-3 block">
+          <span className="mb-1.5 block text-sm font-semibold">
+            {t.checkNumber} <span className="font-normal text-muted">· {t.optional}</span>
+          </span>
+          <input className={field} value={checkNo} onChange={(e) => setCheckNo(e.target.value)} inputMode="numeric" />
+        </label>
+      )}
+      {value > 0 && value < owed && <p className="mt-3 text-sm text-black/70">{t.partialNote(money(owed - value))}</p>}
+      {value > owed && <p className="mt-3 text-sm font-semibold text-[#8a2a17]">{t.tooMuch(money(owed))}</p>}
+      <div className="mt-5 space-y-1">
+        <button type="button" onClick={save} disabled={!valid} className={btnPrimary}>
+          <Check className="size-5" strokeWidth={2.5} /> {value > 0 && value < owed ? t.savePartial : t.savePaid}
+        </button>
+        <button type="button" onClick={onClose} className={btnGhost}>
+          {t.goBack}
+        </button>
+      </div>
+    </Sheet>
   );
 }
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Eye, Loader2, MessageCircle, RotateCcw, Send, Smartphone, Sparkles } from "lucide-react";
 import { PageHeader, Screen, SuccessScreen, Title, btnLime, btnPrimary } from "@/components/ui";
-import { firstName, getJob, jobTotal, money, sendMessage, smsLink, whatsappLink, type Job } from "@/lib/api";
+import { balanceDue, firstName, getJob, jobTotal, money, sendMessage, smsLink, whatsappLink, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 import { followUpMessage } from "@/lib/mano";
@@ -29,7 +29,7 @@ export default function Seguimiento() {
     getJob(Number(id)).then(async (j) => {
       if (!j) return;
       const biz = { ...DEMO_BUSINESS, ...loadBusiness() };
-      const msg = await followUpMessage(j, biz.ownerName || DEMO_BUSINESS.ownerName, biz.businessName || DEMO_BUSINESS.businessName, money(jobTotal(j)));
+      const msg = await followUpMessage(j, biz.ownerName || DEMO_BUSINESS.ownerName, biz.businessName || DEMO_BUSINESS.businessName, money(j.invoice_number ? balanceDue(j) : jobTotal(j)));
       mano.current = msg;
       setJob(j);
       setEs(msg.es);

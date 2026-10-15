@@ -60,6 +60,7 @@ export type Job = {
   // Set → the job total is this; null/absent → the total is the sum of the items.
   job_total?: number | null;
   note_totals?: number[]; // "Total" amounts written on a scanned/typed note, to check against the item prices (app only)
+  payments?: Payment[]; // money received on the invoice, full or partial (app only until the backend has payments)
   price_note?: string | null; // what the price covers, for the customer ("Labor only")
   price_note_es?: string | null; // same note, for Carlos ("Solo mano de obra")
   doc_intent?: "invoice" | null;
@@ -536,10 +537,25 @@ export async function reactivateJob(id: number): Promise<Job> {
   });
 }
 
-export async function markPaid(id: number): Promise<Job> {
-  const paid = await updateJob(id, { status: "PAID", paid_at: new Date().toISOString() });
-  if (paid.public_token && paid.invoice_number) void publishEstimate(paid, loadBusiness()); // customer link shows "Paid"
-  return paid;
+export type PaymentMethod = "zelle" | "bank" | "check" | "cash" | "card";
+export const PAYMENT_METHODS: PaymentMethod[] = ["zelle", "bank", "check", "cash", "card"];
+export type Payment = { id: string; amount: number; method: PaymentMethod; date: string; check_number?: string | null };
+
+/** Money received so far. A job marked paid before payments were recorded counts as fully paid. */
+export const paidSoFar = (job: Job) =>
+  job.payments?.length ? job.payments.reduce((s, p) => s + p.amount, 0) : job.paid_at ? jobTotal(job) : 0;
+/** What's still owed on the invoice. */
+export const balanceDue = (job: Job) => Math.max(0, Math.round((jobTotal(job) - paidSoFar(job)) * 100) / 100);
+
+// POST /jobs/:id/payments — Zelle, bank, check, cash or card; full or partial. Paid once it adds up to the total.
+export async function addPayment(id: number, payment: Omit<Payment, "id">): Promise<Job> {
+  const job = (await getJob(id))!;
+  const payments = [...(job.payments ?? []), { ...payment, id: uid() }];
+  const total = payments.reduce((s, p) => s + p.amount, 0);
+  const full = total >= jobTotal(job) - 0.005;
+  const saved = await updateJob(id, full ? { payments, status: "PAID", paid_at: payment.date } : { payments });
+  if (saved.public_token && saved.invoice_number) void publishEstimate(saved, loadBusiness()); // customer link shows the balance or "Paid"
+  return saved;
 }
 
 export type InvoiceState = "ready" | "unpaid" | "overdue" | "paid";
@@ -557,17 +573,25 @@ export function moneySummary(jobs: Job[]) {
   // an invoice only counts once it was actually sent (a prepared one isn't owed yet)
   const invoiced = jobs.filter((j) => j.invoice_number && j.invoice_sent_at && j.status !== "CANCELLED");
   const unpaid = invoiced.filter((j) => !j.paid_at);
-  const sum = (list: Job[]) => list.reduce((s, j) => s + jobTotal(j), 0);
+  const owedOn = (list: Job[]) => list.reduce((s, j) => s + balanceDue(j), 0);
+  const thisMonth = (iso: string) => {
+    const d = new Date(iso);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  };
   return {
     hasInvoices: invoiced.length > 0,
-    owed: sum(unpaid),
-    overdue: sum(unpaid.filter((j) => invoiceState(j) === "overdue")),
-    paidThisMonth: sum(
-      invoiced.filter((j) => {
-        if (!j.paid_at) return false;
-        const d = new Date(j.paid_at);
-        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-      }),
+    owed: owedOn(unpaid),
+    overdue: owedOn(unpaid.filter((j) => invoiceState(j) === "overdue")),
+    // money that came in this month: each payment by its date (older jobs without payments: by paid date)
+    paidThisMonth: invoiced.reduce(
+      (s, j) =>
+        s +
+        (j.payments?.length
+          ? j.payments.filter((p) => thisMonth(p.date)).reduce((a, p) => a + p.amount, 0)
+          : j.paid_at && thisMonth(j.paid_at)
+            ? jobTotal(j)
+            : 0),
+      0,
     ),
   };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import type { PaymentMethod } from "@/lib/api";
 
 export type Lang = "es" | "en";
 
@@ -248,6 +249,19 @@ const strings = {
     viewInvoice: "Ver factura",
     sendInvoice: "Preparar factura",
     markPaid: "Marcar como pagado",
+    addPayment: "Registrar otro pago",
+    payMethod: "Cómo pagó",
+    payMethods: { zelle: "Zelle", bank: "Banco", check: "Cheque", cash: "Efectivo", card: "Tarjeta" } as Record<PaymentMethod, string>,
+    payAmount: "Cantidad",
+    payDate: "Fecha",
+    checkNumber: "Número de cheque",
+    stillOwed: (a: string) => `Le deben ${a}.`,
+    partialNote: (a: string) => `Pago parcial: quedarán ${a} por cobrar.`,
+    tooMuch: (a: string) => `Es más de lo que le deben (${a}).`,
+    savePaid: "Guardar: pagado completo",
+    savePartial: "Guardar pago parcial",
+    paidOf: (p: string, total: string) => `Pagado ${p} de ${total}`,
+    leftToPay: (a: string) => `Falta ${a}`,
     docsTitle: "Estimados y facturas",
     tabEstimates: "Estimados",
     tabInvoices: "Facturas",
@@ -560,6 +574,19 @@ const strings = {
     viewInvoice: "View invoice",
     sendInvoice: "Prepare invoice",
     markPaid: "Mark as paid",
+    addPayment: "Record another payment",
+    payMethod: "How they paid",
+    payMethods: { zelle: "Zelle", bank: "Bank", check: "Check", cash: "Cash", card: "Card" },
+    payAmount: "Amount",
+    payDate: "Date",
+    checkNumber: "Check number",
+    stillOwed: (a: string) => `They owe you ${a}.`,
+    partialNote: (a: string) => `Partial payment: ${a} will still be owed.`,
+    tooMuch: (a: string) => `That's more than they owe (${a}).`,
+    savePaid: "Save: paid in full",
+    savePartial: "Save partial payment",
+    paidOf: (p: string, total: string) => `Paid ${p} of ${total}`,
+    leftToPay: (a: string) => `${a} left`,
     docsTitle: "Estimates & invoices",
     tabEstimates: "Estimates",
     tabInvoices: "Invoices",

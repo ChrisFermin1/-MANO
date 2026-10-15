@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { Check, Copy, MessageCircle, QrCode, Share2, Smartphone } from "lucide-react";
-import { estimateLink, firstName, fmtDate, isUnsent, jobTotal, markSent, money, smsLink, whatsappLink, type Job } from "@/lib/api";
+import { balanceDue, estimateLink, firstName, fmtDate, isUnsent, markSent, money, smsLink, whatsappLink, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 import { shareOrigin } from "@/lib/relay";
 
@@ -32,8 +32,8 @@ export function ShareEstimate({
   const dueEs = job.invoice_due_at ? fmtDate(job.invoice_due_at, "es") : "";
   const msg = invoice
     ? {
-        en: `Hi ${n}, here's your invoice for ${money(jobTotal(job))}${due ? `, due ${due}` : ""}. You can see it here:`,
-        es: `Hola ${n}, aquí está tu factura por ${money(jobTotal(job))}${dueEs ? `, vence el ${dueEs}` : ""}. La puedes ver aquí:`,
+        en: `Hi ${n}, here's your invoice for ${money(balanceDue(job))}${due ? `, due ${due}` : ""}. You can see it here:`,
+        es: `Hola ${n}, aquí está tu factura por ${money(balanceDue(job))}${dueEs ? `, vence el ${dueEs}` : ""}. La puedes ver aquí:`,
       }
     : {
         en: `Hi ${n}, here's your estimate. You can review and approve it here:`,

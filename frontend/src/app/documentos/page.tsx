@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
 import { DocStateBadge, PageHeader, Screen, Title, type DocState } from "@/components/ui";
-import { estimateNo, fmtDate, getJobs, onJobsChange, invoiceNo, invoiceState, jobTotal, money, STATUS_FLOW, type Job } from "@/lib/api";
+import { estimateNo, fmtDate, getJobs, onJobsChange, invoiceNo, invoiceState, jobTotal, money, paidSoFar, STATUS_FLOW, type Job, balanceDue } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 
 type Tab = "estimates" | "invoices";
@@ -54,8 +54,8 @@ export default function Documentos() {
 
   const rows = jobs ? (tab === "estimates" ? estimateRows(jobs) : invoiceRows(jobs)) : [];
   const invoices = jobs ? invoiceRows(jobs) : [];
-  const outstanding = invoices.filter((r) => r.state !== "paid" && r.state !== "ready").reduce((s, r) => s + jobTotal(r.job), 0);
-  const collected = invoices.filter((r) => r.state === "paid").reduce((s, r) => s + jobTotal(r.job), 0);
+  const outstanding = invoices.filter((r) => r.state !== "paid" && r.state !== "ready").reduce((s, r) => s + balanceDue(r.job), 0);
+  const collected = invoices.filter((r) => r.state !== "ready").reduce((s, r) => s + paidSoFar(r.job), 0);
 
   return (
     <Screen>
@@ -117,6 +117,7 @@ export default function Documentos() {
               </span>
               <span className="flex flex-col items-end gap-1.5">
                 <span className="text-lg font-bold">{money(jobTotal(r.job))}</span>
+                {r.state !== "paid" && paidSoFar(r.job) > 0 && <span className="text-xs text-muted">{t.leftToPay(money(balanceDue(r.job)))}</span>}
                 <DocStateBadge state={r.state} label={t.docState[r.state]} />
               </span>
               <ChevronRight className="size-5 text-muted" />

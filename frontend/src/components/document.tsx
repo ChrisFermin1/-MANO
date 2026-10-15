@@ -1,4 +1,4 @@
-import { estimateNo, fmtDate, invoiceNo, isLumpSum, jobTotal, money, type Job } from "@/lib/api";
+import { balanceDue, estimateNo, fmtDate, invoiceNo, isLumpSum, jobTotal, money, paidSoFar, type Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
 
 // Estimate / invoice document. The CUSTOMER always gets `view="en"`.
@@ -90,10 +90,28 @@ export function DocumentCard({
       {isLumpSum(job) && (es ? job.price_note_es || job.price_note : job.price_note) && (
         <p className="mt-3 text-sm text-muted">{es ? job.price_note_es || job.price_note : job.price_note}</p>
       )}
-      <div className="mt-3 flex items-center justify-between">
-        <span className="text-sm">{isInvoice ? (job.paid_at ? L("Total paid", "Total pagado") : L("Amount due", "Total a pagar")) : "Total"}</span>
-        <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
-      </div>
+      {isInvoice && !job.paid_at && paidSoFar(job) > 0 ? (
+        // partial payment: total, what came in, what's left
+        <div className="mt-3 space-y-1">
+          <div className="flex justify-between text-sm">
+            <span>Total</span>
+            <span>{money(jobTotal(job))}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>{L("Paid", "Pagado")}</span>
+            <span>−{money(paidSoFar(job))}</span>
+          </div>
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-sm">{L("Balance due", "Saldo pendiente")}</span>
+            <span className="text-2xl font-bold">{money(balanceDue(job))}</span>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-sm">{isInvoice ? (job.paid_at ? L("Total paid", "Total pagado") : L("Amount due", "Total a pagar")) : "Total"}</span>
+          <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
+        </div>
+      )}
 
       <p className="mt-5 text-xs leading-4 text-muted">{terms}</p>
     </article>
