@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Loader2, Mic, RotateCcw, Sparkles, Trash2, Undo2 } from "lucide-react";
+import { Camera, Loader2, Mic, RotateCcw, Sparkles, Trash2, Undo2, UserRound, X } from "lucide-react";
 import { PageHeader, Screen, Title, btnPrimary } from "@/components/ui";
-import { createJob } from "@/lib/api";
+import { createJob, getJobs } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 import { ManoBusyError, ManoBusyReadingError, organizeAhead, readNote } from "@/lib/mano";
 import { loadBusiness } from "@/lib/business";
+import { clientFromLink, type ClientPick } from "@/lib/clients";
 import { NoteScanner, canUseLiveCamera } from "@/components/note-scanner";
 
 // ElevenLabs voice, through this app's own /api/voice (works on a phone over the https link, no backend needed).
@@ -59,6 +60,8 @@ export default function NuevoTrabajo() {
   const [scanning, setScanning] = useState(false); // live camera with the paper outline (https only)
   // what Carlos is writing: an estimate (before the work) or an invoice (work already done)
   const [docKind, setDocKind] = useState<"estimate" | "invoice">("estimate");
+  // Started from a client card ("Nuevo trabajo para Maria"): the job is for them, whatever the note says
+  const [client, setClient] = useState<ClientPick | null>(null);
   const rec = useRef<Recognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -67,6 +70,10 @@ export default function NuevoTrabajo() {
 
   useEffect(() => {
     setCanListen(typeof MediaRecorder !== "undefined" || getRecognition() !== null);
+    // "+" on the Invoices list opens this screen ready for an invoice
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("doc") === "invoice") setDocKind("invoice");
+    if (params.has("client") || params.has("job")) void getJobs().then((jobs) => setClient(clientFromLink(params, jobs)));
   }, []);
   useEffect(() => {
     textRef.current = text;
@@ -240,7 +247,7 @@ export default function NuevoTrabajo() {
     setBusy(true);
     setSubmitError("");
     try {
-      const job = await createJob(text.trim(), { docIntent: docKind });
+      const job = await createJob(text.trim(), { docIntent: docKind, client });
       router.push(`/trabajos/${job.id}`);
     } catch (err) {
       setSubmitError(err instanceof ManoBusyError ? t.extractBusy : t.extractError);
@@ -262,6 +269,16 @@ export default function NuevoTrabajo() {
       <PageHeader backHref="/inicio" />
       <Title>{t.newJob}</Title>
       <p className="mt-2 text-base leading-5">{t.newJobBody}</p>
+
+      {client && (
+        <p className="mt-4 flex items-center gap-2 rounded-[14px] glass px-4 py-2.5 text-sm font-semibold text-forest">
+          <UserRound className="size-4 shrink-0" strokeWidth={2.25} />
+          <span className="min-w-0 flex-1 truncate">{t.forClient(client.name)}</span>
+          <button type="button" onClick={() => setClient(null)} aria-label={t.close} className="-mr-1 shrink-0 p-1 text-black/50">
+            <X className="size-4" />
+          </button>
+        </p>
+      )}
 
       <div role="tablist" aria-label={t.docKindLabel} className="glass mt-5 grid grid-cols-2 rounded-[14px] p-1 text-sm font-semibold">
         {(["estimate", "invoice"] as const).map((k) => (

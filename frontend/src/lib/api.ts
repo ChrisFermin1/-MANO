@@ -368,10 +368,22 @@ export async function getJob(id: number): Promise<Job | null> {
 }
 
 // POST /jobs  — backend runs Mano (interpret) then Ojo (validate)
-export async function createJob(description: string, opts: { docIntent?: "estimate" | "invoice" } = {}): Promise<Job> {
+export async function createJob(
+  description: string,
+  opts: { docIntent?: "estimate" | "invoice"; client?: { name: string; phone: string | null; address: string | null } | null } = {},
+): Promise<Job> {
   const jobs = read();
   const now = new Date().toISOString();
   const parsed = await interpret(description, loadBusiness()?.otherTrade);
+  // Started from a client ("Nuevo estimado para Maria"): their details win over what Mano heard
+  if (opts.client?.name.trim()) {
+    Object.assign(parsed, {
+      customer_name: opts.client.name.trim(),
+      customer_name_suggested: null,
+      address: opts.client.address?.trim() || parsed.address,
+      customer_phone: opts.client.phone?.trim() || parsed.customer_phone,
+    });
+  }
   // Carlos already corrected this name on an earlier job → use his spelling
   const heard = parsed.customer_name ?? null;
   const fixed = knownNameFix(heard);

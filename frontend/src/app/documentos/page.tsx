@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { DocStateBadge, PageHeader, Screen, Title, type DocState } from "@/components/ui";
 import { estimateNo, fmtDate, getJobs, onJobsChange, invoiceNo, invoiceState, jobTotal, money, STATUS_FLOW, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
@@ -59,7 +59,18 @@ export default function Documentos() {
 
   return (
     <Screen>
-      <PageHeader backHref="/inicio" />
+      <PageHeader
+        backHref="/inicio"
+        right={
+          <Link
+            href={tab === "invoices" ? "/trabajos/nuevo?doc=invoice" : "/trabajos/nuevo"}
+            aria-label={tab === "invoices" ? t.docInvoice : t.docEstimate}
+            className="flex size-10 items-center justify-center rounded-full bg-forest"
+          >
+            <Plus className="size-5 text-lime" strokeWidth={2.75} />
+          </Link>
+        }
+      />
       <Title>{t.docsTitle}</Title>
 
       <div className="glass mt-6 grid grid-cols-2 rounded-[14px] p-1" role="tablist">
