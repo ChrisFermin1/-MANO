@@ -6,7 +6,7 @@ import { ChevronRight, Eye, FileText, PartyPopper, Plus, Sparkles, Users } from 
 import { firstName, getJobs, onJobsChange, invoiceNo, invoiceState, jobBadge, jobTotal, moneySummary, money, type Job, type JobBadge } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness } from "@/lib/business";
 import { useLang, type Strings } from "@/lib/i18n";
-import { alerts, nextAction, type Alert } from "@/lib/ojo";
+import { prioritized, type Alert } from "@/lib/ojo";
 import { jobSubtitle } from "@/lib/services";
 
 // Neutral grey for every fact; only "Pagado" is colored (good news). Warnings live in Ojo.
@@ -70,6 +70,7 @@ export default function Inicio() {
   const [name, setName] = useState(DEMO_BUSINESS.ownerName);
   const [hour, setHour] = useState<number | null>(null);
   const [jobs, setJobs] = useState<Job[] | null>(null);
+  const [showAll, setShowAll] = useState(false); // the rest of Ojo's list stays folded under "+N más"
 
   useEffect(() => {
     setName(loadBusiness()?.ownerName || DEMO_BUSINESS.ownerName);
@@ -79,10 +80,22 @@ export default function Inicio() {
     return onJobsChange(() => void getJobs().then(setJobs));
   }, []);
 
-  const next = jobs ? nextAction(jobs) : null;
+  // ONE next step on the home screen; everything else, in the same order, folds under "+N más"
+  const queue = jobs ? prioritized(jobs) : [];
+  const next = queue[0] ?? null;
   const copy = next && actionCopy(next, t);
-  // One signal per job: whatever is the next action is not repeated in Ojo's list
-  const ojoAlerts = (jobs ? alerts(jobs) : []).filter((a) => a.job.id !== next?.job.id);
+  const ojoAlerts = queue.slice(1);
+  const moreToggle = (dark: boolean) =>
+    ojoAlerts.length > 0 && (
+      <button
+        type="button"
+        onClick={() => setShowAll((v) => !v)}
+        aria-expanded={showAll}
+        className={`mt-3 w-full py-1 text-center text-sm font-semibold ${dark ? "text-white/80" : "text-forest"}`}
+      >
+        {showAll ? t.showLess : `+${t.nMore(ojoAlerts.length)}`}
+      </button>
+    );
   const approval = next?.kind === "to_schedule" && next.job.approved_by ? next : null;
   const cash = jobs ? moneySummary(jobs) : null;
   const recent = (jobs ?? []).filter((j) => j.status !== "CANCELLED").slice(0, 3); // getJobs() is newest first
@@ -123,6 +136,7 @@ export default function Inicio() {
               >
                 {t.viewJob}
               </Link>
+              {moreToggle(false)}
             </section>
           ) : (
             <section key={`na-${next.job.id}`} className="mt-7 rounded-[20px] glass-forest p-5 text-white">
@@ -136,34 +150,13 @@ export default function Inicio() {
                 {copy.mano && <Sparkles className="size-4" strokeWidth={2.5} />}
                 {copy.cta}
               </Link>
+              {moreToggle(true)}
             </section>
           ))}
 
-        {/* Money — how much Carlos is owed. Hidden until his first invoice (no wall of $0s for new users). */}
-        {cash?.hasInvoices && (
-          <Link href="/documentos?tab=invoices" className={`${next ? "mt-4" : "mt-7"} block rounded-[20px] glass p-5 transition active:scale-[0.99]`}>
-            <span className="flex items-center justify-between text-sm font-medium text-muted">
-              {t.owedTitle}
-              <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
-            </span>
-            <span className="mt-0.5 block text-[40px] font-bold leading-[44px]">{money(cash.owed)}</span>
-            <span className="mt-3 flex flex-wrap gap-2 text-sm">
-              {cash.overdue > 0 && (
-                <span className="rounded-full bg-[#f6c9c0] px-3 py-1 font-semibold text-[#8a2a17]">
-                  {t.overdueLabel} {money(cash.overdue)}
-                </span>
-              )}
-              <span className="rounded-full bg-lime/40 px-3 py-1 font-semibold text-forest">
-                {t.paidThisMonth} {money(cash.paidThisMonth)}
-              </span>
-            </span>
-          </Link>
-        )}
-
-        {/* Ojo — everything ELSE that needs attention. Hidden when the next action is the only thing pending
-            (an Ojo card saying "nothing else" right under an Ojo warning reads like a contradiction). */}
-        {jobs && (ojoAlerts.length > 0 || !next) && (
-          <section className={`${next || cash?.hasInvoices ? "mt-4" : "mt-7"} rounded-[20px] glass-peach p-4`}>
+        {/* Ojo — the rest of the list, right under "+N más" when opened; "all clear" when nothing is pending */}
+        {jobs && ((showAll && ojoAlerts.length > 0) || !next) && (
+          <section className={`${next ? "mt-3" : "mt-7"} rounded-[20px] glass-peach p-4`}>
             <div className="flex items-center gap-2">
               <Eye className="size-6 text-[#b8803f]" strokeWidth={1.75} />
               <span className="font-mono text-xs font-medium uppercase tracking-[1.44px]">Ojo</span>
@@ -191,6 +184,27 @@ export default function Inicio() {
               </ul>
             )}
           </section>
+        )}
+
+        {/* Money — how much Carlos is owed. Hidden until his first invoice (no wall of $0s for new users). */}
+        {cash?.hasInvoices && (
+          <Link href="/documentos?tab=invoices" className={`mt-4 block rounded-[20px] glass p-5 transition active:scale-[0.99]`}>
+            <span className="flex items-center justify-between text-sm font-medium text-muted">
+              {t.owedTitle}
+              <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
+            </span>
+            <span className="mt-0.5 block text-[40px] font-bold leading-[44px]">{money(cash.owed)}</span>
+            <span className="mt-3 flex flex-wrap gap-2 text-sm">
+              {cash.overdue > 0 && (
+                <span className="rounded-full bg-[#f6c9c0] px-3 py-1 font-semibold text-[#8a2a17]">
+                  {t.overdueLabel} {money(cash.overdue)}
+                </span>
+              )}
+              <span className="rounded-full bg-lime/40 px-3 py-1 font-semibold text-forest">
+                {t.paidThisMonth} {money(cash.paidThisMonth)}
+              </span>
+            </span>
+          </Link>
         )}
 
         {/* Recent jobs — what's going on with the latest work */}

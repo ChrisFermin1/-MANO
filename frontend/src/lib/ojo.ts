@@ -104,12 +104,14 @@ export function alerts(jobs: Job[]): Alert[] {
 // One clear next step instead of a list of 17 things
 const PRIORITY: Alert["kind"][] = ["to_schedule", "no_response", "payment", "ready", "missing"];
 
+/** Everything that needs Carlos, most important first (same order as the next action), oldest first within a kind. */
+export function prioritized(jobs: Job[]): Alert[] {
+  return alerts(jobs).sort(
+    (a, b) => PRIORITY.indexOf(a.kind) - PRIORITY.indexOf(b.kind) || a.job.updated_at.localeCompare(b.job.updated_at),
+  );
+}
+
 export function nextAction(jobs: Job[]): Alert | null {
-  const all = alerts(jobs);
-  for (const kind of PRIORITY) {
-    const match = all.filter((a) => a.kind === kind).sort((a, b) => a.job.updated_at.localeCompare(b.job.updated_at))[0];
-    if (match) return match;
-  }
-  return null;
+  return prioritized(jobs)[0] ?? null;
 }
 
