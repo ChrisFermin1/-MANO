@@ -42,8 +42,8 @@ Welcome screen loads sample jobs. The backend (port 8000) doesn't need to run; t
 | 4 | Home screen: one next step | ✅ Done | `4c24fb1` |
 | 5 | Invoice and estimate views: no dead end | ✅ Done | `675dccc` |
 | 6 | Create from every list ("+") | ✅ Done | `a8793de` |
-| 7 | Search | ⏭ Next | |
-| 8 | Mark as paid: method and partial payments | To do (needs Josh later) | |
+| 7 | Search | ✅ Done | `3009856` |
+| 8 | Mark as paid: method and partial payments | ⏭ Next (needs Josh later) | |
 | 9 | Edit contact details after sending | To do | |
 
 Update this table (status + commit) after each task.
