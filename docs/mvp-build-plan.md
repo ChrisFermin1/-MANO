@@ -41,8 +41,8 @@ Welcome screen loads sample jobs. The backend (port 8000) doesn't need to run; t
 | 3 | Ojo uses the job's type first | ✅ Done | `2e06426` |
 | 4 | Home screen: one next step | ✅ Done | `4c24fb1` |
 | 5 | Invoice and estimate views: no dead end | ✅ Done | `675dccc` |
-| 6 | Create from every list ("+") | ⏭ Next | |
-| 7 | Search | To do | |
+| 6 | Create from every list ("+") | ✅ Done | `a8793de` |
+| 7 | Search | ⏭ Next | |
 | 8 | Mark as paid: method and partial payments | To do (needs Josh later) | |
 | 9 | Edit contact details after sending | To do | |
 
@@ -68,9 +68,8 @@ Update this table (status + commit) after each task.
     `const [docKind, setDocKind]`; read a query param like `?doc=invoice` to preselect it.
   - On a client's card in `/clientes`: "Nuevo estimado para Maria" → `/trabajos/nuevo` with her name
     (and address/phone) already filled in.
-- **Decision needed first:** "New client" on its own. Clients are not stored by themselves today; the
-  Clients page groups them from jobs (`groupClients` in `src/app/clientes/page.tsx`). A standalone client
-  needs a new place to save it (and later Josh's `customers` table). Ask Abe before building that part.
+- **Decided (Abe): yes, standalone clients.** Saved on the phone (`mano.clients`, see `src/lib/clients.ts`)
+  until Josh's backend can create a customer without a job (and stores an email).
 - **Done when:** each "+" opens New job set up correctly, in both languages.
 
 ### 7. Search
