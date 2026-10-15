@@ -40,8 +40,8 @@ Welcome screen loads sample jobs. The backend (port 8000) doesn't need to run; t
 | 2 | "Sent" only when it's sent | ✅ Done | `9b09722` |
 | 3 | Ojo uses the job's type first | ✅ Done | `2e06426` |
 | 4 | Home screen: one next step | ✅ Done | `4c24fb1` |
-| 5 | Invoice and estimate views: no dead end | ⏭ Next | |
-| 6 | Create from every list ("+") | To do | |
+| 5 | Invoice and estimate views: no dead end | ✅ Done | `675dccc` |
+| 6 | Create from every list ("+") | ⏭ Next | |
 | 7 | Search | To do | |
 | 8 | Mark as paid: method and partial payments | To do (needs Josh later) | |
 | 9 | Edit contact details after sending | To do | |
