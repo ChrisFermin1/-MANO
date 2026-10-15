@@ -423,6 +423,17 @@ export async function updateJob(id: number, patch: Partial<Job>): Promise<Job> {
   return next;
 }
 
+// PATCH /jobs/:id — fix the client's name, phone or address after sending. Price and work stay locked.
+// Keeps updated_at: a spelling fix shouldn't restart the "no answer in 2 days" clock.
+export async function updateContact(id: number, contact: Pick<Job, "customer_name" | "customer_phone" | "address">): Promise<Job> {
+  const jobs = read();
+  const i = jobs.findIndex((j) => j.id === id);
+  jobs[i] = { ...jobs[i], ...contact };
+  write(jobs);
+  if (jobs[i].public_token) void publishEstimate(jobs[i], loadBusiness()); // the customer's link shows the fix
+  return jobs[i];
+}
+
 export async function setStatus(id: number, status: JobStatus): Promise<Job> {
   return updateJob(id, { status });
 }

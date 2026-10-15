@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Archive, CalendarDays, Check, Database, Ellipsis, Eye, PartyPopper, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X } from "lucide-react";
+import { Archive, CalendarDays, Check, Database, Ellipsis, Eye, PartyPopper, Pencil, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X } from "lucide-react";
 import { AutoTextarea, DocStateBadge, OjoNote, PageHeader, Screen, Sheet, StatusBadge, Title, btnDanger, btnGhost, btnLime, btnPrimary, btnSecondary } from "@/components/ui";
 import {
   CANCEL_REASONS,
@@ -32,7 +32,9 @@ import {
   nextStatus,
   setStatus,
   uid,
+  updateContact,
   updateJob,
+  phoneDigits,
   type InvoiceState,
   type Job,
   type LineItem,
@@ -577,6 +579,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
     setJob(await setStatus(job.id, "SCHEDULED"));
   };
   const [paying, setPaying] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   return (
     <Screen>
@@ -626,29 +629,37 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
       )}
 
       <section className="mt-6 rounded-[20px] glass p-5">
-        {job.address && <p className="text-sm text-muted">{job.address}</p>}
+        {/* client: address + phone (tap to call); the pencil fixes a typo even after sending */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1 text-sm">
+            {job.address && <p className="text-muted">{job.address}</p>}
+            {job.customer_phone && phoneDigits(job.customer_phone) ? (
+              <a href={`tel:+${phoneDigits(job.customer_phone)}`} className="inline-flex items-center gap-1.5 font-semibold text-forest">
+                <Phone className="size-3.5" /> {job.customer_phone}
+              </a>
+            ) : (
+              job.status !== "CANCELLED" && (
+                <button type="button" onClick={() => setEditing(true)} className="inline-flex items-center gap-1.5 font-semibold text-forest">
+                  <Plus className="size-3.5" strokeWidth={2.5} /> {t.addPhone}
+                </button>
+              )
+            )}
+          </div>
+          {job.status !== "CANCELLED" && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              aria-label={t.editContact}
+              className="-mr-1 -mt-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-white/60 active:bg-white"
+            >
+              <Pencil className="size-4 text-forest" />
+            </button>
+          )}
+        </div>
         {job.scheduled_for && job.status !== "CANCELLED" && (
           <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-forest">
             <CalendarDays className="size-4" strokeWidth={2} /> {t.scheduledFor(fmtDay(job.scheduled_for, lang))}
           </p>
-        )}
-        {/* phone can still be added after sending (for reminders) */}
-        {job.status !== "CANCELLED" && job.status !== "PAID" && (
-          <label className="mt-2 flex items-center gap-2 rounded-[10px] bg-white/60 px-3 py-2 text-sm">
-            <Phone className="size-4 shrink-0 text-muted" />
-            <input
-              defaultValue={job.customer_phone ?? ""}
-              onBlur={async (e) => {
-                const v = e.currentTarget.value.trim();
-                if (v !== (job.customer_phone ?? "")) setJob(await updateJob(job.id, { customer_phone: v || null }));
-              }}
-              placeholder={`${t.customerPhone} · ${t.optional}`}
-              aria-label={t.customerPhone}
-              type="tel"
-              inputMode="tel"
-              className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted"
-            />
-          </label>
         )}
         <ul className="mt-3 space-y-1.5 text-[15px]">
           {job.line_items.map((i) => (
@@ -766,8 +777,58 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         )}
       </div>
 
+      <ContactSheet open={editing} job={job} onClose={() => setEditing(false)} onSaved={(j) => (setEditing(false), setJob(j))} />
       <PaymentSheet open={paying} job={job} onClose={() => setPaying(false)} onSaved={(j) => (setPaying(false), setJob(j))} />
     </Screen>
+  );
+}
+
+/* ───────── Client details: fix name, phone, address after sending ───────── */
+
+function ContactSheet({ open, job, onClose, onSaved }: { open: boolean; job: Job; onClose: () => void; onSaved: (j: Job) => void }) {
+  const { t } = useLang();
+  const [form, setForm] = useState({ name: "", phone: "", address: "" });
+  useEffect(() => {
+    if (open) setForm({ name: job.customer_name ?? "", phone: job.customer_phone ?? "", address: job.address ?? "" });
+  }, [open, job.customer_name, job.customer_phone, job.address]);
+
+  const save = async () => {
+    if (!form.name.trim()) return;
+    const name = form.name.trim();
+    // Mano misheard the name → remember the right spelling for next time
+    if (name !== job.customer_name) rememberNameFix(job.customer_name_heard ?? job.customer_name, name);
+    onSaved(await updateContact(job.id, { customer_name: name, customer_phone: form.phone.trim() || null, address: form.address.trim() || null }));
+  };
+  const field = "h-[48px] w-full rounded-[14px] glass-field px-4 text-base outline-none ring-forest/60 focus:ring-2";
+
+  return (
+    <Sheet open={open} onClose={onClose} title={t.editContact}>
+      <p className="mt-1 text-sm text-black/60">{job.public_token ? t.contactNoteSent : t.contactNote}</p>
+      <div className="mt-4 space-y-3">
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold">{t.clientName}</span>
+          <input className={field} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="off" />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold">{t.customerPhone}</span>
+          <input
+            className={field}
+            value={form.phone}
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            type="tel"
+            inputMode="tel"
+            placeholder="(555) 123-4567"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold">{t.address}</span>
+          <input className={field} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+        </label>
+      </div>
+      <button type="button" onClick={save} disabled={!form.name.trim()} className={`mt-5 ${btnPrimary}`}>
+        <Check className="size-5" strokeWidth={2.5} /> {t.saveChanges}
+      </button>
+    </Sheet>
   );
 }
 

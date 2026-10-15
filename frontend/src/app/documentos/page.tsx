@@ -117,7 +117,7 @@ export default function Documentos() {
               </span>
               <span className="flex flex-col items-end gap-1.5">
                 <span className="text-lg font-bold">{money(jobTotal(r.job))}</span>
-                {r.state !== "paid" && paidSoFar(r.job) > 0 && <span className="text-xs text-muted">{t.leftToPay(money(balanceDue(r.job)))}</span>}
+                {tab === "invoices" && r.state !== "paid" && paidSoFar(r.job) > 0 && <span className="text-xs text-muted">{t.leftToPay(money(balanceDue(r.job)))}</span>}
                 <DocStateBadge state={r.state} label={t.docState[r.state]} />
               </span>
               <ChevronRight className="size-5 text-muted" />
