@@ -216,6 +216,7 @@ const strings = {
     prepareSend: "Preparar para enviar",
     sentQuoteBody: (n: string) => `Ojo va a estar pendiente de la respuesta de ${n}.`,
     backHome: "Volver al inicio",
+    backToJob: "Volver al trabajo",
 
     // Seguimiento
     followTitle: (n: string) => `Mensaje para ${n}`,
@@ -521,6 +522,7 @@ const strings = {
     prepareSend: "Prepare to send",
     sentQuoteBody: (n: string) => `Ojo will keep an eye out for ${n}'s reply.`,
     backHome: "Back to home",
+    backToJob: "Back to the job",
 
     followTitle: (n: string) => `Message for ${n}`,
     followBody: "Mano wrote it. Change it if you want before sending.",

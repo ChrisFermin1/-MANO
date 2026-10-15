@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Loader2, Send } from "lucide-react";
+import { ArrowLeft, Loader2, Send } from "lucide-react";
 import { DocLangSwitch, DocumentCard } from "@/components/document";
-import { PageHeader, Screen, SuccessScreen, Title, btnPrimary } from "@/components/ui";
+import { PageHeader, Screen, SuccessScreen, Title, btnPrimary, btnSecondary } from "@/components/ui";
 import { ShareEstimate } from "@/components/share-estimate";
 import { canSendInvoice, firstName, getJob, invoiceNo, isUnsent, prepareInvoice, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
@@ -70,6 +70,15 @@ export default function Factura() {
             {sending ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" strokeWidth={2.25} />}
             {t.prepareSend}
           </button>
+        </div>
+      )}
+      {/* Already sent: sending again, mark as paid and follow-up live on the job page — say so */}
+      {!canSend && (
+        <div className="mt-auto pt-8">
+          <Link href={`/trabajos/${job.id}`} className={btnSecondary}>
+            <ArrowLeft className="size-5" strokeWidth={2.25} />
+            {t.backToJob}
+          </Link>
         </div>
       )}
     </Screen>

@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Loader2, Pencil, Send } from "lucide-react";
+import { ArrowLeft, Loader2, Pencil, Send } from "lucide-react";
 import { DocLangSwitch, DocumentCard } from "@/components/document";
 import { ShareEstimate } from "@/components/share-estimate";
-import { PageHeader, Screen, SuccessScreen, Title, btnGhost, btnPrimary } from "@/components/ui";
+import { PageHeader, Screen, SuccessScreen, Title, btnGhost, btnPrimary, btnSecondary } from "@/components/ui";
 import { estimateNo, firstName, getJob, isUnsent, prepareEstimate, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
@@ -73,6 +73,15 @@ export default function Estimado() {
           </button>
           <Link href={`/trabajos/${job.id}`} className={btnGhost}>
             <Pencil className="size-4" /> {t.edit}
+          </Link>
+        </div>
+      )}
+      {/* Already sent: follow-up and the rest live on the job page — say so */}
+      {!draft && (
+        <div className="mt-auto pt-8">
+          <Link href={`/trabajos/${job.id}`} className={btnSecondary}>
+            <ArrowLeft className="size-5" strokeWidth={2.25} />
+            {t.backToJob}
           </Link>
         </div>
       )}
