@@ -26,6 +26,16 @@
 body {
   font-family: var(--font-montserrat), system-ui, sans-serif;
 }
+/* The page's base color. iPhone Safari paints the strip behind the clock and battery with it (and it
+   shows when the page is pulled past the top), so it follows the screen: dark on dark screens. */
+html,
+body {
+  background-color: #eef1ea;
+}
+html:has(.bg-mano-dark),
+html:has(.bg-mano-dark) body {
+  background-color: #0f3d2e;
+}
 
 @keyframes wave {
   0%, 100% { transform: scaleY(0.4); }

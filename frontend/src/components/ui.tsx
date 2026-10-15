@@ -22,7 +22,7 @@ export const input =
 export function Screen({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <main className="min-h-dvh bg-mano-light text-black">
-      <div className={`mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-8 pt-[30px] ${className}`}>{children}</div>
+      <div className={`mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] ${className}`}>{children}</div>
     </main>
   );
 }
@@ -80,7 +80,7 @@ export function OjoNote({ children, className = "" }: { children: React.ReactNod
 export function SuccessScreen({ title, body, children }: { title: string; body: string; children: React.ReactNode }) {
   return (
     <main className="min-h-dvh bg-mano-dark text-white">
-      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col justify-center px-[25px] pb-8">
+      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col justify-center px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-[env(safe-area-inset-top)]">
         <div className="flex size-16 items-center justify-center rounded-full bg-lime">
           <Check className="size-8 text-forest" strokeWidth={3} />
         </div>
@@ -126,7 +126,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[430px] rounded-t-[28px] border-t border-white/80 bg-[#f4f6f1]/90 px-[25px] pb-8 pt-3 shadow-[0_-12px_40px_-12px_rgba(15,61,46,0.35)] backdrop-blur-2xl"
+        className="w-full max-w-[430px] rounded-t-[28px] border-t border-white/80 bg-[#f4f6f1]/90 px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_-12px_rgba(15,61,46,0.35)] backdrop-blur-2xl"
       >
         <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-black/15" />
         <h2 className="font-serif text-[28px] leading-8 tracking-[-0.56px]">{title}</h2>

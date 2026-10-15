@@ -89,7 +89,7 @@ export default function Inicio() {
 
   return (
     <main className="min-h-dvh bg-mano-light text-black">
-      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[120px] pt-[30px]">
+      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[calc(120px+env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))]">
         <header className="flex items-center justify-between">
           <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest">mano</span>
           <Link
@@ -243,7 +243,7 @@ export default function Inicio() {
       </div>
 
       {/* Primary action, always reachable */}
-      <div className="fixed inset-x-0 bottom-0 bg-gradient-to-t from-[#eef1ea] from-55% to-transparent pb-6 pt-8">
+      <div className="fixed inset-x-0 bottom-0 bg-gradient-to-t from-[#eef1ea] from-55% to-transparent pb-[max(24px,env(safe-area-inset-bottom))] pt-8">
         <div className="mx-auto max-w-[430px] px-[25px]">
           <Link
             href="/trabajos/nuevo"

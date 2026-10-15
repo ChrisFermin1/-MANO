@@ -37,7 +37,7 @@ export function ApprovalToast() {
   if (!job || pathname === "/inicio" || pathname === `/trabajos/${job.id}` || pathname.startsWith("/e/")) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-3 z-[60] flex justify-center px-3">
+    <div className="pointer-events-none fixed inset-x-0 top-[calc(12px+env(safe-area-inset-top))] z-[60] flex justify-center px-3">
       <div
         role="status"
         aria-live="polite"

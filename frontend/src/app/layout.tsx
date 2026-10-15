@@ -14,11 +14,13 @@ export const metadata: Metadata = {
   title: "MANO",
   description: "Tú hablas, Mano escribe.",
   // iPhone "Add to Home Screen": opens full screen with its own name
-  appleWebApp: { capable: true, title: "mano", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "mano", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {
   themeColor: "#0f3d2e",
+  // draw behind the iPhone's clock and battery (each screen pads itself with the safe-area insets)
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

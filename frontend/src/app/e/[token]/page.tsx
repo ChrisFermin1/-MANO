@@ -120,7 +120,7 @@ export default function CustomerEstimate() {
 
   return (
     <main className="min-h-dvh bg-mano-light text-black">
-      <div className="mx-auto flex min-h-dvh max-w-[520px] flex-col px-5 pb-10 pt-6">
+      <div className="mx-auto flex min-h-dvh max-w-[520px] flex-col px-5 pb-[max(40px,env(safe-area-inset-bottom))] pt-[calc(24px+env(safe-area-inset-top))]">
         {/* One clean row: who it's from + a compact language switch (the document itself says "Estimate") */}
         <header className="flex items-center justify-between gap-4">
           <p className="min-w-0 truncate font-logo text-xl leading-none text-forest">{bizName}</p>
