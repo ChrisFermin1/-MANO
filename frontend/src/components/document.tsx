@@ -1,4 +1,4 @@
-import { balanceDue, estimateNo, fmtDate, invoiceNo, isLumpSum, jobTotal, money, paidSoFar, type Job } from "@/lib/api";
+import { balanceDue, defaultDue, dueDay, estimateNo, fmtDate, invoiceNo, isLumpSum, jobTotal, money, paidSoFar, type Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
 
 // Estimate / invoice document. The CUSTOMER always gets `view="en"`.
@@ -21,7 +21,9 @@ export function DocumentCard({
   const num = isInvoice ? job.invoice_number : job.estimate_number;
   const label = num ? (isInvoice ? invoiceNo(num) : estimateNo(num)) : L("NOT SENT", "SIN ENVIAR");
   const issued = (isInvoice ? job.invoice_sent_at : job.estimate_sent_at) ?? new Date().toISOString();
-  const due = job.invoice_due_at ?? new Date(Date.now() + 15 * 86_400_000).toISOString();
+  const due = job.invoice_due_at ?? defaultDue();
+  // whole days from the invoice date to the due date (0 = due on receipt)
+  const dueIn = Math.max(0, Math.round((new Date(dueDay(due)).getTime() - new Date(dueDay(issued)).getTime()) / 86_400_000));
   const validUntil = new Date(new Date(issued).getTime() + 30 * 86_400_000).toISOString();
   const ref = job.estimate_number ? estimateNo(job.estimate_number) : null;
 
@@ -29,8 +31,8 @@ export function DocumentCard({
     ? job.paid_at
       ? L(`${ref ? `Ref. estimate #${ref}. ` : ""}Thank you for your business!`, `${ref ? `Ref. estimado #${ref}. ` : ""}¡Gracias por su preferencia!`)
       : L(
-          `${ref ? `Ref. estimate #${ref}. ` : ""}Payment due within 15 days. Thank you for your business!`,
-          `${ref ? `Ref. estimado #${ref}. ` : ""}Pago dentro de 15 días. ¡Gracias por su preferencia!`,
+          `${ref ? `Ref. estimate #${ref}. ` : ""}${dueIn === 0 ? "Payment due on receipt." : `Payment due within ${dueIn} days.`} Thank you for your business!`,
+          `${ref ? `Ref. estimado #${ref}. ` : ""}${dueIn === 0 ? "Pago al recibir." : `Pago dentro de ${dueIn} días.`} ¡Gracias por su preferencia!`,
         )
     : L(
         "Estimate valid for 30 days. Includes labor and materials unless noted. Thank you for your business!",

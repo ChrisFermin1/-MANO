@@ -12,6 +12,8 @@ export type Business = {
   phone: string;
   // How clients pay (e.g. "Zelle: (713) 555-0100"), printed on invoices and the customer's link
   payInfo?: string;
+  // Invoices are due this many days after sending (0 = on receipt). Default 15.
+  invoiceDueDays?: number;
   trades: TradeId[];
   otherTrade?: OtherTrade | null;
   // Ojo checklist items Carlos said he always includes in his price ("Ya lo incluyo siempre")
@@ -31,6 +33,8 @@ export const DEMO_BUSINESS: Business = {
   trades: ["painting", "drywall"],
   ojoIgnore: [],
 };
+
+export const DUE_OPTIONS = [0, 7, 15, 30] as const;
 
 export function loadBusiness(): Business | null {
   try {

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, Eye } from "lucide-react";
 import { LangToggle } from "@/components/lang-toggle";
 import { PageHeader, Screen, Title, btnPrimary, input } from "@/components/ui";
-import { DEMO_BUSINESS, loadBusiness, saveBusiness, type Business } from "@/lib/business";
+import { DEMO_BUSINESS, DUE_OPTIONS, loadBusiness, saveBusiness, type Business } from "@/lib/business";
 import { checklistItemByKey } from "@/lib/checklists";
 import { useLang, type TradeId } from "@/lib/i18n";
 import { TRADES } from "@/lib/trades";
@@ -44,6 +44,7 @@ export default function Negocio() {
       businessName: biz.businessName.trim(),
       phone: biz.phone.trim(),
       payInfo: biz.payInfo?.trim() ?? "",
+      invoiceDueDays: biz.invoiceDueDays ?? 15,
       trades: biz.trades,
       otherTrade: otherOn ? { name: biz.otherTrade?.name.trim() ?? "", unit: biz.otherTrade?.unit ?? "project" } : null,
       ojoIgnore: biz.ojoIgnore ?? [],
@@ -137,6 +138,26 @@ export default function Negocio() {
           />
           <span className="mt-1.5 block text-xs text-muted">{t.payInfoHint}</span>
         </label>
+        <div>
+          <span className="mb-1.5 block text-sm text-charcoal/70">{t.dueTerms}</span>
+          <div role="radiogroup" aria-label={t.dueTerms} className="grid grid-cols-4 gap-1.5">
+            {DUE_OPTIONS.map((d) => {
+              const on = (biz.invoiceDueDays ?? 15) === d;
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => change({ invoiceDueDays: d })}
+                  className={`h-10 rounded-[12px] text-[13px] font-semibold transition ${on ? "bg-forest text-white" : "bg-white text-charcoal"}`}
+                >
+                  {d === 0 ? t.dueOnReceipt : t.dueDays(d)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </section>
 
       <section className="mt-8">

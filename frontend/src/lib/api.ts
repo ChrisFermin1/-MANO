@@ -59,6 +59,7 @@ export type Job = {
   // One price for the whole job ("Total 1400$ only labor"): items list the work, no per-item prices.
   // Set → the job total is this; null/absent → the total is the sum of the items.
   job_total?: number | null;
+  invoice_due_custom?: boolean; // Carlos picked this invoice's due date himself → sending doesn't reset it (app only)
   note_totals?: number[]; // "Total" amounts written on a scanned/typed note, to check against the item prices (app only)
   payments?: Payment[]; // money received on the invoice, full or partial (app only until the backend has payments)
   price_note?: string | null; // what the price covers, for the customer ("Labor only")
@@ -109,6 +110,17 @@ export const canDelete = (j: Job) =>
 export const canCancel = (j: Job) => !!j.estimate_number && !j.invoice_number && j.status !== "CANCELLED" && j.status !== "PAID";
 
 export const INVOICE_DUE_DAYS = 15;
+/** "2026-10-31" → the end of that day, so an invoice due today isn't overdue until tomorrow. */
+export const endOfDay = (day: string) => new Date(`${day}T23:59:59`).toISOString();
+const dayOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/** Due date from Carlos's terms (Tu negocio), counted from `from`. */
+export const defaultDue = (from = new Date()) => {
+  const d = new Date(from);
+  d.setDate(d.getDate() + (loadBusiness()?.invoiceDueDays ?? INVOICE_DUE_DAYS));
+  return endOfDay(dayOf(d));
+};
+/** "2026-10-31" from a stored due date, for a date input. */
+export const dueDay = (iso: string) => dayOf(new Date(iso));
 export const estimateNo = (n: number) => `EST-${String(n).padStart(4, "0")}`;
 export const invoiceNo = (n: number) => `INV-${String(n).padStart(4, "0")}`;
 
@@ -473,7 +485,8 @@ export async function markSent(id: number): Promise<Job> {
     ? await updateJob(id, {
         status: "PAYMENT_PENDING",
         invoice_sent_at: now.toISOString(),
-        invoice_due_at: new Date(now.getTime() + INVOICE_DUE_DAYS * DAY).toISOString(),
+        // counted from the day it's really sent, unless Carlos picked the date himself
+        invoice_due_at: job.invoice_due_custom && job.invoice_due_at ? job.invoice_due_at : defaultDue(now),
       })
     : await updateJob(id, { status: "QUOTE_SENT", estimate_sent_at: now.toISOString() });
   void publishEstimate(sent, loadBusiness());
@@ -486,20 +499,28 @@ export async function markSent(id: number): Promise<Job> {
 export const canInvoiceDirectly = (j: Job) => canDelete(j) && validate(j).length === 0;
 export const canSendInvoice = (j: Job) => !j.invoice_number && (j.status === "COMPLETED" || canInvoiceDirectly(j));
 
-export async function prepareInvoice(id: number): Promise<Job> {
+export async function prepareInvoice(id: number, due?: string): Promise<Job> {
   await wait(600);
   const job = (await getJob(id))!;
   if (!canSendInvoice(job)) throw new Error("This job can't be invoiced yet");
   const now = new Date();
   const ready = await updateJob(id, {
     invoice_number: job.invoice_number ?? nextNumber("invoice_number"),
-    // a due date so the customer page reads right; markSent() restarts it from the day it's really sent
-    invoice_due_at: new Date(now.getTime() + INVOICE_DUE_DAYS * DAY).toISOString(),
+    // Carlos's date if he changed it; otherwise his terms, restarted by markSent() on the day it's really sent
+    invoice_due_at: due && endOfDay(due) !== defaultDue(now) ? endOfDay(due) : defaultDue(now),
+    invoice_due_custom: !!due && endOfDay(due) !== defaultDue(now),
     // the same customer link shows the invoice now (a job invoiced without an estimate gets one here)
     public_token: job.public_token ?? newToken(),
   });
   void publishEstimate(ready, loadBusiness());
   return ready;
+}
+
+// PATCH /jobs/:id {invoice_due_at} — a client asked for more time
+export async function setInvoiceDue(id: number, day: string): Promise<Job> {
+  const saved = await updateJob(id, { invoice_due_at: endOfDay(day), invoice_due_custom: true });
+  if (saved.public_token) void publishEstimate(saved, loadBusiness()); // the customer's link shows the new date
+  return saved;
 }
 
 // POST /jobs/:id/invoice/paid
