@@ -110,6 +110,15 @@ Update this table (status + commit) after each task.
   `ContactSheet` on the job page. Backend: the existing job update already takes `customer_name`, phone and
   address; when the backend becomes the source of truth, a contact fix shouldn't bump `updated_at`.
 
+## Extra changes (done, after the list)
+
+| Change | Commit | Josh / Chris |
+|--------|--------|--------------|
+| Payment sheet: simpler layout + progress bar | `5a95258` | — |
+| Welcome screen: light background, dark green button and logo | `a1b9680`, `da3d48e` | — |
+| New brand palette (colors only): forest `#073D2D`, ivory `#F5F5ED`, white cards, charcoal `#202522`, sage `#DDE7D8`, status pairs. Tokens in `globals.css` | `fd77173` | — |
+| UX fixes: undo a payment; customer invoice wording when overdue or partly paid; no "due in 15 days" on paid invoices; "Cómo te pagan" (Zelle, checks…) on invoices; paid job shows a sage box; no "$0" on clients | `2ceefb6` | Josh: `pay_info` text on the business, and `DELETE /jobs/{id}/payments/{pid}` (job back to PAYMENT_PENDING if it drops below the total) |
+
 ## After this list
 All 10 tasks (0–9) are done on `abe/experiments`. Next step: a pull request into `dev` when Abe says so.
 
