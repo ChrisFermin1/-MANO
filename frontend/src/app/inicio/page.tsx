@@ -11,15 +11,15 @@ import { jobSubtitle } from "@/lib/services";
 
 // Neutral grey for every fact; only "Pagado" is colored (good news). Warnings live in Ojo.
 const BADGE_STYLE: Record<JobBadge, string> = {
-  unsent: "bg-black/5 text-black/60",
-  sent: "bg-black/5 text-black/60",
-  accepted: "bg-black/5 text-black/60",
-  scheduled: "bg-black/5 text-black/60",
-  in_progress: "bg-black/5 text-black/60",
-  done: "bg-black/5 text-black/60",
-  invoiced: "bg-black/5 text-black/60",
-  paid: "bg-lime text-forest",
-  cancelled: "bg-black/5 text-black/40",
+  unsent: "bg-black/5 text-charcoal/60",
+  sent: "bg-black/5 text-charcoal/60",
+  accepted: "bg-black/5 text-charcoal/60",
+  scheduled: "bg-black/5 text-charcoal/60",
+  in_progress: "bg-black/5 text-charcoal/60",
+  done: "bg-black/5 text-charcoal/60",
+  invoiced: "bg-black/5 text-charcoal/60",
+  paid: "bg-sage text-forest",
+  cancelled: "bg-black/5 text-charcoal/40",
 };
 
 function alertText(a: Alert, t: Strings) {
@@ -101,14 +101,14 @@ export default function Inicio() {
   const recent = (jobs ?? []).filter((j) => j.status !== "CANCELLED").slice(0, 3); // getJobs() is newest first
 
   return (
-    <main className="min-h-dvh bg-mano-light text-black">
+    <main className="min-h-dvh bg-mano-light text-charcoal">
       <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[calc(120px+env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))]">
         <header className="flex items-center justify-between">
           <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest">mano</span>
           <Link
             href="/negocio"
             aria-label={t.openSettings}
-            className="flex size-10 items-center justify-center rounded-full bg-forest text-base font-semibold text-lime transition active:scale-95"
+            className="flex size-10 items-center justify-center rounded-full bg-forest text-base font-semibold text-white transition active:scale-95"
           >
             {name.charAt(0).toUpperCase()}
           </Link>
@@ -123,7 +123,7 @@ export default function Inicio() {
         {/* Next action — the ONE thing to do now. Turns into good news when a customer approved. */}
         {next && copy &&
           (approval ? (
-            <section key={`ok-${approval.job.id}`} className="mt-7 rounded-[24px] glass-lime p-5 text-forest motion-safe:animate-[pop-in_300ms_ease-out]">
+            <section key={`ok-${approval.job.id}`} className="mt-7 rounded-[24px] glass-sage p-5 text-forest motion-safe:animate-[pop-in_300ms_ease-out]">
               <span className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-[1.44px]">
                 <PartyPopper className="size-5" strokeWidth={2} /> {t.goodNews}
               </span>
@@ -132,7 +132,7 @@ export default function Inicio() {
               <p className="mt-2 text-sm font-semibold">{t.approvedNext}</p>
               <Link
                 href={alertHref(approval)}
-                className="mt-5 flex h-[53px] items-center justify-center gap-2 rounded-[20px] bg-forest text-sm font-bold text-lime transition active:scale-[0.98]"
+                className="mt-5 flex h-[53px] items-center justify-center gap-2 rounded-[20px] bg-forest text-sm font-bold text-white transition active:scale-[0.98]"
               >
                 {t.viewJob}
               </Link>
@@ -140,12 +140,12 @@ export default function Inicio() {
             </section>
           ) : (
             <section key={`na-${next.job.id}`} className="mt-7 rounded-[20px] glass-forest p-5 text-white">
-              <span className="font-mono text-xs uppercase tracking-[1.44px] text-lime">{t.nextAction}</span>
+              <span className="font-mono text-xs uppercase tracking-[1.44px] text-white">{t.nextAction}</span>
               <p className="mt-2 font-serif text-[28px] leading-8 tracking-[-0.56px]">{copy.title}</p>
               <p className="mt-1 text-sm leading-5 text-white/80">{copy.detail}</p>
               <Link
                 href={alertHref(next)}
-                className="mt-5 flex h-[53px] items-center justify-center gap-2 rounded-[20px] bg-lime text-sm font-bold text-forest transition active:scale-[0.98]"
+                className="mt-5 flex h-[53px] items-center justify-center gap-2 rounded-[20px] bg-white text-sm font-bold text-forest transition active:scale-[0.98]"
               >
                 {copy.mano && <Sparkles className="size-4" strokeWidth={2.5} />}
                 {copy.cta}
@@ -196,11 +196,11 @@ export default function Inicio() {
             <span className="mt-0.5 block text-[40px] font-bold leading-[44px]">{money(cash.owed)}</span>
             <span className="mt-3 flex flex-wrap gap-2 text-sm">
               {cash.overdue > 0 && (
-                <span className="rounded-full bg-[#f6c9c0] px-3 py-1 font-semibold text-[#8a2a17]">
+                <span className="rounded-full bg-overdue px-3 py-1 font-semibold text-overdue-ink">
                   {t.overdueLabel} {money(cash.overdue)}
                 </span>
               )}
-              <span className="rounded-full bg-lime/40 px-3 py-1 font-semibold text-forest">
+              <span className="rounded-full bg-sage px-3 py-1 font-semibold text-forest">
                 {t.paidThisMonth} {money(cash.paidThisMonth)}
               </span>
             </span>
@@ -257,11 +257,11 @@ export default function Inicio() {
       </div>
 
       {/* Primary action, always reachable */}
-      <div className="fixed inset-x-0 bottom-0 bg-gradient-to-t from-[#eef1ea] from-55% to-transparent pb-[max(24px,env(safe-area-inset-bottom))] pt-8">
+      <div className="fixed inset-x-0 bottom-0 bg-gradient-to-t from-ivory from-55% to-transparent pb-[max(24px,env(safe-area-inset-bottom))] pt-8">
         <div className="mx-auto max-w-[430px] px-[25px]">
           <Link
             href="/trabajos/nuevo"
-            className="flex h-[60px] items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-lime shadow-lg shadow-forest/20 transition active:scale-[0.98]"
+            className="flex h-[60px] items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-lg shadow-forest/20 transition active:scale-[0.98]"
           >
             <Plus className="size-5" strokeWidth={2.75} />
             {t.newJob}

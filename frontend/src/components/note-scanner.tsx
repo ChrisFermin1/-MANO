@@ -140,7 +140,7 @@ export function NoteScanner({
           aria-label={t.scanShutter}
           className="flex size-[72px] items-center justify-center rounded-full border-4 border-white/90 transition active:scale-95 disabled:opacity-40"
         >
-          <span className={`size-[56px] rounded-full ${state === "hold" ? "bg-lime" : "bg-white"}`} />
+          <span className={`size-[56px] rounded-full ${state === "hold" ? "bg-sage" : "bg-white"}`} />
         </button>
         <span className="w-16" aria-hidden />
       </div>
@@ -166,6 +166,6 @@ function drawOutline(canvas: HTMLCanvasElement | null, v: HTMLVideoElement, q: Q
   ctx.fill();
   ctx.lineWidth = 4 * devicePixelRatio;
   ctx.lineJoin = "round";
-  ctx.strokeStyle = "#a6d93b";
+  ctx.strokeStyle = "#dde7d8";
   ctx.stroke();
 }

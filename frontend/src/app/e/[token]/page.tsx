@@ -119,7 +119,7 @@ export default function CustomerEstimate() {
   const unavailable = !invoice && job && (job.status === "CANCELLED" || (!approved && job.status !== "QUOTE_SENT"));
 
   return (
-    <main className="min-h-dvh bg-mano-light text-black">
+    <main className="min-h-dvh bg-mano-light text-charcoal">
       <div className="mx-auto flex min-h-dvh max-w-[520px] flex-col px-5 pb-[max(40px,env(safe-area-inset-bottom))] pt-[calc(24px+env(safe-area-inset-top))]">
         {/* One clean row: who it's from + a compact language switch (the document itself says "Estimate") */}
         <header className="flex items-center justify-between gap-4">
@@ -132,7 +132,7 @@ export default function CustomerEstimate() {
                 onClick={() => setLang(l)}
                 aria-pressed={lang === l}
                 aria-label={l === "en" ? "English" : "Español"}
-                className={`min-h-8 min-w-11 rounded-full px-3 ${lang === l ? "bg-white shadow-sm" : "text-black/50"}`}
+                className={`min-h-8 min-w-11 rounded-full px-3 ${lang === l ? "bg-white shadow-sm" : "text-charcoal/50"}`}
               >
                 {l.toUpperCase()}
               </button>
@@ -151,30 +151,30 @@ export default function CustomerEstimate() {
             {invoice ? (
               paid ? (
                 <section className="mt-6 rounded-[20px] glass-forest p-5 text-white">
-                  <CheckCircle2 className="size-8 text-lime" />
+                  <CheckCircle2 className="size-8 text-white" />
                   <h1 className="mt-3 font-serif text-[32px] leading-9">{c.paidTitle}</h1>
-                  {job.paid_at && <p className="mt-3 font-mono text-xs text-lime">{c.paidOn(fmtDate(job.paid_at, lang))}</p>}
+                  {job.paid_at && <p className="mt-3 font-mono text-xs text-white">{c.paidOn(fmtDate(job.paid_at, lang))}</p>}
                 </section>
               ) : (
                 <section className="mt-6">
                   <h1 className="font-serif text-[32px] leading-9">{c.hi((job.customer_name ?? "").split(" ")[0])}</h1>
-                  <p className="mt-2 text-base leading-6 text-black/75">{c.invoiceIntro(money(balanceDue(job)), due)}</p>
-                  {overdue && <p className="mt-2 text-sm font-semibold text-[#8a2a17]">{c.invoiceOverdue(due)}</p>}
+                  <p className="mt-2 text-base leading-6 text-charcoal/75">{c.invoiceIntro(money(balanceDue(job)), due)}</p>
+                  {overdue && <p className="mt-2 text-sm font-semibold text-overdue-ink">{c.invoiceOverdue(due)}</p>}
                 </section>
               )
             ) : approved ? (
               <section className="mt-6 rounded-[20px] glass-forest p-5 text-white">
-                <CheckCircle2 className="size-8 text-lime" />
+                <CheckCircle2 className="size-8 text-white" />
                 <h1 className="mt-3 font-serif text-[32px] leading-9">{c.approvedTitle}</h1>
                 <p className="mt-2 text-sm leading-5 text-white/85">{c.approvedBody(bizName)}</p>
-                <p className="mt-3 font-mono text-xs text-lime">{c.approvedBy(job.approved_by ?? "", fmtDate(job.approved_at!, lang))}</p>
+                <p className="mt-3 font-mono text-xs text-white">{c.approvedBy(job.approved_by ?? "", fmtDate(job.approved_at!, lang))}</p>
               </section>
             ) : unavailable ? (
               <p className="mt-6 rounded-[16px] bg-black/5 p-4 text-sm">{c.unavailable}</p>
             ) : (
               <section className="mt-6">
                 <h1 className="font-serif text-[32px] leading-9">{c.hi((job.customer_name ?? "").split(" ")[0])}</h1>
-                <p className="mt-2 text-base leading-6 text-black/75">{c.intro}</p>
+                <p className="mt-2 text-base leading-6 text-charcoal/75">{c.intro}</p>
               </section>
             )}
 
@@ -197,7 +197,7 @@ export default function CustomerEstimate() {
                   type="button"
                   onClick={approve}
                   disabled={name.trim().length < 2 || busy}
-                  className="mt-4 flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-lime shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40"
+                  className="mt-4 flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40"
                 >
                   {busy ? <Loader2 className="size-5 animate-spin" /> : <CheckCircle2 className="size-5" />}
                   {c.approve}
@@ -236,13 +236,13 @@ export default function CustomerEstimate() {
             {invoice && !paid && (
               <section className="mt-6 rounded-[20px] glass p-4">
                 <h2 className="text-base font-semibold">{c.howToPay}</h2>
-                <p className="mt-1 text-sm leading-5 text-black/70">{c.howToPayBody(bizName)}</p>
+                <p className="mt-1 text-sm leading-5 text-charcoal/70">{c.howToPayBody(bizName)}</p>
                 {biz.phone && <p className="mt-2 font-mono text-sm">{biz.phone}</p>}
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <a
                     href={biz.phone ? `tel:${biz.phone}` : undefined}
                     aria-disabled={!biz.phone}
-                    className="flex h-12 items-center justify-center gap-2 rounded-[14px] bg-forest text-sm font-semibold text-lime aria-disabled:opacity-40"
+                    className="flex h-12 items-center justify-center gap-2 rounded-[14px] bg-forest text-sm font-semibold text-white aria-disabled:opacity-40"
                   >
                     <Phone className="size-4" /> {c.call}
                   </a>

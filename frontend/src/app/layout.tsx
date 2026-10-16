@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f3d2e",
+  themeColor: "#073d2d",
   // draw behind the iPhone's clock and battery (each screen pads itself with the safe-area insets)
   viewportFit: "cover",
 };

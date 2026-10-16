@@ -258,7 +258,7 @@ export default function NuevoTrabajo() {
   if (busy) {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-mano-dark px-8 text-center text-white">
-        <Loader2 className="size-10 animate-spin text-lime" />
+        <Loader2 className="size-10 animate-spin text-white" />
         <p className="font-serif text-[28px] leading-8">{t.thinking}</p>
       </main>
     );
@@ -274,7 +274,7 @@ export default function NuevoTrabajo() {
         <p className="mt-4 flex items-center gap-2 rounded-[14px] glass px-4 py-2.5 text-sm font-semibold text-forest">
           <UserRound className="size-4 shrink-0" strokeWidth={2.25} />
           <span className="min-w-0 flex-1 truncate">{t.forClient(client.name)}</span>
-          <button type="button" onClick={() => setClient(null)} aria-label={t.close} className="-mr-1 shrink-0 p-1 text-black/50">
+          <button type="button" onClick={() => setClient(null)} aria-label={t.close} className="-mr-1 shrink-0 p-1 text-charcoal/50">
             <X className="size-4" />
           </button>
         </p>
@@ -288,7 +288,7 @@ export default function NuevoTrabajo() {
             role="tab"
             aria-selected={docKind === k}
             onClick={() => setDocKind(k)}
-            className={`min-h-10 rounded-[10px] px-2 py-1.5 leading-4 transition ${docKind === k ? "bg-forest text-lime" : "text-black/60"}`}
+            className={`min-h-10 rounded-[10px] px-2 py-1.5 leading-4 transition ${docKind === k ? "bg-forest text-white" : "text-charcoal/60"}`}
           >
             {k === "estimate" ? t.docEstimate : t.docInvoice}
           </button>
@@ -305,13 +305,13 @@ export default function NuevoTrabajo() {
         >
           <span
             className={`flex size-[88px] items-center justify-center rounded-full transition ${
-              isRecording ? "bg-forest ring-8 ring-lime/40 glow-lime" : "bg-lime glow-lime"
+              isRecording ? "bg-forest ring-8 ring-sage glow-sage" : "bg-forest glow-sage"
             }`}
           >
             {transcribing ? (
               <Loader2 className="size-10 animate-spin text-forest" strokeWidth={2} />
             ) : (
-              <Mic className={`size-10 ${isRecording ? "animate-pulse text-lime" : "text-forest"}`} strokeWidth={2} />
+              <Mic className={`size-10 ${isRecording ? "animate-pulse text-white" : "text-white"}`} strokeWidth={2} />
             )}
           </span>
           <span className="text-sm font-semibold">
@@ -355,14 +355,14 @@ export default function NuevoTrabajo() {
       {scanMessage && (
         <p
           role={scanMessage.kind === "error" ? "alert" : "status"}
-          className={`mt-2 text-center text-sm font-semibold ${scanMessage.kind === "error" ? "text-[#8a2a17]" : "text-forest"}`}
+          className={`mt-2 text-center text-sm font-semibold ${scanMessage.kind === "error" ? "text-overdue-ink" : "text-forest"}`}
         >
           {scanMessage.text}
         </p>
       )}
 
       {voiceError && (
-        <p role="alert" className="mt-3 text-center text-sm font-semibold text-[#8a2a17]">
+        <p role="alert" className="mt-3 text-center text-sm font-semibold text-overdue-ink">
           {voiceError}
         </p>
       )}
@@ -394,7 +394,7 @@ export default function NuevoTrabajo() {
               {t.recordAgain}
             </button>
           )}
-          <button type="button" onClick={clearAll} className={`${chip} text-[#8a2a17]`}>
+          <button type="button" onClick={clearAll} className={`${chip} text-overdue-ink`}>
             <Trash2 className="size-[18px]" strokeWidth={2.25} />
             {t.clearAll}
           </button>
@@ -404,7 +404,7 @@ export default function NuevoTrabajo() {
       {justCleared && !text && (
         <div role="status" className="mt-3 flex items-center justify-between rounded-[14px] glass-forest px-4 py-3 text-sm text-white">
           {t.cleared}
-          <button type="button" onClick={undoClear} className="font-bold text-lime">
+          <button type="button" onClick={undoClear} className="font-bold text-white">
             {t.undo}
           </button>
         </div>
@@ -425,7 +425,7 @@ export default function NuevoTrabajo() {
       )}
 
       {submitError && (
-        <p role="alert" className="mt-4 rounded-[14px] bg-[#fff0ed] px-4 py-3 text-sm font-semibold text-[#8a2a17]">
+        <p role="alert" className="mt-4 rounded-[14px] bg-overdue px-4 py-3 text-sm font-semibold text-overdue-ink">
           {submitError}
         </p>
       )}

@@ -45,7 +45,7 @@ export function DocumentCard({
         <div className="text-right">
           <p className="font-mono text-xs font-bold uppercase tracking-[1.44px]">{isInvoice ? L("Invoice", "Factura") : L("Estimate", "Estimado")}</p>
           {num ? (
-            <p className="mt-1 font-mono text-xs text-black">#{label}</p>
+            <p className="mt-1 font-mono text-xs text-charcoal">#{label}</p>
           ) : (
             // badge hugs its text (inline-block), so the highlight is centered on the word
             <p className="mt-1">
@@ -55,7 +55,7 @@ export function DocumentCard({
             </p>
           )}
           {isInvoice && job.paid_at && (
-            <p className="mt-1.5 inline-block rounded bg-lime px-2 py-0.5 font-mono text-xs font-bold uppercase tracking-[1.5px] text-forest">
+            <p className="mt-1.5 inline-block rounded bg-sage px-2 py-0.5 font-mono text-xs font-bold uppercase tracking-[1.5px] text-forest">
               {L("Paid", "Pagado")} {fmtDate(job.paid_at, view)}
             </p>
           )}
@@ -137,7 +137,7 @@ export function DocLangSwitch({
           role="tab"
           aria-selected={view === v}
           onClick={() => onChange(v)}
-          className={`min-h-10 rounded-[10px] px-2 py-1.5 leading-4 transition ${view === v ? "bg-forest text-lime" : "text-black/60"}`}
+          className={`min-h-10 rounded-[10px] px-2 py-1.5 leading-4 transition ${view === v ? "bg-forest text-white" : "text-charcoal/60"}`}
         >
           {labels[v]}
         </button>

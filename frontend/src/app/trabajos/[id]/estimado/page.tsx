@@ -37,7 +37,7 @@ export default function Estimado() {
         }`}
       >
         <ShareEstimate job={job} dark onSent={setJob} />
-        <Link href="/inicio" className="mt-4 flex h-[48px] w-full items-center justify-center rounded-[20px] text-sm font-semibold text-lime">
+        <Link href="/inicio" className="mt-4 flex h-[48px] w-full items-center justify-center rounded-[20px] text-sm font-semibold text-white">
           {t.backHome}
         </Link>
       </SuccessScreen>

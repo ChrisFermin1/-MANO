@@ -67,7 +67,7 @@ export default function Documentos() {
             aria-label={tab === "invoices" ? t.docInvoice : t.docEstimate}
             className="flex size-10 items-center justify-center rounded-full bg-forest"
           >
-            <Plus className="size-5 text-lime" strokeWidth={2.75} />
+            <Plus className="size-5 text-white" strokeWidth={2.75} />
           </Link>
         }
       />
@@ -81,7 +81,7 @@ export default function Documentos() {
             role="tab"
             aria-selected={tab === k}
             onClick={() => setTab(k)}
-            className={`h-10 rounded-[10px] text-sm font-semibold transition ${tab === k ? "bg-forest text-lime" : "text-black/70"}`}
+            className={`h-10 rounded-[10px] text-sm font-semibold transition ${tab === k ? "bg-forest text-white" : "text-charcoal/70"}`}
           >
             {k === "estimates" ? t.tabEstimates : t.tabInvoices}
           </button>
@@ -94,7 +94,7 @@ export default function Documentos() {
             <p className="text-xs font-medium">{t.outstanding}</p>
             <p className="mt-1 text-2xl font-bold">{money(outstanding)}</p>
           </div>
-          <div className="rounded-[16px] glass-lime p-4">
+          <div className="rounded-[16px] glass-sage p-4">
             <p className="text-xs font-medium">{t.collected}</p>
             <p className="mt-1 text-2xl font-bold">{money(collected)}</p>
           </div>

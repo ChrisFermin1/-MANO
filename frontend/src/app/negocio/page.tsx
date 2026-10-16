@@ -69,12 +69,12 @@ export default function Negocio() {
                 onClick={() => toggle(id)}
                 aria-pressed={on}
                 className={`relative flex h-[76px] flex-col justify-between rounded-[16px] p-3 text-left transition active:scale-[0.98] ${
-                  on ? "glass-forest text-white" : "glass text-black"
+                  on ? "glass-forest text-white" : "glass text-charcoal"
                 }`}
               >
-                <Icon className={`size-6 ${on ? "text-lime" : ""}`} strokeWidth={1.75} />
+                <Icon className={`size-6 ${on ? "text-white" : ""}`} strokeWidth={1.75} />
                 {on && (
-                  <span className="absolute right-3 top-3 flex size-5 items-center justify-center rounded-full bg-lime">
+                  <span className="absolute right-3 top-3 flex size-5 items-center justify-center rounded-full bg-sage">
                     <Check className="size-3 text-forest" strokeWidth={3} />
                   </span>
                 )}
@@ -100,15 +100,15 @@ export default function Negocio() {
       <section className="mt-8 space-y-3">
         <h2 className="text-sm font-semibold">{t.yourDetails}</h2>
         <label className="block">
-          <span className="mb-1.5 block text-sm text-black/70">{t.yourName}</span>
+          <span className="mb-1.5 block text-sm text-charcoal/70">{t.yourName}</span>
           <input id="f-owner" className={input} value={biz.ownerName} onChange={(e) => change({ ownerName: e.target.value })} autoComplete="given-name" />
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-sm text-black/70">{t.bizName}</span>
+          <span className="mb-1.5 block text-sm text-charcoal/70">{t.bizName}</span>
           <input id="f-biz" className={input} value={biz.businessName} onChange={(e) => change({ businessName: e.target.value })} autoComplete="organization" />
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-sm text-black/70">
+          <span className="mb-1.5 block text-sm text-charcoal/70">
             {t.phone} <span className="text-muted">· {t.optional}</span>
           </span>
           <input

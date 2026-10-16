@@ -25,7 +25,7 @@ export default function TuNegocio() {
   };
 
   return (
-    <main className="min-h-dvh bg-mano-light text-black">
+    <main className="min-h-dvh bg-mano-light text-charcoal">
       <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-[calc(33px+env(safe-area-inset-top))]">
         <OnboardingHeader step={2} total={2} backHref="/onboarding/oficio" />
 
@@ -49,7 +49,7 @@ export default function TuNegocio() {
             type="button"
             onClick={finish}
             disabled={!canFinish}
-            className="flex h-[53px] w-full items-center justify-center rounded-[20px] bg-forest text-sm font-bold text-lime shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40"
+            className="flex h-[53px] w-full items-center justify-center rounded-[20px] bg-forest text-sm font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40"
           >
             {t.finish} →
           </button>

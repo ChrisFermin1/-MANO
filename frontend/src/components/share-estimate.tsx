@@ -51,7 +51,7 @@ export function ShareEstimate({
   }, [job]);
 
   useEffect(() => {
-    if (showQr && link && !qr) QRCode.toDataURL(link, { margin: 1, width: 240, color: { dark: "#0f3d2e" } }).then(setQr);
+    if (showQr && link && !qr) QRCode.toDataURL(link, { margin: 1, width: 240, color: { dark: "#073d2d" } }).then(setQr);
   }, [showQr, link, qr]);
 
   if (!link) return null;
@@ -84,7 +84,7 @@ export function ShareEstimate({
   const sms = link ? smsLink(job.customer_phone, fullText) : null;
 
   const base = "flex h-12 items-center justify-center gap-2 rounded-[16px] text-sm font-bold transition active:scale-[0.98]";
-  const solid = `${base} bg-lime text-forest`;
+  const solid = `${base} bg-forest text-white`;
   const outline = `${base} border ${dark ? "border-white/35 text-white" : "border-forest/25 bg-white/50 text-forest"}`;
 
   return (
@@ -93,12 +93,12 @@ export function ShareEstimate({
       <p className={`mt-1 truncate font-mono text-xs ${dark ? "text-white/60" : "text-muted"}`}>{link}</p>
 
       {/* The text that goes with the link — English for the customer; Spanish meaning for Carlos */}
-      <div className={`mt-3 rounded-[12px] px-3 py-2 text-xs leading-4 ${dark ? "bg-white/10" : "bg-white/60"}`}>
-        <p lang="en" className={dark ? "text-white/90" : "text-black/75"}>
+      <div className={`mt-3 rounded-[12px] px-3 py-2 text-xs leading-4 ${dark ? "bg-white/10" : "bg-ivory"}`}>
+        <p lang="en" className={dark ? "text-white/90" : "text-charcoal/75"}>
           “{msg.en}”
         </p>
         {lang === "es" && (
-          <p lang="es" className={`mt-1 ${dark ? "text-white/50" : "text-black/45"}`}>
+          <p lang="es" className={`mt-1 ${dark ? "text-white/50" : "text-charcoal/45"}`}>
             {t.meaning}: “{msg.es}”
           </p>
         )}
@@ -128,7 +128,7 @@ export function ShareEstimate({
           {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
           {copied ? t.copied : t.copyLink}
         </button>
-        <span aria-hidden className={dark ? "text-white/30" : "text-black/20"}>·</span>
+        <span aria-hidden className={dark ? "text-white/30" : "text-charcoal/20"}>·</span>
         <button
           type="button"
           onClick={() => {

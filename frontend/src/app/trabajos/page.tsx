@@ -33,7 +33,7 @@ export default function Trabajos() {
         backHref="/inicio"
         right={
           <Link href="/trabajos/nuevo" aria-label={t.newJob} className="flex size-10 items-center justify-center rounded-full bg-forest">
-            <Plus className="size-5 text-lime" strokeWidth={2.75} />
+            <Plus className="size-5 text-white" strokeWidth={2.75} />
           </Link>
         }
       />
@@ -51,7 +51,7 @@ export default function Trabajos() {
             className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted [&::-webkit-search-cancel-button]:hidden"
           />
           {searching && (
-            <button type="button" onClick={() => setQuery("")} aria-label={t.clearSearch} className="-mr-1 shrink-0 p-1 text-black/50">
+            <button type="button" onClick={() => setQuery("")} aria-label={t.clearSearch} className="-mr-1 shrink-0 p-1 text-charcoal/50">
               <X className="size-4" />
             </button>
           )}

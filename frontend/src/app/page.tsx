@@ -34,7 +34,7 @@ export default function Welcome() {
   return (
     // One screen, no scrolling: the gaps (flex-1 spacers) shrink to fit the visible height. min-h (not h) so a
     // phone shorter than planned for can still scroll to the buttons instead of cutting them off
-    <main className="min-h-dvh bg-mano-light text-black">
+    <main className="min-h-dvh bg-mano-light text-charcoal">
       <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[27px] pb-[max(20px,env(safe-area-inset-bottom))] tiny:pb-[max(12px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] short:pt-[max(16px,env(safe-area-inset-top))] tiny:pt-[max(8px,env(safe-area-inset-top))]">
         <header className="flex items-center justify-between">
           <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest short:text-[28px]">mano</span>
@@ -49,7 +49,7 @@ export default function Welcome() {
             <br />
             <span className="text-forest">{t.headline2}</span>
           </h1>
-          <p className="mt-4 text-base leading-5 text-black/70 short:mt-2 short:text-[15px] tiny:text-[13px] tiny:leading-[17px]">{t.welcomeBody}</p>
+          <p className="mt-4 text-base leading-5 text-charcoal/70 short:mt-2 short:text-[15px] tiny:text-[13px] tiny:leading-[17px]">{t.welcomeBody}</p>
         </section>
 
         {/* Demo: voice → estimate */}
@@ -58,20 +58,20 @@ export default function Welcome() {
           <div className="flex w-full items-center justify-center gap-4 short:gap-3">
             <Wave bars={[...WAVE].reverse()} side="left" />
             <div className="glass flex size-[84px] shrink-0 items-center justify-center rounded-full short:size-[64px] tiny:size-[40px]">
-              <div className="glow-lime flex size-[50px] items-center justify-center rounded-full bg-lime short:size-[40px] tiny:size-[30px]">
-                <Mic className="size-[25px] text-forest short:size-5 tiny:size-4" strokeWidth={2} />
+              <div className="glow-sage flex size-[50px] items-center justify-center rounded-full bg-forest short:size-[40px] tiny:size-[30px]">
+                <Mic className="size-[25px] text-white short:size-5 tiny:size-4" strokeWidth={2} />
               </div>
             </div>
             <Wave bars={WAVE} delay={0.4} side="right" />
           </div>
-          <p className="mt-3 text-center text-[15px] font-medium leading-5 text-black/70 short:mt-2 tiny:mt-1 tiny:text-[13px] tiny:leading-4">{t.welcomeQuote}</p>
+          <p className="mt-3 text-center text-[15px] font-medium leading-5 text-charcoal/70 short:mt-2 tiny:mt-1 tiny:text-[13px] tiny:leading-4">{t.welcomeQuote}</p>
 
-          <div className="glass-paper mt-[18px] w-full max-w-[340px] rounded-[20px] px-[17px] pb-4 pt-[22px] text-black short:mt-2.5 short:pb-3 short:pt-3.5 tiny:mt-2 tiny:pb-2.5 tiny:pt-3">
+          <div className="glass-paper mt-[18px] w-full max-w-[340px] rounded-[20px] px-[17px] pb-4 pt-[22px] text-charcoal short:mt-2.5 short:pb-3 short:pt-3.5 tiny:mt-2 tiny:pb-2.5 tiny:pt-3">
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs font-medium uppercase leading-none tracking-[1.44px]">
                 Estimate Maria Lopez
               </span>
-              <span className="rounded-[5px] bg-lime/50 px-[14px] py-1 font-mono text-xs uppercase leading-none text-forest">
+              <span className="rounded-[5px] bg-sage px-[14px] py-1 font-mono text-xs uppercase leading-none text-forest">
                 English
               </span>
             </div>
@@ -91,7 +91,7 @@ export default function Welcome() {
             </div>
           </div>
 
-          <div className="mt-[11px] short:mt-2 flex h-8 tiny:h-7 border border-white/60 bg-peach/90 shadow-[0_10px_24px_-12px_rgba(0,0,0,0.5)] backdrop-blur-xl w-full max-w-[291px] items-center justify-center gap-2 rounded-full px-3 text-xs text-black">
+          <div className="mt-[11px] short:mt-2 flex h-8 tiny:h-7 border border-white/60 bg-peach/90 shadow-[0_10px_24px_-12px_rgba(0,0,0,0.5)] backdrop-blur-xl w-full max-w-[291px] items-center justify-center gap-2 rounded-full px-3 text-xs text-charcoal">
             <Eye className="size-6 shrink-0 text-[#b8803f]" strokeWidth={1.75} />
             <p className="leading-5">
               <span className="font-bold">Ojo:</span> {t.ojoHint}
@@ -103,7 +103,7 @@ export default function Welcome() {
         <div>
           <Link
             href="/onboarding/oficio"
-            className="flex h-[53px] short:h-[48px] tiny:h-[44px] w-full items-center justify-center rounded-[20px] bg-forest text-sm font-bold text-lime shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98]"
+            className="flex h-[53px] short:h-[48px] tiny:h-[44px] w-full items-center justify-center rounded-[20px] bg-forest text-sm font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98]"
           >
             {t.start} →
           </Link>

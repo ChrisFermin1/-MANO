@@ -44,7 +44,7 @@ export default function Clientes() {
             aria-label={t.newClient}
             className="flex size-10 items-center justify-center rounded-full bg-forest"
           >
-            <Plus className="size-5 text-lime" strokeWidth={2.75} />
+            <Plus className="size-5 text-white" strokeWidth={2.75} />
           </button>
         }
       />
@@ -91,7 +91,7 @@ export default function Clientes() {
                       <Link href={`/trabajos/${job.id}`} className="flex items-center gap-2 py-2.5 text-sm">
                         <span className="min-w-0 flex-1 truncate">{job.line_items[0]?.description_es || job.line_items[0]?.description || job.description}</span>
                         <StatusBadge status={job.status} invoice={job.doc_intent === "invoice"} />
-                        <ChevronRight className="size-4 shrink-0 text-black/40" />
+                        <ChevronRight className="size-4 shrink-0 text-charcoal/40" />
                       </Link>
                     </li>
                   ))}
@@ -99,7 +99,7 @@ export default function Clientes() {
               )}
               <Link
                 href={newJobHref(c)}
-                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-[14px] bg-white/60 py-2.5 text-sm font-semibold text-forest transition active:scale-[0.99]"
+                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-[14px] bg-ivory py-2.5 text-sm font-semibold text-forest transition active:scale-[0.99]"
               >
                 <FileText className="size-4" strokeWidth={2.25} /> {t.newJobFor(c.name)}
               </Link>

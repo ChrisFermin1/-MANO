@@ -7,14 +7,23 @@
 
 /* MANO design tokens (from Figma) */
 @theme inline {
-  --color-forest: #0f3d2e;
-  --color-lime: #a6d93b;
-  --color-peach: #f9d4a6;
-  --color-cream: #f4f6f1;
+  /* brand palette */
+  --color-forest: #073d2d; /* primary */
+  --color-ivory: #f5f5ed; /* main background */
+  --color-charcoal: #202522; /* primary text */
+  --color-sage: #dde7d8; /* positive states, subtle highlights */
+  /* status pairs (background + text) */
+  --color-pending: #f2e8d6;
+  --color-pending-ink: #815c2c;
+  --color-overdue: #f2dfd9;
+  --color-overdue-ink: #9b493b;
+  --color-draft: #ecede8;
+  --color-draft-ink: #555d57;
+  --color-peach: #f2e8d6; /* Ojo's notes = the pending tone */
   --color-muted: #9d9d9d;
   --color-track: #d9d9d9;
   --color-ojo: #b8803f; /* Ojo's eye icon */
-  --color-ojo-ink: #7a4a12; /* Ojo's text & buttons on peach */
+  --color-ojo-ink: #815c2c; /* Ojo's text & buttons on peach */
   --color-flag: #e0a35a; /* the ONE 'missing info' color */
 
   --font-sans: var(--font-montserrat);
@@ -30,11 +39,11 @@ body {
    shows when the page is pulled past the top), so it follows the screen: dark on dark screens. */
 html,
 body {
-  background-color: #eef1ea;
+  background-color: #f5f5ed;
 }
 html:has(.bg-mano-dark),
 html:has(.bg-mano-dark) body {
-  background-color: #0f3d2e;
+  background-color: #073d2d;
 }
 
 @keyframes wave {
@@ -73,19 +82,19 @@ html:has(.bg-mano-dark) body {
 /* Inner pages: SOLID cream (clean). The glass feel comes from the cards themselves — see-through white,
    bright edge, soft shadow. Welcome keeps the gradient (bg-mano-dark). */
 .bg-mano-light {
-  background-color: #eef1ea;
+  background-color: #f5f5ed;
 }
 .bg-mano-light::before {
   background: var(--mano-photo, none);
 }
 .bg-mano-dark {
-  background-color: #0f3d2e;
+  background-color: #073d2d;
   color: #fff;
 }
 .bg-mano-dark::before {
   /* clean: one smooth gradient, no blobs (loading & "¡Enviado!" screens). Welcome uses .bg-mano-photo instead */
   background:
-    linear-gradient(170deg, #155240 0%, #0f3d2e 55%, #0b2e23 100%),
+    linear-gradient(170deg, #0c4a37 0%, #073d2d 55%, #052e22 100%),
     var(--mano-photo, none);
 }
 
@@ -109,7 +118,7 @@ html:has(.bg-mano-dark) body {
 
 /* Frosted panels. Every one has: see-through fill + blur + light edge + soft shadow. */
 @utility glass {
-  background-color: rgba(255, 255, 255, 0.56);
+  background-color: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.75);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
@@ -119,7 +128,7 @@ html:has(.bg-mano-dark) body {
 }
 /* text fields & the estimate document: more solid so reading/typing stays easy */
 @utility glass-field {
-  background-color: rgba(255, 255, 255, 0.74);
+  background-color: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.85);
   box-shadow:
     inset 0 1px 2px rgba(15, 61, 46, 0.06),
@@ -128,7 +137,7 @@ html:has(.bg-mano-dark) body {
   backdrop-filter: blur(16px) saturate(140%);
 }
 @utility glass-paper {
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.85);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
@@ -147,7 +156,7 @@ html:has(.bg-mano-dark) body {
   backdrop-filter: blur(20px) saturate(140%);
 }
 @utility glass-forest {
-  background-color: rgba(15, 61, 46, 0.92);
+  background-color: rgba(7, 61, 45, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
@@ -156,7 +165,7 @@ html:has(.bg-mano-dark) body {
   backdrop-filter: blur(20px) saturate(140%);
 }
 @utility glass-peach {
-  background-color: rgba(249, 212, 166, 0.62);
+  background-color: rgba(242, 232, 214, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.65);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
@@ -164,8 +173,8 @@ html:has(.bg-mano-dark) body {
   -webkit-backdrop-filter: blur(20px) saturate(150%);
   backdrop-filter: blur(20px) saturate(150%);
 }
-@utility glass-lime {
-  background-color: rgba(166, 217, 59, 0.55);
+@utility glass-sage {
+  background-color: rgba(221, 231, 216, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
@@ -173,30 +182,30 @@ html:has(.bg-mano-dark) body {
   -webkit-backdrop-filter: blur(20px) saturate(150%);
   backdrop-filter: blur(20px) saturate(150%);
 }
-/* lime glow (mic, primary lime buttons on dark) */
-@utility glow-lime {
+/* soft sage glow (mic, selected check) */
+@utility glow-sage {
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.25) inset,
-    0 0 32px rgba(166, 217, 59, 0.55);
+    0 0 32px rgba(221, 231, 216, 0.9);
 }
 
 /* Phones without blur support, or with "Reduce transparency" on: solid panels, same colors */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass, .glass-field, .glass-paper { background-color: rgba(255, 255, 255, 0.94); }
   .glass-dark { background-color: rgba(255, 255, 255, 0.16); }
-  .glass-forest { background-color: #0f3d2e; }
-  .glass-peach { background-color: #f9d4a6; }
-  .glass-lime { background-color: #c6e68a; }
+  .glass-forest { background-color: #073d2d; }
+  .glass-peach { background-color: #f2e8d6; }
+  .glass-sage { background-color: #dde7d8; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .glass, .glass-field, .glass-paper, .glass-dark, .glass-forest, .glass-peach, .glass-lime {
+  .glass, .glass-field, .glass-paper, .glass-dark, .glass-forest, .glass-peach, .glass-sage {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
   .glass, .glass-field, .glass-paper { background-color: #fff; }
-  .glass-dark { background-color: #1c4a3a; }
-  .glass-forest { background-color: #0f3d2e; }
-  .glass-peach { background-color: #f9d4a6; }
-  .glass-lime { background-color: #c6e68a; }
+  .glass-dark { background-color: #14493a; }
+  .glass-forest { background-color: #073d2d; }
+  .glass-peach { background-color: #f2e8d6; }
+  .glass-sage { background-color: #dde7d8; }
   .bg-mano-light::before, .bg-mano-dark::before { background-image: none; }
 }

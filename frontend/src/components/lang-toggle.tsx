@@ -16,7 +16,7 @@ export function LangToggle({ light = false }: { light?: boolean }) {
           onClick={() => setLang(l)}
           aria-pressed={lang === l}
           className={`h-full w-[52px] rounded-full text-sm font-medium uppercase transition-colors ${
-            lang === l ? (light ? "bg-forest text-lime" : "bg-white text-black shadow-sm") : light ? "text-black/60" : "text-white/85"
+            lang === l ? (light ? "bg-forest text-white" : "bg-white text-charcoal shadow-sm") : light ? "text-charcoal/60" : "text-white/85"
           }`}
         >
           {l}

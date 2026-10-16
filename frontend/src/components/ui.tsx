@@ -7,11 +7,14 @@ import type { JobStatus } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 
 export const btnPrimary =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-lime shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40 disabled:shadow-none";
-export const btnLime =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-lime text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40";
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40 disabled:shadow-none";
+export const btnSage =
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-sage text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40";
+// main button on dark green screens and cards
+export const btnWhite =
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-white text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40";
 export const btnDanger =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-[#8a2a17] text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-40";
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-overdue-ink text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-40";
 export const btnSecondary =
   "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] border border-forest/25 bg-white/50 text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40";
 export const btnGhost =
@@ -21,7 +24,7 @@ export const input =
 
 export function Screen({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <main className="min-h-dvh bg-mano-light text-black">
+    <main className="min-h-dvh bg-mano-light text-charcoal">
       <div className={`mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] ${className}`}>{children}</div>
     </main>
   );
@@ -44,17 +47,18 @@ export function Title({ children }: { children: React.ReactNode }) {
 }
 
 const STATUS_STYLE: Record<JobStatus, string> = {
-  NEW: "bg-track text-black",
-  NEEDS_INFORMATION: "bg-transparent text-ojo-ink ring-1 ring-flag/70",
-  READY_FOR_QUOTE: "bg-lime/50 text-forest",
-  QUOTE_SENT: "bg-forest/10 text-forest",
-  ACCEPTED: "bg-lime text-forest",
+  // draft = gray · pending = sand · approved/paid = sage · overdue = clay (Documents)
+  NEW: "bg-draft text-draft-ink",
+  NEEDS_INFORMATION: "bg-transparent text-pending-ink ring-1 ring-flag/70",
+  READY_FOR_QUOTE: "bg-draft text-draft-ink",
+  QUOTE_SENT: "bg-pending text-pending-ink",
+  ACCEPTED: "bg-sage text-forest",
   SCHEDULED: "bg-forest/10 text-forest",
-  IN_PROGRESS: "bg-forest text-lime",
+  IN_PROGRESS: "bg-forest text-white",
   COMPLETED: "bg-forest text-white",
-  PAYMENT_PENDING: "bg-peach text-[#7a4a12]",
-  PAID: "bg-lime text-forest",
-  CANCELLED: "bg-black/10 text-black/60",
+  PAYMENT_PENDING: "bg-pending text-pending-ink",
+  PAID: "bg-sage text-forest",
+  CANCELLED: "bg-draft text-draft-ink",
 };
 
 // invoice: Carlos picked "Factura" on Nuevo trabajo, so "ready" means ready to invoice, not to quote
@@ -81,7 +85,7 @@ export function SuccessScreen({ title, body, children }: { title: string; body: 
   return (
     <main className="min-h-dvh bg-mano-dark text-white">
       <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col justify-center px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-[env(safe-area-inset-top)]">
-        <div className="flex size-16 items-center justify-center rounded-full bg-lime">
+        <div className="flex size-16 items-center justify-center rounded-full bg-sage">
           <Check className="size-8 text-forest" strokeWidth={3} />
         </div>
         <h1 className="mt-6 font-serif text-[48px] leading-[47px] tracking-[-0.96px]">{title}</h1>
@@ -95,13 +99,13 @@ export function SuccessScreen({ title, body, children }: { title: string; body: 
 export type DocState = "ready" | "sent" | "accepted" | "declined" | "unpaid" | "overdue" | "paid";
 
 const DOC_STATE_STYLE: Record<DocState, string> = {
-  ready: "border border-dashed border-forest/40 text-forest",
-  sent: "bg-forest/10 text-forest",
-  accepted: "bg-lime/50 text-forest",
-  declined: "bg-black/10 text-black/60",
-  unpaid: "bg-peach text-[#7a4a12]",
-  overdue: "bg-[#f6c9c0] text-[#8a2a17]",
-  paid: "bg-lime text-forest",
+  ready: "border border-dashed border-draft-ink/40 text-draft-ink",
+  sent: "bg-pending text-pending-ink",
+  accepted: "bg-sage text-forest",
+  declined: "bg-draft text-draft-ink",
+  unpaid: "bg-draft text-draft-ink",
+  overdue: "bg-overdue text-overdue-ink",
+  paid: "bg-sage text-forest",
 };
 
 export function DocStateBadge({ state, label }: { state: DocState; label: string }) {
@@ -127,7 +131,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[430px] rounded-t-[28px] border-t border-white/80 bg-[#f4f6f1]/90 px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_-12px_rgba(15,61,46,0.35)] backdrop-blur-2xl"
+        className="w-full max-w-[430px] rounded-t-[28px] border-t border-white/80 bg-ivory/90 px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_-12px_rgba(15,61,46,0.35)] backdrop-blur-2xl"
       >
         <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-black/15" />
         <h2 className="font-serif text-[28px] leading-8 tracking-[-0.56px]">{title}</h2>

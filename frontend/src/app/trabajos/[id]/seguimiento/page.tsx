@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Eye, Loader2, MessageCircle, RotateCcw, Send, Smartphone, Sparkles } from "lucide-react";
-import { PageHeader, Screen, SuccessScreen, Title, btnLime, btnPrimary } from "@/components/ui";
+import { PageHeader, Screen, SuccessScreen, Title, btnPrimary, btnWhite } from "@/components/ui";
 import { balanceDue, firstName, getJob, jobTotal, money, sendMessage, smsLink, whatsappLink, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
@@ -44,7 +44,7 @@ export default function Seguimiento() {
   if (sent) {
     return (
       <SuccessScreen title={t.sentTitle} body={t.sentFollowBody}>
-        <Link href="/inicio" className={btnLime}>
+        <Link href="/inicio" className={btnWhite}>
           {t.backHome}
         </Link>
       </SuccessScreen>
@@ -129,7 +129,7 @@ export default function Seguimiento() {
               <p className="font-mono text-[11px] uppercase tracking-[1.2px] text-muted">
                 {enState === "translating" ? t.translatingMsg : t.customerGets}
               </p>
-              <p lang="en" className="mt-1.5 text-sm leading-5 text-black/75">
+              <p lang="en" className="mt-1.5 text-sm leading-5 text-charcoal/75">
                 {en}
               </p>
             </section>
