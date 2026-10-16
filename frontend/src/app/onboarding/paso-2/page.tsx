@@ -16,10 +16,11 @@ export default function TuNegocio() {
   const [ownerName, setOwnerName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [phone, setPhone] = useState("");
+  const [payInfo, setPayInfo] = useState("");
   const canFinish = ownerName.trim() !== "" && businessName.trim() !== "";
 
   const finish = () => {
-    saveBusiness({ ownerName: ownerName.trim(), businessName: businessName.trim(), phone: phone.trim() });
+    saveBusiness({ ownerName: ownerName.trim(), businessName: businessName.trim(), phone: phone.trim(), payInfo: payInfo.trim() });
     resetJobs({ demo: false });
     router.push("/inicio");
   };
@@ -41,6 +42,16 @@ export default function TuNegocio() {
           </Field>
           <Field label={t.phone} hint={t.optional}>
             <input className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" type="tel" inputMode="tel" autoComplete="tel" />
+          </Field>
+          <Field label={t.payInfo} hint={t.optional}>
+            <textarea
+              rows={2}
+              className={`${inputClass} h-auto resize-none py-3.5 leading-6`}
+              value={payInfo}
+              onChange={(e) => setPayInfo(e.target.value)}
+              placeholder={t.payInfoPlaceholder}
+            />
+            <span className="mt-1.5 block text-xs text-muted">{t.payInfoHint}</span>
           </Field>
         </div>
 

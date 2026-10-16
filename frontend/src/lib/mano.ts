@@ -233,9 +233,18 @@ export async function ojoQuestions(job: Job, trade: string): Promise<OjoAiQuesti
 export async function followUpMessage(job: Job, owner: string, business: string, total: string) {
   const name = (job.customer_name ?? "").split(" ")[0] || "there";
   if (job.status === "PAYMENT_PENDING" || job.status === "COMPLETED") {
+    const due = job.invoice_due_at ? new Date(job.invoice_due_at) : null;
+    const day = (lang: string) => due!.toLocaleDateString(lang, { month: "long", day: "numeric" });
+    // past due → say so plainly; not yet due → say when
+    const when =
+      due && due < new Date()
+        ? { en: `was due on ${day("en-US")}`, es: `venció el ${day("es-US")}` }
+        : due
+          ? { en: `is due on ${day("en-US")}`, es: `vence el ${day("es-US")}` }
+          : { en: "is due", es: "está pendiente" };
     return {
-      en: `Hi ${name}, this is ${owner} from ${business}. Thank you again for trusting us with your ${job.service.toLowerCase()}! Just a friendly reminder that the balance of ${total} is due. Let me know if you have any questions.`,
-      es: `Hola ${name}, soy ${owner} de ${business}. ¡Gracias otra vez por confiar en nosotros! Solo un recordatorio amable de que el saldo de ${total} está pendiente. Avísame si tienes preguntas.`,
+      en: `Hi ${name}, this is ${owner} from ${business}. Thank you again for trusting us with your ${job.service.toLowerCase()}! Just a friendly reminder that the balance of ${total} ${when.en}. Let me know if you have any questions.`,
+      es: `Hola ${name}, soy ${owner} de ${business}. ¡Gracias otra vez por confiar en nosotros! Solo un recordatorio amable de que el saldo de ${total} ${when.es}. Avísame si tienes preguntas.`,
     };
   }
   return {
