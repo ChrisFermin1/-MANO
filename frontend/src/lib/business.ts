@@ -10,6 +10,8 @@ export type Business = {
   ownerName: string;
   businessName: string;
   phone: string;
+  // How clients pay (e.g. "Zelle: (713) 555-0100"), printed on invoices and the customer's link
+  payInfo?: string;
   trades: TradeId[];
   otherTrade?: OtherTrade | null;
   // Ojo checklist items Carlos said he always includes in his price ("Ya lo incluyo siempre")

@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { CheckCircle2, Loader2, MessageCircle, Phone } from "lucide-react";
 import { DocumentCard } from "@/components/document";
-import { approveEstimate, balanceDue, fmtDate, getJobByToken, money, type Job } from "@/lib/api";
+import { approveEstimate, balanceDue, fmtDate, paidSoFar, getJobByToken, money, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { approveRemote, fetchEstimate, type RelayEntry } from "@/lib/relay";
 
@@ -35,11 +35,13 @@ const copy = {
     terms: "By approving, you accept this estimate. Final price may change if the scope of work changes.",
     poweredBy: "Sent with Mano",
     invoiceIntro: (amount: string, due: string) => `Here's your invoice for ${amount}. Please pay by ${due}.`,
-    invoiceOverdue: (due: string) => `This invoice was due ${due}.`,
+    partialIntro: (paid: string, left: string, due: string) => `Thank you for your payment of ${paid}. The balance is ${left}, due ${due}.`,
+    overdueIntro: (left: string, due: string) => `This invoice was due ${due}. The balance is ${left}.`,
     paidTitle: "Paid — thank you!",
     paidOn: (d: string) => `Payment received on ${d}`,
     howToPay: "How to pay",
     howToPayBody: (b: string) => `Contact ${b} to pay or ask a question.`,
+    questionsTo: (b: string) => `Questions? Contact ${b}.`,
   },
   es: {
     hi: (n: string) => `Hola ${n},`,
@@ -57,11 +59,13 @@ const copy = {
     terms: "Al aprobar, aceptas este estimado. El precio final puede cambiar si cambia el trabajo.",
     poweredBy: "Enviado con Mano",
     invoiceIntro: (amount: string, due: string) => `Aquí está tu factura por ${amount}. Por favor paga antes del ${due}.`,
-    invoiceOverdue: (due: string) => `Esta factura venció el ${due}.`,
+    partialIntro: (paid: string, left: string, due: string) => `Gracias por tu pago de ${paid}. Quedan ${left}, a pagar antes del ${due}.`,
+    overdueIntro: (left: string, due: string) => `Esta factura venció el ${due}. Quedan ${left} por pagar.`,
     paidTitle: "Pagado — ¡gracias!",
     paidOn: (d: string) => `Pago recibido el ${d}`,
     howToPay: "Cómo pagar",
     howToPayBody: (b: string) => `Contacta a ${b} para pagar o hacer una pregunta.`,
+    questionsTo: (b: string) => `¿Preguntas? Contacta a ${b}.`,
   },
 };
 
@@ -158,8 +162,14 @@ export default function CustomerEstimate() {
               ) : (
                 <section className="mt-6">
                   <h1 className="font-serif text-[32px] leading-9">{c.hi((job.customer_name ?? "").split(" ")[0])}</h1>
-                  <p className="mt-2 text-base leading-6 text-charcoal/75">{c.invoiceIntro(money(balanceDue(job)), due)}</p>
-                  {overdue && <p className="mt-2 text-sm font-semibold text-overdue-ink">{c.invoiceOverdue(due)}</p>}
+                  {/* overdue: no "please pay by" a date that already passed · partly paid: thank them, show the balance */}
+                  {overdue ? (
+                    <p className="mt-2 text-base font-semibold leading-6 text-overdue-ink">{c.overdueIntro(money(balanceDue(job)), due)}</p>
+                  ) : paidSoFar(job) > 0 ? (
+                    <p className="mt-2 text-base leading-6 text-charcoal/75">{c.partialIntro(money(paidSoFar(job)), money(balanceDue(job)), due)}</p>
+                  ) : (
+                    <p className="mt-2 text-base leading-6 text-charcoal/75">{c.invoiceIntro(money(balanceDue(job)), due)}</p>
+                  )}
                 </section>
               )
             ) : approved ? (
@@ -235,8 +245,15 @@ export default function CustomerEstimate() {
 
             {invoice && !paid && (
               <section className="mt-6 rounded-[20px] glass p-4">
-                <h2 className="text-base font-semibold">{c.howToPay}</h2>
-                <p className="mt-1 text-sm leading-5 text-charcoal/70">{c.howToPayBody(bizName)}</p>
+                {/* payment info is on the invoice itself; here: who to call */}
+                {biz.payInfo?.trim() ? (
+                  <h2 className="text-base font-semibold">{c.questionsTo(bizName)}</h2>
+                ) : (
+                  <>
+                    <h2 className="text-base font-semibold">{c.howToPay}</h2>
+                    <p className="mt-1 text-sm leading-5 text-charcoal/70">{c.howToPayBody(bizName)}</p>
+                  </>
+                )}
                 {biz.phone && <p className="mt-2 font-mono text-sm">{biz.phone}</p>}
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <a

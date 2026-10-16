@@ -559,6 +559,17 @@ export const paidSoFar = (job: Job) =>
 export const balanceDue = (job: Job) => Math.max(0, Math.round((jobTotal(job) - paidSoFar(job)) * 100) / 100);
 
 // POST /jobs/:id/payments — Zelle, bank, check, cash or card; full or partial. Paid once it adds up to the total.
+// DELETE /jobs/:id/payments/:pid — undo a payment typed wrong. If it was the one that made it paid, it's unpaid again.
+export async function removePayment(id: number, paymentId: string): Promise<Job> {
+  const job = (await getJob(id))!;
+  const payments = (job.payments ?? []).filter((p) => p.id !== paymentId);
+  const total = payments.reduce((s, p) => s + p.amount, 0);
+  const stillPaid = total >= jobTotal(job) - 0.005;
+  const saved = await updateJob(id, stillPaid ? { payments } : { payments, status: job.status === "PAID" ? "PAYMENT_PENDING" : job.status, paid_at: null });
+  if (saved.public_token && saved.invoice_number) void publishEstimate(saved, loadBusiness());
+  return saved;
+}
+
 export async function addPayment(id: number, payment: Omit<Payment, "id">): Promise<Job> {
   const job = (await getJob(id))!;
   const payments = [...(job.payments ?? []), { ...payment, id: uid() }];

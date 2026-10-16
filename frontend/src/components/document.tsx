@@ -26,10 +26,12 @@ export function DocumentCard({
   const ref = job.estimate_number ? estimateNo(job.estimate_number) : null;
 
   const terms = isInvoice
-    ? L(
-        `${ref ? `Ref. estimate #${ref}. ` : ""}Payment due within 15 days. Thank you for your business!`,
-        `${ref ? `Ref. estimado #${ref}. ` : ""}Pago dentro de 15 días. ¡Gracias por su preferencia!`,
-      )
+    ? job.paid_at
+      ? L(`${ref ? `Ref. estimate #${ref}. ` : ""}Thank you for your business!`, `${ref ? `Ref. estimado #${ref}. ` : ""}¡Gracias por su preferencia!`)
+      : L(
+          `${ref ? `Ref. estimate #${ref}. ` : ""}Payment due within 15 days. Thank you for your business!`,
+          `${ref ? `Ref. estimado #${ref}. ` : ""}Pago dentro de 15 días. ¡Gracias por su preferencia!`,
+        )
     : L(
         "Estimate valid for 30 days. Includes labor and materials unless noted. Thank you for your business!",
         "Estimado válido por 30 días. Incluye mano de obra y materiales salvo que se indique. ¡Gracias por su preferencia!",
@@ -113,6 +115,12 @@ export function DocumentCard({
         </div>
       )}
 
+      {isInvoice && !job.paid_at && biz.payInfo?.trim() && (
+        <div className="mt-5 rounded-[12px] bg-ivory px-3 py-2.5">
+          <p className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">{L("How to pay", "Cómo pagar")}</p>
+          <p className="mt-1 whitespace-pre-line text-sm leading-5">{biz.payInfo.trim()}</p>
+        </div>
+      )}
       <p className="mt-5 text-xs leading-4 text-muted">{terms}</p>
     </article>
   );

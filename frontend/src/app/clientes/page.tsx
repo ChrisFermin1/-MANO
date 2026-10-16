@@ -66,7 +66,7 @@ export default function Clientes() {
                   )}
                 </div>
                 <span className="shrink-0 text-right">
-                  <span className="block text-lg font-bold">{money(c.billed)}</span>
+                  {c.billed > 0 && <span className="block text-lg font-bold">{money(c.billed)}</span>}
                   <span className="block text-xs text-muted">{t.clientJobs(c.jobs.length)}</span>
                 </span>
               </div>

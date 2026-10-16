@@ -24,6 +24,7 @@ import {
   isLumpSum,
   isUnsent,
   addPayment,
+  removePayment,
   balanceDue,
   paidSoFar,
   PAYMENT_METHODS,
@@ -677,7 +678,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           <span>{t.total}</span>
           <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
         </div>
-        {(job.payments?.length ?? 0) > 0 && <PaymentsSummary job={job} />}
+        {(job.payments?.length ?? 0) > 0 && <PaymentsSummary job={job} setJob={setJob} />}
         <div className="mt-4 space-y-2">
           {job.estimate_number && (
             <DocLink href={`/trabajos/${job.id}/estimado`} label={t.viewQuote} number={estimateNo(job.estimate_number)} />
@@ -715,9 +716,10 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
             {t.reactivate}
           </button>
         ) : job.status === "PAID" ? (
-          <OjoNote>
-            <span className="font-bold text-forest">{t.paidDone}</span>
-          </OjoNote>
+          <p className="flex items-center gap-2 rounded-[14px] glass-sage px-4 py-3 text-sm font-bold text-forest">
+            <Check className="size-5 shrink-0" strokeWidth={3} />
+            {t.paidDone}
+          </p>
         ) : job.status === "QUOTE_SENT" ? (
           // Sending lives in the share box above. Here: follow up (main only once it's stale),
           // and a small link for when the customer said yes outside the app.
@@ -839,8 +841,10 @@ const today = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-function PaymentsSummary({ job }: { job: Job }) {
+function PaymentsSummary({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   const { t, lang } = useLang();
+  // typed it wrong: tap ✕, then "Borrar" to confirm
+  const [confirming, setConfirming] = useState<string | null>(null);
   const paid = paidSoFar(job);
   const left = balanceDue(job);
   const pct = Math.min(100, Math.round((paid / (jobTotal(job) || 1)) * 100));
@@ -855,9 +859,30 @@ function PaymentsSummary({ job }: { job: Job }) {
       </p>
       <ul className="mt-1 space-y-0.5 text-xs text-muted">
         {job.payments!.map((p) => (
-          <li key={p.id}>
-            {shortDate(p.date, lang)} · {t.payMethods[p.method]}
-            {p.check_number && ` #${p.check_number}`} · {money(p.amount)}
+          <li key={p.id} className="flex min-h-7 items-center justify-between gap-2">
+            <span>
+              {shortDate(p.date, lang)} · {t.payMethods[p.method]}
+              {p.check_number && ` #${p.check_number}`} · {money(p.amount)}
+            </span>
+            {job.status !== "CANCELLED" &&
+              (confirming === p.id ? (
+                <button
+                  type="button"
+                  onClick={async () => (setConfirming(null), setJob(await removePayment(job.id, p.id)))}
+                  className="rounded-full bg-overdue px-2.5 py-1 font-semibold text-overdue-ink"
+                >
+                  {t.deletePayment}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirming(p.id)}
+                  aria-label={t.deletePayment}
+                  className="-mr-1.5 flex size-7 items-center justify-center rounded-full active:bg-black/5"
+                >
+                  <X className="size-3.5" />
+                </button>
+              ))}
           </li>
         ))}
       </ul>

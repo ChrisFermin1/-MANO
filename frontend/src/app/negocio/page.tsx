@@ -43,6 +43,7 @@ export default function Negocio() {
       ownerName: biz.ownerName.trim(),
       businessName: biz.businessName.trim(),
       phone: biz.phone.trim(),
+      payInfo: biz.payInfo?.trim() ?? "",
       trades: biz.trades,
       otherTrade: otherOn ? { name: biz.otherTrade?.name.trim() ?? "", unit: biz.otherTrade?.unit ?? "project" } : null,
       ojoIgnore: biz.ojoIgnore ?? [],
@@ -121,6 +122,20 @@ export default function Negocio() {
             autoComplete="tel"
             placeholder="(555) 123-4567"
           />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm text-charcoal/70">
+            {t.payInfo} <span className="text-muted">· {t.optional}</span>
+          </span>
+          <textarea
+            id="f-payinfo"
+            rows={3}
+            className={`${input} h-auto resize-none py-3 leading-6`}
+            value={biz.payInfo ?? ""}
+            onChange={(e) => change({ payInfo: e.target.value })}
+            placeholder={t.payInfoPlaceholder}
+          />
+          <span className="mt-1.5 block text-xs text-muted">{t.payInfoHint}</span>
         </label>
       </section>
 
