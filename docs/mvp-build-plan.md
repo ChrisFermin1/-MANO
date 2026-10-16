@@ -119,6 +119,7 @@ Update this table (status + commit) after each task.
 | New brand palette (colors only): forest `#073D2D`, ivory `#F5F5ED`, white cards, charcoal `#202522`, sage `#DDE7D8`, status pairs. Tokens in `globals.css` | `fd77173` | — |
 | UX fixes: undo a payment; customer invoice wording when overdue or partly paid; no "due in 15 days" on paid invoices; "Cómo te pagan" (Zelle, checks…) on invoices; paid job shows a sage box; no "$0" on clients | `2ceefb6` | Josh: `pay_info` text on the business, and `DELETE /jobs/{id}/payments/{pid}` (job back to PAYMENT_PENDING if it drops below the total) |
 | Payment reminder says the due date ("was due on October 13" when overdue); optional "Cómo te pagan" in onboarding step 2. Paid message sits under the approval line | `7966f05`, `490e886` | — |
+| Invoice due dates: default terms in Tu negocio (on receipt / 7 / 15 / 30 days) and a date picker per invoice; due dates run to the end of the day | `3da1ed4` | Josh: `invoice_due_days` on the business (default 15); invoices already have `invoice_due_at`, and it should be settable on the invoice |
 
 
 ## After this list
