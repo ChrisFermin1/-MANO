@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Archive, CalendarDays, Check, Database, Ellipsis, Eye, PartyPopper, Pencil, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X } from "lucide-react";
-import { AutoTextarea, DocStateBadge, OjoNote, PageHeader, Screen, Sheet, StatusBadge, Title, btnDanger, btnGhost, btnPrimary, btnSage, btnSecondary } from "@/components/ui";
+import { AutoTextarea, DocStateBadge, PageHeader, Screen, Sheet, StatusBadge, Title, btnDanger, btnGhost, btnPrimary, btnSage, btnSecondary } from "@/components/ui";
 import {
   CANCEL_REASONS,
   STATUS_FLOW,
@@ -709,18 +709,21 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </p>
       )}
 
+      {/* paid: a message, not an action, so it sits with the other records instead of at the bottom */}
+      {job.status === "PAID" && (
+        <p className="mt-3 flex items-center gap-2 rounded-[14px] glass-sage px-4 py-3 text-sm font-bold text-forest">
+          <Check className="size-5 shrink-0" strokeWidth={3} />
+          {t.paidDone}
+        </p>
+      )}
+
       <div className="mt-auto space-y-3 pt-8">
         {job.status === "CANCELLED" ? (
           <button type="button" onClick={async () => setJob(await reactivateJob(job.id))} className={btnPrimary}>
             <RotateCcw className="size-5" strokeWidth={2.25} />
             {t.reactivate}
           </button>
-        ) : job.status === "PAID" ? (
-          <p className="flex items-center gap-2 rounded-[14px] glass-sage px-4 py-3 text-sm font-bold text-forest">
-            <Check className="size-5 shrink-0" strokeWidth={3} />
-            {t.paidDone}
-          </p>
-        ) : job.status === "QUOTE_SENT" ? (
+        ) : job.status === "PAID" ? null : job.status === "QUOTE_SENT" ? (
           // Sending lives in the share box above. Here: follow up (main only once it's stale),
           // and a small link for when the customer said yes outside the app.
           <>
