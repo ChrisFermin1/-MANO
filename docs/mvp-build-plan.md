@@ -45,6 +45,7 @@ Welcome screen loads sample jobs. The backend (port 8000) doesn't need to run; t
 | 7 | Search | ✅ Done | `3009856` |
 | 8 | Mark as paid: method and partial payments | ✅ Done (needs Josh later) | `67d2a8a` |
 | 9 | Edit contact details after sending | ✅ Done | `8476b3c` |
+| 10 | Voice hears only Carlos (no TV, right language) | ⏭ Next | |
 
 Update this table (status + commit) after each task.
 
@@ -110,6 +111,21 @@ Update this table (status + commit) after each task.
   `ContactSheet` on the job page. Backend: the existing job update already takes `customer_name`, phone and
   address; when the backend becomes the source of truth, a contact fix shouldn't bump `updated_at`.
 
+### 10. Voice hears only Carlos
+- **Problem (found testing on a phone):** the mic sends everything it hears to ElevenLabs. A TV in the room
+  got written into the job, and some words came out in the wrong language, because ElevenLabs guesses the
+  language when it isn't told.
+- **Build:**
+  - `src/app/trabajos/nuevo/page.tsx`: send the app's language with the recording, and ask `getUserMedia` for
+    `echoCancellation`, `noiseSuppression` and `autoGainControl`.
+  - `src/app/api/voice/route.ts`: pass ElevenLabs `language_code` (Spanish or English; Spanish still catches
+    English trade words like "drywall") and `diarize: true`, then keep only the words of the speaker who
+    talks the most (the person holding the phone).
+- **Decided (Abe):** if Carlos records next to the customer, the customer's words are dropped too. Mano listens
+  to Carlos, not the room.
+- **Done when:** with a TV or another person talking in the background, the note has only Carlos's words, in
+  the right language, in Spanish and English. The phone's own speech recognition (fallback) still works.
+
 ## Extra changes (done, after the list)
 
 | Change | Commit | Josh / Chris |
@@ -123,7 +139,7 @@ Update this table (status + commit) after each task.
 
 
 ## After this list
-All 10 tasks (0–9) are done on `abe/experiments`. Next step: a pull request into `dev` when Abe says so.
+Tasks 0–9 are done on `abe/experiments`; task 10 came from testing on a phone. Next step: a pull request into `dev` when Abe says so.
 
 
 The rest of the MVP (hosting, logins, the database as the source of truth, PDF and email, deposits,
