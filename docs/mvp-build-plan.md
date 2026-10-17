@@ -121,8 +121,8 @@ Update this table (status + commit) after each task.
   - `src/app/api/voice/route.ts`: pass ElevenLabs `language_code` (Spanish or English; Spanish still catches
     English trade words like "drywall") and `diarize: true`, then keep only the words of the speaker who
     talks the most (the person holding the phone).
-- **Decided (Abe):** if Carlos records next to the customer, the customer's words are dropped too. Mano listens
-  to Carlos, not the room.
+- **To confirm (Abe):** if Carlos records next to the customer, the customer's words are dropped too (Mano listens
+  to Carlos, not the room). Proposed: yes.
 - **Done when:** with a TV or another person talking in the background, the note has only Carlos's words, in
   the right language, in Spanish and English. The phone's own speech recognition (fallback) still works.
 
