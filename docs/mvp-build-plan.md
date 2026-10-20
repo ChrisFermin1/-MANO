@@ -224,6 +224,7 @@ Update this table (status + commit) after each task.
 | Invoice numbers are a plain `190`, like Wave (was `INV-0190`). Estimates stay `EST-0001`. The number on the job, Tu negocio, the invoice, the PDF, and search | `914c1ab` | Josh: still stores the integer. Display is the frontend's |
 | Downloaded PDF is named with that number and the document's year: `190 Ana Garcia 2026.pdf` | `153ce8f` | — |
 | PDF share sheet includes subject + message (e.g. "Invoice from Visão" / "Hi Maria, here's your invoice…"). Same copy as the link; PDF drops "see it here". Phone only; computer still downloads | `20e9bef` | — (OS Mail may use them; not a server send) |
+| Bugbot fixes: planned invoice numbers count toward next/peek; prepare validates the number first; PDF download no longer marks sent (only the share sheet does) | `512f639` | — |
 
 
 ## Where we left off (2026-10-20, for the next tool picking this up)
