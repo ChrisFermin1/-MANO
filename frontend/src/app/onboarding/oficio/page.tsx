@@ -43,13 +43,13 @@ export default function TuOficio() {
 
   return (
     <main className="bg-mano-light text-charcoal">
-      <div className="mx-auto max-w-[430px] px-[25px] pb-[calc(116px+max(20px,env(safe-area-inset-bottom)))] pt-[calc(33px+env(safe-area-inset-top))] short:pt-[calc(16px+env(safe-area-inset-top))]">
+      <div className="mx-auto max-w-[430px] px-[25px] pb-[calc(116px+max(20px,env(safe-area-inset-bottom)))] pt-[calc(16px+env(safe-area-inset-top))]">
         <OnboardingHeader step={1} total={2} backHref="/" />
 
-        <h1 className="mt-[50px] short:mt-6 font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.tradeTitle}</h1>
+        <h1 className="mt-6 font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.tradeTitle}</h1>
         <p className="mt-2 text-base leading-5">{t.tradeBody}</p>
 
-        <div className="mt-[37px] short:mt-5 grid grid-cols-2 gap-x-[9px] gap-y-[13px]">
+        <div className="mt-5 grid grid-cols-2 gap-x-[9px] gap-y-[13px]">
           {TRADES.map(({ id, icon: Icon }) => {
             const on = selected.includes(id);
             return (
@@ -58,7 +58,7 @@ export default function TuOficio() {
                 type="button"
                 onClick={() => toggle(id)}
                 aria-pressed={on}
-                className={`relative flex h-[124px] short:h-[96px] flex-col justify-between rounded-[20px] p-[14px] text-left transition active:scale-[0.98] ${
+                className={`relative flex h-[96px] flex-col justify-between rounded-[20px] p-[14px] text-left transition active:scale-[0.98] ${
                   on ? "glass-forest text-white" : "glass text-charcoal"
                 }`}
               >
