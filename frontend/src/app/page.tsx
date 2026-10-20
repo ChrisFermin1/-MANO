@@ -37,7 +37,7 @@ export default function Welcome() {
     // buttons are pinned to the bottom of the screen. (A saved Home Screen app reports one height when it
     // opens and another a moment later, so height-based layouts loaded low and jumped on the first scroll.)
     <main className="bg-mano-light text-charcoal">
-      <div className="mx-auto max-w-[430px] px-[27px] pb-[calc(116px+max(20px,env(safe-area-inset-bottom)))] pt-[max(20px,env(safe-area-inset-top))] short:pt-[max(16px,env(safe-area-inset-top))] tiny:pt-[max(8px,env(safe-area-inset-top))]">
+      <div className="mx-auto max-w-[430px] px-[25px] pb-[calc(116px+max(20px,env(safe-area-inset-bottom)))] pt-[max(20px,env(safe-area-inset-top))] short:pt-[max(16px,env(safe-area-inset-top))] tiny:pt-[max(8px,env(safe-area-inset-top))]">
         <header className="flex items-center justify-between">
           <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest short:text-[28px]">mano</span>
           <LangToggle light />
@@ -103,9 +103,10 @@ export default function Welcome() {
 
       </div>
 
-      {/* pinned to the bottom of the screen, whatever height the phone reports */}
+      {/* pinned to the bottom of the screen, whatever height the phone reports. Same spot as Siguiente/Terminar:
+          the link takes the same room as their "Puedes cambiar esto después" line (its tap area is bigger). */}
       <div className="fixed inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ivory from-70% to-ivory/0 pt-6">
-        <div className="mx-auto max-w-[430px] px-[27px] pb-[max(20px,env(safe-area-inset-bottom))]">
+        <div className="mx-auto max-w-[430px] px-[25px] pb-[max(20px,env(safe-area-inset-bottom))]">
           <Link
             href="/onboarding/oficio"
             className={btnPrimary}
@@ -115,7 +116,7 @@ export default function Welcome() {
           <Link
             href="/inicio"
             onClick={() => resetJobs({ demo: true })}
-            className="mt-1 block py-3 text-center text-sm font-semibold leading-4 text-forest short:py-2 tiny:py-1.5"
+            className="relative mt-3 block text-center text-sm font-semibold leading-4 text-forest after:absolute after:inset-x-0 after:-inset-y-3"
           >
             {t.haveAccount}
           </Link>
