@@ -97,6 +97,7 @@ const strings = {
     alertNoResponse: "Estimado sin respuesta",
     alertPayment: "Pago pendiente",
     alertReady: "Listo para mandar estimado",
+    alertReadyInvoice: "Lista para mandar factura",
 
     naFollowUp: (n: string) => `Dale seguimiento a ${n}`,
     naFollowUpDetail: (total: string, days: number) =>
@@ -444,6 +445,7 @@ const strings = {
     alertNoResponse: "Quote waiting for response",
     alertPayment: "Payment pending",
     alertReady: "Ready to send quote",
+    alertReadyInvoice: "Ready to send invoice",
 
     naFollowUp: (n: string) => `Follow up with ${n}`,
     naFollowUpDetail: (total: string, days: number) =>

@@ -5,6 +5,8 @@ import QRCode from "qrcode";
 import { Check, Copy, MessageCircle, QrCode, Share2, Smartphone } from "lucide-react";
 import { balanceDue, estimateLink, firstName, fmtDate, isUnsent, markSent, money, smsLink, whatsappLink, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
+import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
+import { PdfButton } from "@/components/pdf-button";
 import { shareOrigin } from "@/lib/relay";
 
 // Carlos sends the homeowner a link (WhatsApp/SMS via the phone's share sheet). No app needed on their side.
@@ -25,6 +27,7 @@ export function ShareEstimate({
   const [qr, setQr] = useState<string | null>(null);
   const [showQr, setShowQr] = useState(false);
   const [canShare, setCanShare] = useState(false);
+  const [biz, setBiz] = useState<Business>(DEMO_BUSINESS);
   const n = firstName(job.customer_name);
   // once there's an invoice, the same link shows the invoice
   const invoice = !!job.invoice_number;
@@ -45,6 +48,7 @@ export function ShareEstimate({
     let alive = true;
     shareOrigin().then((origin) => alive && setLink(estimateLink(job, origin)));
     setCanShare(typeof navigator !== "undefined" && "share" in navigator);
+    setBiz({ ...DEMO_BUSINESS, ...loadBusiness() });
     return () => {
       alive = false;
     };
@@ -140,6 +144,19 @@ export function ShareEstimate({
         >
           <QrCode className="size-4" /> QR
         </button>
+        <span aria-hidden className={dark ? "text-white/30" : "text-charcoal/20"}>·</span>
+        {/* the document itself, for email or WhatsApp: the customer's English version */}
+        <PdfButton
+          kind={invoice ? "invoice" : "estimate"}
+          job={job}
+          biz={biz}
+          label="PDF"
+          busyLabel="PDF"
+          errorLabel={t.pdfFailed}
+          compact
+          onDone={sharing}
+          className="flex items-center gap-1.5 py-1"
+        />
       </div>
 
       {showQr && qr && (

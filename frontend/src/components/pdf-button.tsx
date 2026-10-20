@@ -17,6 +17,8 @@ export function PdfButton({
   busyLabel,
   errorLabel,
   className,
+  compact = false,
+  onDone,
 }: {
   kind: "estimate" | "invoice";
   job: Job;
@@ -26,6 +28,8 @@ export function PdfButton({
   busyLabel: string;
   errorLabel: string;
   className: string;
+  compact?: boolean; // small text link (the share box's "Copiar · QR · PDF" row)
+  onDone?: () => void; // shared or downloaded: counts as sending it
 }) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -43,6 +47,7 @@ export function PdfButton({
       if (phone && navigator.canShare?.({ files: [file] })) {
         try {
           await navigator.share({ files: [file] });
+          onDone?.();
           return;
         } catch (err) {
           if ((err as Error).name === "AbortError") return; // he closed the share sheet
@@ -57,6 +62,7 @@ export function PdfButton({
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      onDone?.();
     } catch (err) {
       console.warn("PDF failed:", err);
       setFailed(true);
@@ -65,10 +71,18 @@ export function PdfButton({
     }
   };
 
+  const icon = compact ? "size-4" : "size-5";
+  if (compact)
+    return (
+      <button type="button" onClick={run} disabled={busy} className={className} title={failed ? errorLabel : undefined}>
+        {busy ? <Loader2 className={`${icon} animate-spin`} /> : <Download className={icon} />}
+        {failed ? "!" : label}
+      </button>
+    );
   return (
     <>
       <button type="button" onClick={run} disabled={busy} className={className}>
-        {busy ? <Loader2 className="size-5 animate-spin" /> : <Download className="size-5" strokeWidth={2.25} />}
+        {busy ? <Loader2 className={`${icon} animate-spin`} /> : <Download className={icon} strokeWidth={2.25} />}
         {busy ? busyLabel : label}
       </button>
       {failed && <p className="mt-2 text-center text-sm font-semibold text-overdue-ink">{errorLabel}</p>}

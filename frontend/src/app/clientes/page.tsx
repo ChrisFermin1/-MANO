@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, FileText, Mail, MapPin, Phone, Plus } from "lucide-react";
 import { PageHeader, Screen, Sheet, StatusBadge, Title, btnPrimary, input } from "@/components/ui";
-import { getJobs, money, onJobsChange, phoneDigits, type Job } from "@/lib/api";
+import { getJobs, money, onJobsChange, phoneDigits, type Job, isInvoiceJob } from "@/lib/api";
 import { groupClients, loadSavedClients, newJobHref, saveClient, type Client } from "@/lib/clients";
 import { useLang } from "@/lib/i18n";
 
@@ -90,7 +90,7 @@ export default function Clientes() {
                     <li key={job.id}>
                       <Link href={`/trabajos/${job.id}`} className="flex items-center gap-2 py-2.5 text-sm">
                         <span className="min-w-0 flex-1 truncate">{job.line_items[0]?.description_es || job.line_items[0]?.description || job.description}</span>
-                        <StatusBadge status={job.status} invoice={job.doc_intent === "invoice"} />
+                        <StatusBadge status={job.status} invoice={isInvoiceJob(job)} />
                         <ChevronRight className="size-4 shrink-0 text-charcoal/40" />
                       </Link>
                     </li>

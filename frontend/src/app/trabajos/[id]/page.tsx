@@ -40,6 +40,7 @@ import {
   type Job,
   type LineItem,
   daysSince,
+  isInvoiceJob,
 } from "@/lib/api";
 import { ShareEstimate } from "@/components/share-estimate";
 import { loadBusiness, rememberNameFix, saveBusiness, type Business } from "@/lib/business";
@@ -182,7 +183,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </div>
       ) : (
         <p className="mt-5 flex items-center gap-2 rounded-[14px] glass-sage px-4 py-3 text-sm font-bold text-forest">
-          <Check className="size-4" strokeWidth={3} /> {job.doc_intent === "invoice" ? t.ojoReadyInvoice : t.ojoReady}
+          <Check className="size-4" strokeWidth={3} /> {isInvoiceJob(job) ? t.ojoReadyInvoice : t.ojoReady}
         </p>
       )}
 
@@ -520,21 +521,24 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           <p className="mb-2 text-center text-sm font-semibold text-ojo-ink">{t.completeFirst(missing.map((m) => t.missing[m]))}</p>
         )}
         {/* Main button follows what Carlos picked on Nuevo trabajo; the other document stays one tap away */}
-        {job.doc_intent === "invoice" ? (
+        {isInvoiceJob(job) ? (
           <>
             <button type="button" disabled={missing.length > 0} onClick={() => router.push(`/trabajos/${job.id}/factura`)} className={btnPrimary}>
               <Receipt className="size-5" strokeWidth={2.25} />
-              {t.generateInvoice} →
+              {job.invoice_number ? t.viewInvoice : t.generateInvoice} →
             </button>
-            <button
-              type="button"
-              disabled={missing.length > 0}
-              onClick={() => router.push(`/trabajos/${job.id}/estimado`)}
-              className={`${btnGhost} disabled:opacity-40`}
-            >
-              <FileText className="size-4" strokeWidth={2.25} />
-              {t.estimateInstead}
-            </button>
+            {/* the invoice already exists (made, not sent yet): no switching back to an estimate */}
+            {!job.invoice_number && (
+              <button
+                type="button"
+                disabled={missing.length > 0}
+                onClick={() => router.push(`/trabajos/${job.id}/estimado`)}
+                className={`${btnGhost} disabled:opacity-40`}
+              >
+                <FileText className="size-4" strokeWidth={2.25} />
+                {t.estimateInstead}
+              </button>
+            )}
           </>
         ) : (
           <>
@@ -1004,7 +1008,7 @@ function JobActions({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
   return (
     <div className="relative flex items-center gap-2">
-      <StatusBadge status={job.status} invoice={job.doc_intent === "invoice"} />
+      <StatusBadge status={job.status} invoice={isInvoiceJob(job)} />
       {(deletable || cancellable) && (
         <button
           type="button"

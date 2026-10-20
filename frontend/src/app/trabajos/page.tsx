@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Plus, Search, X } from "lucide-react";
 import { PageHeader, Screen, StatusBadge, Title } from "@/components/ui";
-import { estimateNo, getJobs, onJobsChange, invoiceNo, jobTotal, money, type Job } from "@/lib/api";
+import { estimateNo, getJobs, onJobsChange, invoiceNo, jobTotal, money, type Job, isInvoiceJob } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 import { jobSubtitle } from "@/lib/services";
 import { matchesJob } from "@/lib/search";
@@ -80,7 +80,7 @@ export default function Trabajos() {
                   )}
                 </span>
                 <span className="mt-2 block">
-                  <StatusBadge status={job.status} invoice={job.doc_intent === "invoice"} />
+                  <StatusBadge status={job.status} invoice={isInvoiceJob(job)} />
                 </span>
               </span>
               <span className="text-lg font-bold">{jobTotal(job) ? money(jobTotal(job)) : "—"}</span>

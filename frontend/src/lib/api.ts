@@ -496,6 +496,8 @@ export async function markSent(id: number): Promise<Job> {
 // POST /jobs/:id/invoice/send
 // Invoice without an estimate: a complete draft (e.g. small/already-done jobs) can be invoiced directly.
 // Skips QUOTE_SENT…COMPLETED — the backend must allow READY_FOR_QUOTE → PAYMENT_PENDING (see handoff §3).
+/** An invoice job: Carlos picked "Factura" on New job, or he invoiced it directly ("Facturar sin estimado"). */
+export const isInvoiceJob = (j: Job) => j.doc_intent === "invoice" || !!j.invoice_number;
 export const canInvoiceDirectly = (j: Job) => canDelete(j) && validate(j).length === 0;
 export const canSendInvoice = (j: Job) => !j.invoice_number && (j.status === "COMPLETED" || canInvoiceDirectly(j));
 

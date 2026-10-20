@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Eye, FileText, PartyPopper, Plus, Sparkles, Users } from "lucide-react";
-import { firstName, getJobs, onJobsChange, invoiceNo, invoiceState, jobBadge, jobTotal, moneySummary, money, type Job, type JobBadge } from "@/lib/api";
+import { firstName, getJobs, onJobsChange, invoiceNo, invoiceState, jobBadge, jobTotal, moneySummary, money, type Job, type JobBadge, isInvoiceJob } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness } from "@/lib/business";
 import { useLang, type Strings } from "@/lib/i18n";
 import { prioritized, type Alert } from "@/lib/ojo";
@@ -34,7 +34,7 @@ function alertText(a: Alert, t: Strings) {
       return invoiceState(a.job) === "overdue" ? t.alertOverdue(no) : t.alertUnpaid(no);
     }
     case "ready":
-      return t.alertReady;
+      return isInvoiceJob(a.job) ? t.alertReadyInvoice : t.alertReady;
     case "to_schedule":
       return a.job.approved_by ? t.alertApproved : t.alertToSchedule;
   }
@@ -42,7 +42,7 @@ function alertText(a: Alert, t: Strings) {
 
 function alertHref(a: Alert) {
   if (a.kind === "no_response" || a.kind === "payment") return `/trabajos/${a.job.id}/seguimiento`;
-  if (a.kind === "ready") return `/trabajos/${a.job.id}/${a.job.doc_intent === "invoice" ? "factura" : "estimado"}`;
+  if (a.kind === "ready") return `/trabajos/${a.job.id}/${isInvoiceJob(a.job) ? "factura" : "estimado"}`;
   return `/trabajos/${a.job.id}`;
 }
 
@@ -55,7 +55,7 @@ function actionCopy(a: Alert, t: Strings) {
     case "payment":
       return { title: t.naPayment(name), detail: t.naPaymentDetail(total), cta: t.letManoHelp, mano: true };
     case "ready":
-      return a.job.doc_intent === "invoice"
+      return isInvoiceJob(a.job)
         ? { title: t.naSendInvoice(name), detail: t.naSendInvoiceDetail, cta: t.viewInvoice, mano: false }
         : { title: t.naSendQuote(name), detail: t.naSendQuoteDetail, cta: t.viewQuote, mano: false };
     case "missing":
