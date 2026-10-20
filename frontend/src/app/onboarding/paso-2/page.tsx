@@ -26,8 +26,8 @@ export default function TuNegocio() {
   };
 
   return (
-    <main className="min-h-dvh bg-mano-light text-charcoal">
-      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pt-[calc(33px+env(safe-area-inset-top))] short:pt-[calc(16px+env(safe-area-inset-top))]">
+    <main className="min-h-svh bg-mano-light text-charcoal">
+      <div className="mx-auto flex min-h-svh max-w-[430px] flex-col px-[25px] pt-[calc(33px+env(safe-area-inset-top))] short:pt-[calc(16px+env(safe-area-inset-top))]">
         <OnboardingHeader step={2} total={2} backHref="/onboarding/oficio" />
 
         <h1 className="mt-[50px] short:mt-6 font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.bizTitle}</h1>

@@ -34,8 +34,10 @@ export default function Welcome() {
   return (
     // One screen, no scrolling: the gaps (flex-1 spacers) shrink to fit the visible height. min-h (not h) so a
     // phone shorter than planned for can still scroll to the buttons instead of cutting them off
-    <main className="min-h-dvh bg-mano-light text-charcoal">
-      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[27px] pb-[max(20px,env(safe-area-inset-bottom))] tiny:pb-[max(12px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] short:pt-[max(16px,env(safe-area-inset-top))] tiny:pt-[max(8px,env(safe-area-inset-top))]">
+    // svh (the height WITH Safari's bar showing), not dvh: dvh grows when the bar hides on scroll, so the
+    // spacers re-stretched and the page jumped
+    <main className="min-h-svh bg-mano-light text-charcoal">
+      <div className="mx-auto flex min-h-svh max-w-[430px] flex-col px-[27px] pb-[max(20px,env(safe-area-inset-bottom))] tiny:pb-[max(12px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] short:pt-[max(16px,env(safe-area-inset-top))] tiny:pt-[max(8px,env(safe-area-inset-top))]">
         <header className="flex items-center justify-between">
           <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest short:text-[28px]">mano</span>
           <LangToggle light />
