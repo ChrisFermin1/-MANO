@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Eye, FileText, PartyPopper, Plus, Sparkles, Users } from "lucide-react";
+import { ChevronRight, Eye, FileText, PartyPopper, Plus, Receipt, Sparkles, Users } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { firstName, getJobs, onJobsChange, invoiceNo, invoiceState, jobBadge, jobTotal, moneySummary, money, type Job, type JobBadge, isInvoiceJob } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, firstNameOf } from "@/lib/business";
 import { jobRow } from "@/lib/rows";
@@ -133,8 +134,9 @@ export default function Inicio() {
           <span className="text-forest">{name}!</span>
         </h1>
 
-        {/* tablet + desktop: the numbers that matter. Same card, same order, numbers on one baseline */}
-        {jobs && (
+        {/* tablet + desktop: the numbers that matter. Same card, same order, numbers on one baseline.
+            Not for a brand-new account (a row of $0 says nothing). */}
+        {jobs && jobs.length > 0 && (
           <div className="mt-8 hidden gap-6 md:grid md:grid-cols-2 xl:grid-cols-4">
             <Stat href="/documentos?tab=invoices" label={t.owedTitle} value={money(cash?.owed ?? 0)} ring={ring} />
             <Stat href="/documentos?tab=invoices" label={t.overdueLabel} value={money(cash?.overdue ?? 0)} tone={cash && cash.overdue > 0 ? "overdue" : undefined} ring={ring} />
@@ -186,7 +188,19 @@ export default function Inicio() {
               ))}
 
             {/* Ojo — the rest of the list, right under "+N más" when opened; "all clear" when nothing is pending */}
-            {jobs && ((showAll && ojoAlerts.length > 0) || !next) && (
+            {/* brand new: no jobs yet → how to make the first one, instead of "nothing pending" */}
+            {jobs && jobs.length === 0 && (
+              <div className="mt-8 md:mt-6 xl:mt-0 [&>section]:mt-0">
+                <EmptyState
+                  icon={Sparkles}
+                  title={t.emptyStartTitle}
+                  body={t.emptyStartBody}
+                  primary={{ label: t.newEstimate, href: "/trabajos/nuevo?doc=estimate", icon: FileText }}
+                  secondary={{ label: t.newInvoice, href: "/trabajos/nuevo?doc=invoice", icon: Receipt }}
+                />
+              </div>
+            )}
+            {jobs && jobs.length > 0 && ((showAll && ojoAlerts.length > 0) || !next) && (
               <section className={`${next ? "mt-4 md:mt-6" : "mt-8 md:mt-6 xl:mt-0"} rounded-[20px] glass-peach p-4 md:rounded-[24px] md:p-6 md:[box-shadow:none]`}>
                 <div className="flex items-center gap-2">
                   <Eye className="size-6 text-[#b8803f]" strokeWidth={1.75} />

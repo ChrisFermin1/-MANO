@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, ChevronRight, Eye } from "lucide-react";
-import type { JobStatus } from "@/lib/api";
+import { invoiceState, isInvoiceJob, type Job, type JobStatus } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 
 export const btnPrimary =
@@ -82,6 +82,18 @@ export function StatusBadge({ status, invoice = false }: { status: JobStatus; in
       {invoice && status === "READY_FOR_QUOTE" ? t.readyToInvoice : t.status[status]}
     </span>
   );
+}
+
+/** A job's tag in lists: its status, or red "Vencida" once the invoice is late (the thing that matters most). */
+export function JobStatusTag({ job }: { job: Job }) {
+  const { t } = useLang();
+  if (invoiceState(job) === "overdue")
+    return (
+      <span className="inline-flex items-center whitespace-nowrap rounded-[6px] bg-overdue px-2 py-1 font-mono text-[11px] uppercase leading-none tracking-[0.5px] text-overdue-ink">
+        {t.overdueTag(0)}
+      </span>
+    );
+  return <StatusBadge status={job.status} invoice={isInvoiceJob(job)} />;
 }
 
 export function OjoNote({ children, className = "" }: { children: React.ReactNode; className?: string }) {

@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, FileText, Plus, Receipt } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { DocStateBadge, PageHeader, Screen, Title, btnPrimary, type DocState } from "@/components/ui";
 import { estimateNo, fmtDate, getJobs, onJobsChange, invoiceNo, invoiceState, jobTotal, money, paidSoFar, STATUS_FLOW, type Job, balanceDue } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
@@ -121,7 +122,7 @@ function Documentos() {
         ))}
       </div>
 
-      {tab === "invoices" && (
+      {tab === "invoices" && rows.length > 0 && (
         <div className="mt-4 grid grid-cols-2 gap-3 md:mt-5 md:max-w-[560px]">
           {/* same as Home's numbers: white, the dot carries the meaning (peach is Ojo's color) */}
           <div className="rounded-[16px] glass p-4">
@@ -137,7 +138,22 @@ function Documentos() {
         </div>
       )}
 
-      {jobs && rows.length === 0 && <p className="mt-8 text-base text-muted">{t.noDocs}</p>}
+      {jobs && rows.length === 0 &&
+        (tab === "invoices" ? (
+          <EmptyState
+            icon={Receipt}
+            title={t.emptyInvoicesTitle}
+            body={t.emptyInvoicesBody}
+            primary={{ label: t.newInvoice, href: "/trabajos/nuevo?doc=invoice", icon: Plus }}
+          />
+        ) : (
+          <EmptyState
+            icon={FileText}
+            title={t.emptyEstimatesTitle}
+            body={t.emptyEstimatesBody}
+            primary={{ label: t.newEstimate, href: "/trabajos/nuevo?doc=estimate", icon: Plus }}
+          />
+        ))}
 
       {/* tablet + desktop: a table; click a row to open it */}
       {rows.length > 0 && (

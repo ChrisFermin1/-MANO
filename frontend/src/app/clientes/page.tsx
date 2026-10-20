@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, FileText, Mail, MapPin, Phone, Plus } from "lucide-react";
+import { ChevronRight, FileText, Mail, MapPin, Phone, Plus, Users } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { PageHeader, Screen, Sheet, StatusBadge, Title, btnPrimary, btnSecondary, input } from "@/components/ui";
 import { getJobs, money, onJobsChange, phoneDigits, type Job, isInvoiceJob } from "@/lib/api";
 import { groupClients, loadSavedClients, newJobHref, saveClient, type Client } from "@/lib/clients";
@@ -58,7 +59,15 @@ export default function Clientes() {
         }
       />
       <Title>{t.clientsTitle}</Title>
-      {clients && clients.length === 0 && <p className="mt-6 text-base text-muted">{t.clientsEmpty}</p>}
+      {clients && clients.length === 0 && (
+        <EmptyState
+          icon={Users}
+          title={t.emptyClientsTitle}
+          body={t.emptyClientsBody}
+          primary={{ label: t.newClient, onClick: () => setAdding(true), icon: Plus }}
+          secondary={{ label: t.newEstimate, href: "/trabajos/nuevo?doc=estimate", icon: FileText }}
+        />
+      )}
 
       {/* desktop: a table */}
       {clients && clients.length > 0 && (

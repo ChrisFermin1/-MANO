@@ -3,12 +3,22 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Plus, Search, X } from "lucide-react";
-import { PageHeader, Screen, StatusBadge, Title, btnPrimary } from "@/components/ui";
-import { fmtDate, getJobs, onJobsChange, money, type Job } from "@/lib/api";
+import { ChevronRight, FileText, Plus, Receipt, Search, X } from "lucide-react";
+import { JobStatusTag, PageHeader, Screen, Title, btnPrimary } from "@/components/ui";
+import { EmptyState } from "@/components/empty-state";
+import { fmtDate, getJobs, invoiceState, onJobsChange, money, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 import { matchesJob } from "@/lib/search";
 import { jobRow } from "@/lib/rows";
+
+// What he looks for most: money owed, money late, estimates nobody answered
+type Filter = "all" | "owed" | "overdue" | "noReply";
+const FILTERS: Record<Filter, (j: Job) => boolean> = {
+  all: () => true,
+  owed: (j) => invoiceState(j) === "unpaid" || invoiceState(j) === "overdue",
+  overdue: (j) => invoiceState(j) === "overdue",
+  noReply: (j) => j.status === "QUOTE_SENT",
+};
 
 export default function Trabajos() {
   const { t, lang } = useLang();
@@ -16,6 +26,7 @@ export default function Trabajos() {
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [showCancelled, setShowCancelled] = useState(false);
   const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
 
   useEffect(() => {
     getJobs().then(setJobs);
@@ -27,7 +38,7 @@ export default function Trabajos() {
   // Searching looks through everything, cancelled jobs included
   const searching = query.trim() !== "";
   const results = searching ? (jobs ?? []).filter((j) => matchesJob(j, query)) : null;
-  const shown = results ?? [...active, ...(showCancelled ? cancelled : [])];
+  const shown = results ?? (filter === "all" ? [...active, ...(showCancelled ? cancelled : [])] : active.filter(FILTERS[filter]));
   const rows = shown.map((j) => jobRow(j, lang));
 
   return (
@@ -69,7 +80,42 @@ export default function Trabajos() {
         </label>
       )}
 
-      {jobs && active.length === 0 && !searching && <p className="mt-6 text-base text-muted">{t.noJobs}</p>}
+      {/* quick filters, with how many each has (search looks through everything instead) */}
+      {active.length > 0 && !searching && (
+        <div className="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist">
+          {(Object.keys(FILTERS) as Filter[]).map((f) => {
+            const n = active.filter(FILTERS[f]).length;
+            const on = filter === f;
+            return (
+              <button
+                key={f}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => setFilter(f)}
+                className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition ${
+                  on ? "bg-forest text-white" : "border border-black/10 bg-white text-charcoal/75 hover:border-forest/30"
+                }`}
+              >
+                {t.jobFilters[f]}
+                <span className={`tabular-nums ${on ? "text-white/70" : "text-muted"}`}>{n}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {jobs && active.length > 0 && !searching && rows.length === 0 && <p className="mt-6 text-base text-muted">{t.noJobsInFilter}</p>}
+
+      {jobs && jobs.length === 0 && (
+        <EmptyState
+          icon={FileText}
+          title={t.emptyStartTitle}
+          body={t.emptyStartBody}
+          primary={{ label: t.newEstimate, href: "/trabajos/nuevo?doc=estimate", icon: FileText }}
+          secondary={{ label: t.newInvoice, href: "/trabajos/nuevo?doc=invoice", icon: Receipt }}
+        />
+      )}
+      {jobs && jobs.length > 0 && active.length === 0 && !searching && <p className="mt-6 text-base text-muted">{t.noJobs}</p>}
       {results && results.length === 0 && <p className="mt-6 text-base text-muted">{t.noResults(query.trim())}</p>}
 
       {/* the same rows (lib/rows.ts) in two layouts: a table on tablet and desktop, cards on the phone.
@@ -113,7 +159,7 @@ export default function Trabajos() {
                   <td className="hidden truncate px-4 py-3 text-charcoal/70 lg:table-cell">{r.place ?? (r.sites > 1 ? t.nSites(r.sites) : "—")}</td>
                   <td className="hidden whitespace-nowrap px-4 py-3 font-mono text-xs text-charcoal/70 lg:table-cell">{r.doc ?? "—"}</td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={r.job.status} invoice={r.invoice} />
+                    <JobStatusTag job={r.job} />
                   </td>
                   <td className="hidden whitespace-nowrap px-4 py-3 text-charcoal/70 lg:table-cell">{fmtDate(r.updated, lang)}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-right font-bold">{r.total ? money(r.total) : "—"}</td>
@@ -131,18 +177,20 @@ export default function Trabajos() {
               href={r.href}
               className={`flex items-center gap-3 rounded-[20px] glass p-4 transition active:scale-[0.99] ${r.cancelled ? "opacity-60" : ""}`}
             >
+              {/* two lines: who + how much · where + where it stands */}
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-base font-semibold leading-5">{r.client}</span>
-                <span className="block truncate text-sm text-muted">
-                  {r.subtitle}
-                  {r.doc && <span className="font-mono text-xs">{` · ${r.doc}`}</span>}
+                <span className="flex items-baseline justify-between gap-3">
+                  <span className="truncate text-base font-semibold leading-5">{r.client}</span>
+                  {r.total > 0 && <span className="shrink-0 text-base font-bold tabular-nums">{money(r.total)}</span>}
                 </span>
-                <span className="mt-2 block">
-                  <StatusBadge status={r.job.status} invoice={r.invoice} />
+                <span className="mt-1.5 flex items-center justify-between gap-3">
+                  <span className="min-w-0 truncate text-sm text-muted">{r.subtitle}</span>
+                  <span className="shrink-0">
+                    <JobStatusTag job={r.job} />
+                  </span>
                 </span>
               </span>
-              <span className="text-lg font-bold">{r.total ? money(r.total) : "—"}</span>
-              <ChevronRight className="size-5 text-muted" />
+              <ChevronRight className="size-5 shrink-0 text-muted" />
             </Link>
           </li>
         ))}
