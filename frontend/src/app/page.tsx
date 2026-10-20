@@ -33,19 +33,18 @@ export default function Welcome() {
   const { t } = useLang();
 
   return (
-    // One screen, no scrolling: the gaps (flex-1 spacers) shrink to fit the visible height. min-h (not h) so a
-    // phone shorter than planned for can still scroll to the buttons instead of cutting them off
-    // svh (the height WITH Safari's bar showing), not dvh: dvh grows when the bar hides on scroll, so the
-    // spacers re-stretched and the page jumped
-    <main className="min-h-[var(--app-h,100svh)] bg-mano-light text-charcoal">
-      <div className="mx-auto flex min-h-[var(--app-h,100svh)] max-w-[430px] flex-col px-[27px] pb-[max(20px,env(safe-area-inset-bottom))] tiny:pb-[max(12px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] short:pt-[max(16px,env(safe-area-inset-top))] tiny:pt-[max(8px,env(safe-area-inset-top))]">
+    // Nothing here depends on the screen's height: the content flows from the top with fixed gaps, and the
+    // buttons are pinned to the bottom of the screen. (A saved Home Screen app reports one height when it
+    // opens and another a moment later, so height-based layouts loaded low and jumped on the first scroll.)
+    <main className="bg-mano-light text-charcoal">
+      <div className="mx-auto max-w-[430px] px-[27px] pb-[calc(116px+max(20px,env(safe-area-inset-bottom)))] pt-[max(20px,env(safe-area-inset-top))] short:pt-[max(16px,env(safe-area-inset-top))] tiny:pt-[max(8px,env(safe-area-inset-top))]">
         <header className="flex items-center justify-between">
           <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest short:text-[28px]">mano</span>
           <LangToggle light />
         </header>
 
         {/* Hierarchy: promise first → the voice demo → the result (estimate) → buttons */}
-        <div className="min-h-2 flex-1 basis-0 max-h-[44px]" />
+        <div className="h-[44px] short:h-4 tiny:h-2" />
         <section>
           <h1 className="font-serif text-[48px] leading-[47px] tracking-[-0.96px] short:text-[38px] short:leading-[38px] tiny:text-[28px] tiny:leading-[28px]">
             {t.headline1}
@@ -56,7 +55,7 @@ export default function Welcome() {
         </section>
 
         {/* Demo: voice → estimate */}
-        <div className="min-h-2 flex-1 basis-0 max-h-[36px]" />
+        <div className="h-[36px] short:h-3 tiny:h-2" />
         <section className="flex flex-col items-center" aria-hidden>
           <div className="flex w-full items-center justify-center gap-4 short:gap-3">
             <Wave bars={[...WAVE].reverse()} side="left" />
@@ -102,8 +101,11 @@ export default function Welcome() {
           </div>
         </section>
 
-        <div className="min-h-2 flex-1 basis-0" />
-        <div>
+      </div>
+
+      {/* pinned to the bottom of the screen, whatever height the phone reports */}
+      <div className="fixed inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ivory from-70% to-ivory/0 pt-6">
+        <div className="mx-auto max-w-[430px] px-[27px] pb-[max(20px,env(safe-area-inset-bottom))]">
           <Link
             href="/onboarding/oficio"
             className={btnPrimary}

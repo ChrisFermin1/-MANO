@@ -42,8 +42,8 @@ export default function TuOficio() {
   };
 
   return (
-    <main className="min-h-[var(--app-h,100svh)] bg-mano-light text-charcoal">
-      <div className="mx-auto flex min-h-[var(--app-h,100svh)] max-w-[430px] flex-col px-[25px] pt-[calc(33px+env(safe-area-inset-top))] short:pt-[calc(16px+env(safe-area-inset-top))]">
+    <main className="bg-mano-light text-charcoal">
+      <div className="mx-auto max-w-[430px] px-[25px] pb-[calc(116px+max(20px,env(safe-area-inset-bottom)))] pt-[calc(33px+env(safe-area-inset-top))] short:pt-[calc(16px+env(safe-area-inset-top))]">
         <OnboardingHeader step={1} total={2} backHref="/" />
 
         <h1 className="mt-[50px] short:mt-6 font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.tradeTitle}</h1>
@@ -107,8 +107,10 @@ export default function TuOficio() {
           )}
         </div>
 
-        {/* pinned to the bottom: "Siguiente" is always on screen, the trades scroll behind it */}
-        <div className="sticky bottom-0 -mx-[25px] mt-auto bg-gradient-to-t from-ivory from-75% to-ivory/0 px-[25px] pb-[max(20px,env(safe-area-inset-bottom))] pt-8">
+        {/* pinned to the bottom of the screen (fixed, not height-based): "Siguiente" is always on screen, the trades scroll behind it */}
+        </div>
+      <div className="fixed inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ivory from-75% to-ivory/0 pt-8">
+        <div className="mx-auto max-w-[430px] px-[25px] pb-[max(20px,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={next}
