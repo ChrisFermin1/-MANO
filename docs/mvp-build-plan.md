@@ -225,6 +225,7 @@ Update this table (status + commit) after each task.
 | Downloaded PDF is named with that number and the document's year: `190 Ana Garcia 2026.pdf` | `153ce8f` | — |
 | PDF share sheet includes subject + message (e.g. "Invoice from Visão" / "Hi Maria, here's your invoice…"). Same copy as the link; PDF drops "see it here". Phone only; computer still downloads | `20e9bef` | — (OS Mail may use them; not a server send) |
 | Bugbot fixes: planned invoice numbers count toward next/peek; prepare validates the number first; PDF download no longer marks sent (only the share sheet does) | `512f639` | — |
+| UX audit round 1 (Abe approved 1, 2, 3, 4, 9): invoice numbers back to INV-0190; overdue shown at the top of the job; labeled progress; send box quiet after sending (no raw link, Spanish + "Ver en inglés"); one outline style for secondary actions | `42ae06c` | — |
 
 
 ## Where we left off (2026-10-20, for the next tool picking this up)
@@ -236,6 +237,8 @@ function names when the real services come.
 
 Open questions for Abe:
 - Optional P.O. number on invoices (company clients like ATL Homemaker)? Invoice numbers: `INV-0190` (Abe chose it after trying plain `190`, `914c1ab` was reverted).
+
+UX audit (2026-10-20), still to do: 5 calmer look (flat cards, color only with meaning), 6 Tu negocio autosave + desktop sections, 7 Jobs list rows + filter chips, 8 empty states, 10 client page.
 
 Next, in order:
 1. ~~Payments the owner never marks~~ — skipped (Abe). Was: client "Ya pagué" on the link + "Ya me pagó" on Home.
