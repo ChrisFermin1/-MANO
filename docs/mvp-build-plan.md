@@ -221,6 +221,7 @@ Update this table (status + commit) after each task.
 | Invoice terms match Wave: on receipt / 15 / 30 / 45 / 60 / 90 days (was 0 / 7 / 15 / 30); any other date per invoice as before | `f15ead3` | — |
 | Photos & files + plans. Any job: photos and PDFs (site, design, materials, before/after, receipts, contracts) with a caption (Spanish → English for the client) and a "Solo para mí" switch; the client sees the shared ones on the link and as photo pages in the PDF. Plans in `lib/plan.ts` (fake checkout, like `lib/auth.ts`): Free = 3 photos per job, no PDFs; Solo $19 / Crew $49 (test prices) = unlimited + PDFs. Upgrade card where the limit hits, `/planes`, "Tu plan" in Tu negocio. Monthly document limits not enforced yet | `228f47c` | Josh: file storage (S3-type) + `job_files` (id, job_id, kind, name, mime, url, caption, caption_en, private, created_at), POST/PATCH/DELETE /jobs/:id/files, public files on GET /public/estimates/:token; `plan` on the business, set by the payment service's webhook. Team: payment service (Stripe on the web; Apple/Google rules if Mano goes in the stores) |
 | "Prefiero llenarlo yo" on New job (empty form, no Mano); "Ver como tu cliente" on the estimate / invoice screens: Link (the real client page) and PDF (the real file, drawn with pdf.js); Solo / Crew hide "Sent with Mano" on the link and PDF. Next: quantity × unit price per line | `d494fbe` | Josh: nothing new for the fill-in form (same job). Branding: the public estimate endpoint returns whether the business's plan hides it |
+| Invoice numbers are a plain `190`, like Wave (was `INV-0190`). Estimates stay `EST-0001`. The number on the job, Tu negocio, the invoice, the PDF, and search | `914c1ab` | Josh: still stores the integer. Display is the frontend's |
 
 
 ## Where we left off (2026-10-20, for the next tool picking this up)
@@ -231,8 +232,7 @@ FAKE on purpose, each in one file: `lib/auth.ts`, `lib/plan.ts`, `lib/attachment
 function names when the real services come.
 
 Open questions for Abe:
-- Invoice number format: Mano shows `INV-0190`; Wave (what Edgar's clients know) shows a plain `190`. Switch?
-- Optional P.O. number on invoices (company clients like ATL Homemaker)?
+- Optional P.O. number on invoices (company clients like ATL Homemaker)? Invoice numbers are decided: a plain `190`, like Wave (`914c1ab`).
 
 Next, in order:
 1. Payments the owner never marks (the person billing isn't the one getting paid): ideas in chat were a
