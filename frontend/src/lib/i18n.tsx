@@ -236,6 +236,10 @@ const strings = {
     backHome: "Volver al inicio",
     backToJob: "Volver al trabajo",
     downloadPdf: "Descargar PDF",
+    seePdf: "Ver PDF",
+    sharePdf: "Compartir PDF",
+    pdfPreviewTitle: "Así lo recibe tu cliente",
+    pdfPreviewBody: "En inglés. Revísalo antes de mandarlo.",
     makingPdf: "Creando PDF…",
     pdfFailed: "No se pudo crear el PDF. Intenta otra vez.",
 
@@ -581,6 +585,10 @@ const strings = {
     backHome: "Back to home",
     backToJob: "Back to the job",
     downloadPdf: "Download PDF",
+    seePdf: "See PDF",
+    sharePdf: "Share PDF",
+    pdfPreviewTitle: "What your client gets",
+    pdfPreviewBody: "In English. Check it before you send it.",
     makingPdf: "Making PDF…",
     pdfFailed: "Couldn't make the PDF. Try again.",
 

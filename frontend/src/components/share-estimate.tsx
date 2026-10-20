@@ -6,7 +6,7 @@ import { Check, Copy, MessageCircle, QrCode, Share2, Smartphone } from "lucide-r
 import { balanceDue, estimateLink, firstName, fmtDate, isUnsent, markSent, money, smsLink, whatsappLink, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
-import { PdfButton } from "@/components/pdf-button";
+import { PdfPreviewButton } from "@/components/pdf-button";
 import { shareOrigin } from "@/lib/relay";
 
 // Carlos sends the homeowner a link (WhatsApp/SMS via the phone's share sheet). No app needed on their side.
@@ -146,13 +146,11 @@ export function ShareEstimate({
         </button>
         <span aria-hidden className={dark ? "text-white/30" : "text-charcoal/20"}>·</span>
         {/* the document itself, for email or WhatsApp: the customer's English version */}
-        <PdfButton
+        <PdfPreviewButton
           kind={invoice ? "invoice" : "estimate"}
           job={job}
           biz={biz}
           label="PDF"
-          busyLabel="PDF"
-          errorLabel={t.pdfFailed}
           compact
           onDone={sharing}
           className="flex items-center gap-1.5 py-1"
