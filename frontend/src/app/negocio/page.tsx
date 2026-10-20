@@ -305,7 +305,7 @@ function YourPlan() {
       <h2 className="text-sm font-semibold">{t.currentPlan}</h2>
       <div className="mt-2 flex items-center justify-between gap-3">
         <p className="text-base font-semibold">{t.yourPlanLine(t.planName[plan.id])}</p>
-        <Link href="/planes" className="flex items-center gap-1 text-sm font-bold text-forest hover:underline">
+        <Link href="/planes" className="flex items-center gap-1 text-sm font-bold text-pro hover:underline">
           <Sparkles className="size-4" strokeWidth={2.25} /> {t.seePlans}
         </Link>
       </div>

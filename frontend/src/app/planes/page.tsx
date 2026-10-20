@@ -49,7 +49,7 @@ function Planes() {
       <p className="mt-2 text-base leading-6 text-charcoal/70">{t.plansBody}</p>
 
       {done && (
-        <p role="status" className="mt-6 flex items-center gap-2 rounded-[14px] glass-sage px-4 py-3 text-sm font-bold text-forest motion-safe:animate-[pop-in_300ms_ease-out]">
+        <p role="status" className="mt-6 flex items-center gap-2 rounded-[14px] bg-pro-tint px-4 py-3 text-sm font-bold text-pro-ink motion-safe:animate-[pop-in_300ms_ease-out]">
           <Sparkles className="size-5 shrink-0" strokeWidth={2} /> {t.planActive(t.planName[done])}
         </p>
       )}
@@ -62,11 +62,11 @@ function Planes() {
           return (
             <li
               key={id}
-              className={`flex flex-col rounded-[20px] p-6 ${spotlight ? "bg-forest text-white" : "border border-black/[0.06] bg-white"}`}
+              className={`flex flex-col rounded-[20px] p-6 ${spotlight ? "bg-pro text-white" : "border border-black/[0.06] bg-white"}`}
             >
               <div className="flex items-center justify-between gap-2">
                 <p className="font-serif text-[28px] leading-8 tracking-[-0.5px]">{t.planName[id]}</p>
-                {mine && <span className="rounded-full bg-sage px-2.5 py-1 text-xs font-bold text-forest">{t.currentPlan}</span>}
+                {mine && <span className="rounded-full bg-pro-tint px-2.5 py-1 text-xs font-bold text-pro-ink">{t.currentPlan}</span>}
               </div>
               <p className={`mt-1 text-sm ${spotlight ? "text-white/70" : "text-muted"}`}>{t.planWho[id]}</p>
               <p className="mt-4 flex items-baseline gap-1">
@@ -76,7 +76,7 @@ function Planes() {
               <ul className="mt-6 flex-1 space-y-2 text-sm leading-5">
                 {t.planFeatures[id].map((f) => (
                   <li key={f} className="flex gap-2">
-                    <Check className={`mt-0.5 size-4 shrink-0 ${spotlight ? "text-sage" : "text-forest"}`} strokeWidth={2.75} />
+                    <Check className={`mt-0.5 size-4 shrink-0 ${spotlight ? "text-pro-light" : "text-pro"}`} strokeWidth={2.75} />
                     {f}
                   </li>
                 ))}
@@ -86,7 +86,7 @@ function Planes() {
                   type="button"
                   onClick={() => setPicking(id)}
                   className={`mt-6 flex h-12 items-center justify-center rounded-[14px] text-sm font-bold transition active:scale-[0.98] ${
-                    spotlight ? "bg-white text-forest" : "border border-forest/25 text-forest hover:bg-ivory"
+                    spotlight ? "bg-white text-pro" : "border border-pro/25 text-pro hover:bg-pro-tint"
                   }`}
                 >
                   {t.switchTo(t.planName[id])}
@@ -101,7 +101,7 @@ function Planes() {
         {picking && (
           <div className="mt-3">
             <p className="text-base leading-6 text-charcoal/80">{t.checkoutBody}</p>
-            <button type="button" onClick={() => void confirm()} disabled={busy} className={`mt-6 ${btnPrimary}`}>
+            <button type="button" onClick={() => void confirm()} disabled={busy} className={`mt-6 ${btnPrimary} bg-pro! shadow-none!`}>
               {busy && <Loader2 className="size-5 animate-spin" />}
               {t.checkoutConfirm(PLANS[picking].price)}
             </button>

@@ -34,6 +34,12 @@
   --color-ojo: #b8803f; /* Ojo's eye icon */
   --color-ojo-ink: #815c2c; /* Ojo's text & buttons on peach */
   --color-flag: #e0a35a; /* the ONE 'missing info' color */
+  /* paid plans (Solo / Crew): night blue, so "upgrade" never reads as paid (sage) or Ojo (peach) */
+  --color-pro: #24395e; /* buttons, the highlighted plan */
+  --color-pro-tint: #e8edf5; /* upgrade card background */
+  --color-pro-ink: #1e2f4d; /* text on the tint */
+  --color-pro-soft: #4a5f82; /* secondary text on the tint */
+  --color-pro-light: #b9c8e3; /* accents on the dark blue */
 
   --font-sans: var(--font-montserrat);
   --font-logo: var(--font-righteous);
