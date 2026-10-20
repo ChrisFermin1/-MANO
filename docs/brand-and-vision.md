@@ -325,6 +325,8 @@ Sequencing depends on user research, adoption, technical feasibility and economi
 ## 17. The business model (not validated)
 
 - **Software subscriptions:** monthly plans by needs, features or usage.
+- **A light CRM in the paid plan:** leads, client notes, a page per client, repeat-business reminders, won/lost.
+  Free brings contractors in; the CRM is why they upgrade, because it helps them get more jobs.
 - **Payments:** possible revenue from integrated payments, depending on the provider's terms.
 - **Premium modules:** teams, scheduling, reporting, automation, industry tools.
 - **Multi-crew / multi-location plans.**
