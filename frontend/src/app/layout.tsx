@@ -27,7 +27,18 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        {/* The real screen height, measured before the first paint: a saved Home Screen app can report the
+            wrong height when it opens, so the one-screen pages (Welcome, onboarding) size to this instead.
+            Set once (and on rotation), never on scroll, so Safari's bar hiding can't make the page jump. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){var r=document.documentElement,w=0;function s(){if(innerWidth!==w){w=innerWidth;r.style.setProperty('--app-h',innerHeight+'px')}}s();addEventListener('orientationchange',function(){w=0;setTimeout(s,300)});addEventListener('resize',s)})()",
+          }}
+        />
+      </head>
       <body
         className={`${montserrat.variable} ${righteous.variable} ${hedvig.variable} ${jetbrains.variable} antialiased`}
       >

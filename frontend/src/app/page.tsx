@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { btnPrimary } from "@/components/ui";
 import { Eye, Mic } from "lucide-react";
 import { LangToggle } from "@/components/lang-toggle";
 import { resetJobs } from "@/lib/api";
@@ -36,8 +37,8 @@ export default function Welcome() {
     // phone shorter than planned for can still scroll to the buttons instead of cutting them off
     // svh (the height WITH Safari's bar showing), not dvh: dvh grows when the bar hides on scroll, so the
     // spacers re-stretched and the page jumped
-    <main className="min-h-svh bg-mano-light text-charcoal">
-      <div className="mx-auto flex min-h-svh max-w-[430px] flex-col px-[27px] pb-[max(20px,env(safe-area-inset-bottom))] tiny:pb-[max(12px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] short:pt-[max(16px,env(safe-area-inset-top))] tiny:pt-[max(8px,env(safe-area-inset-top))]">
+    <main className="min-h-[var(--app-h,100svh)] bg-mano-light text-charcoal">
+      <div className="mx-auto flex min-h-[var(--app-h,100svh)] max-w-[430px] flex-col px-[27px] pb-[max(20px,env(safe-area-inset-bottom))] tiny:pb-[max(12px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] short:pt-[max(16px,env(safe-area-inset-top))] tiny:pt-[max(8px,env(safe-area-inset-top))]">
         <header className="flex items-center justify-between">
           <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest short:text-[28px]">mano</span>
           <LangToggle light />
@@ -105,7 +106,7 @@ export default function Welcome() {
         <div>
           <Link
             href="/onboarding/oficio"
-            className="flex h-[53px] short:h-[48px] tiny:h-[44px] w-full items-center justify-center rounded-[20px] bg-forest text-sm font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98]"
+            className={btnPrimary}
           >
             {t.start} →
           </Link>

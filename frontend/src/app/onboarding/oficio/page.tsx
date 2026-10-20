@@ -1,5 +1,6 @@
 "use client";
 
+import { btnPrimary } from "@/components/ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Eye } from "lucide-react";
@@ -41,8 +42,8 @@ export default function TuOficio() {
   };
 
   return (
-    <main className="min-h-svh bg-mano-light text-charcoal">
-      <div className="mx-auto flex min-h-svh max-w-[430px] flex-col px-[25px] pt-[calc(33px+env(safe-area-inset-top))] short:pt-[calc(16px+env(safe-area-inset-top))]">
+    <main className="min-h-[var(--app-h,100svh)] bg-mano-light text-charcoal">
+      <div className="mx-auto flex min-h-[var(--app-h,100svh)] max-w-[430px] flex-col px-[25px] pt-[calc(33px+env(safe-area-inset-top))] short:pt-[calc(16px+env(safe-area-inset-top))]">
         <OnboardingHeader step={1} total={2} backHref="/" />
 
         <h1 className="mt-[50px] short:mt-6 font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.tradeTitle}</h1>
@@ -112,7 +113,7 @@ export default function TuOficio() {
             type="button"
             onClick={next}
             disabled={selected.length === 0}
-            className="flex h-[53px] w-full items-center justify-center rounded-[20px] bg-forest text-sm font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40"
+            className={btnPrimary}
           >
             {t.next} →
           </button>
