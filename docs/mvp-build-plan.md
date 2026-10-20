@@ -201,6 +201,7 @@ Update this table (status + commit) after each task.
 | Onboarding steps 1 and 2: Siguiente / Terminar pinned to the bottom, tighter spacing on phone screens (the button was below the screen in Safari) | `c719fc6` | — |
 | New job: "Subir foto" next to "Escanear una nota" (photo library, screenshots); no glow on the onboarding trade check | `ce62629`, `43d5b27` | — |
 | Onboarding asks what invoices need: first + last name, required phone, business email and address (address = where checks go), and a 3rd step "Cómo te pagan" (payment info + due terms). Invoices show email + address | `0dffe42` | Josh: business `email`, `address`; `owner_name` holds first + last |
+| Phone numbers formatted as you type ((404) 555-0123); business phone must include the area code; "+" numbers left as typed | `d53eff7` | Josh: store phones as typed (formatted) or digits only; the app formats either |
 
 
 ## After this list
