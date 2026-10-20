@@ -228,6 +228,7 @@ Update this table (status + commit) after each task.
 | UX audit round 1 (Abe approved 1, 2, 3, 4, 9): invoice numbers back to INV-0190; overdue shown at the top of the job; labeled progress; send box quiet after sending (no raw link, Spanish + "Ver en inglés"); one outline style for secondary actions | `42ae06c` | — |
 | UX audit 5: calmer look. `glass-*` styles are flat (white, thin border, no blur / shadow); colored panels solid; Facturas summary like Home; softer main-button shadow | `d27d171` | — |
 | UX audit 6, 7, 8: Tu negocio autosaves (+ desktop section menu); Jobs list two-line rows, red Vencida, filter chips; empty states for brand-new accounts (Home, Jobs, Documents, Clients) | `7847c67`, `bc335b7` | — |
+| Client page v1 (`/clientes/[id]`, free) + private notes (Solo) + `client_id` on jobs; Home desktop shows Ojo's queue under the next step | `1f5b77d` | Josh: `customers` gets notes (Solo) and jobs a `customer_id`; PATCH customer updates unsent jobs only |
 
 
 ## Where we left off (2026-10-20, for the next tool picking this up)
@@ -240,7 +241,7 @@ function names when the real services come.
 Open questions for Abe:
 - Optional P.O. number on invoices (company clients like ATL Homemaker)? Invoice numbers: `INV-0190` (Abe chose it after trying plain `190`, `914c1ab` was reverted).
 
-Client page (Abe, 2026-10-20): v1 in progress. Free: the page itself (contact + call/WhatsApp/email, addresses, money
+Client page (Abe, 2026-10-20): v1 done. Free: the page itself (contact + call/WhatsApp/email, addresses, money
 billed/paid/owed/overdue, their jobs, "Nuevo trabajo para…", fix contact info → also updates their UNSENT jobs,
 never sent documents). Solo (paid, the CRM): private notes now; later leads won/lost, "¿Cómo te conoció?",
 repeat-work reminders. Clients get a real id (`client_id` on jobs) so a name typo fix doesn't split history.
