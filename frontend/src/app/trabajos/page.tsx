@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Plus, Search, X } from "lucide-react";
 import { PageHeader, Screen, StatusBadge, Title, btnPrimary } from "@/components/ui";
-import { estimateNo, fmtDate, getJobs, jobSites, onJobsChange, invoiceNo, jobTotal, money, type Job, isInvoiceJob } from "@/lib/api";
+import { fmtDate, getJobs, onJobsChange, money, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
-import { jobSubtitle, serviceLabel } from "@/lib/services";
 import { matchesJob } from "@/lib/search";
+import { jobRow } from "@/lib/rows";
 
 export default function Trabajos() {
   const { t, lang } = useLang();
@@ -28,6 +28,7 @@ export default function Trabajos() {
   const searching = query.trim() !== "";
   const results = searching ? (jobs ?? []).filter((j) => matchesJob(j, query)) : null;
   const shown = results ?? [...active, ...(showCancelled ? cancelled : [])];
+  const rows = shown.map((j) => jobRow(j, lang));
 
   return (
     <Screen>
@@ -71,8 +72,8 @@ export default function Trabajos() {
       {jobs && active.length === 0 && !searching && <p className="mt-6 text-base text-muted">{t.noJobs}</p>}
       {results && results.length === 0 && <p className="mt-6 text-base text-muted">{t.noResults(query.trim())}</p>}
 
-      {/* desktop: a table; click a row to open the job */}
-      {shown.length > 0 && (
+      {/* the same rows (lib/rows.ts) in two layouts: a table on desktop, cards on the phone */}
+      {rows.length > 0 && (
         <div className="mt-5 hidden overflow-hidden rounded-[16px] border border-black/5 bg-white lg:block">
           <table className="w-full table-fixed text-left text-sm">
             <colgroup>
@@ -96,29 +97,25 @@ export default function Trabajos() {
               </tr>
             </thead>
             <tbody>
-              {shown.map((job) => (
+              {rows.map((r) => (
                 <tr
-                  key={job.id}
-                  onClick={() => router.push(`/trabajos/${job.id}`)}
-                  className={`cursor-pointer border-b border-black/5 transition last:border-0 hover:bg-ivory/70 ${job.status === "CANCELLED" ? "opacity-60" : ""}`}
+                  key={r.id}
+                  onClick={() => router.push(r.href)}
+                  className={`cursor-pointer border-b border-black/5 transition last:border-0 hover:bg-ivory/70 ${r.cancelled ? "opacity-60" : ""}`}
                 >
                   <td className="truncate px-4 py-3">
-                    <Link href={`/trabajos/${job.id}`} className="block truncate font-semibold" onClick={(e) => e.stopPropagation()}>
-                      {job.customer_name || "—"}
+                    <Link href={r.href} className="block truncate font-semibold" onClick={(e) => e.stopPropagation()}>
+                      {r.client}
                     </Link>
                   </td>
-                  <td className="truncate px-4 py-3">{serviceLabel(job.service, lang, job.service_es) || "—"}</td>
-                  <td className="truncate px-4 py-3 text-charcoal/70">
-                    {job.address || (jobSites(job).length > 1 ? t.nSites(jobSites(job).length) : "—")}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-charcoal/70">
-                    {job.invoice_number ? invoiceNo(job.invoice_number) : job.estimate_number ? estimateNo(job.estimate_number) : "—"}
-                  </td>
+                  <td className="truncate px-4 py-3">{r.service || "—"}</td>
+                  <td className="truncate px-4 py-3 text-charcoal/70">{r.place ?? (r.sites > 1 ? t.nSites(r.sites) : "—")}</td>
+                  <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-charcoal/70">{r.doc ?? "—"}</td>
                   <td className="px-4 py-3">
-                    <StatusBadge status={job.status} invoice={isInvoiceJob(job)} />
+                    <StatusBadge status={r.job.status} invoice={r.invoice} />
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-charcoal/70">{fmtDate(job.updated_at, lang)}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right font-bold">{jobTotal(job) ? money(jobTotal(job)) : "—"}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-charcoal/70">{fmtDate(r.updated, lang)}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right font-bold">{r.total ? money(r.total) : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -127,28 +124,23 @@ export default function Trabajos() {
       )}
 
       <ul className="mt-4 space-y-3 lg:hidden">
-        {shown.map((job) => (
-          <li key={job.id}>
+        {rows.map((r) => (
+          <li key={r.id}>
             <Link
-              href={`/trabajos/${job.id}`}
-              className={`flex items-center gap-3 rounded-[20px] glass p-4 transition active:scale-[0.99] ${job.status === "CANCELLED" ? "opacity-60" : ""}`}
+              href={r.href}
+              className={`flex items-center gap-3 rounded-[20px] glass p-4 transition active:scale-[0.99] ${r.cancelled ? "opacity-60" : ""}`}
             >
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-base font-semibold leading-5">{job.customer_name || "—"}</span>
+                <span className="block truncate text-base font-semibold leading-5">{r.client}</span>
                 <span className="block truncate text-sm text-muted">
-                  {jobSubtitle(job, lang)}
-                  {(job.invoice_number || job.estimate_number) && (
-                    <span className="font-mono text-xs">
-                      {" · "}
-                      {job.invoice_number ? invoiceNo(job.invoice_number) : estimateNo(job.estimate_number!)}
-                    </span>
-                  )}
+                  {r.subtitle}
+                  {r.doc && <span className="font-mono text-xs">{` · ${r.doc}`}</span>}
                 </span>
                 <span className="mt-2 block">
-                  <StatusBadge status={job.status} invoice={isInvoiceJob(job)} />
+                  <StatusBadge status={r.job.status} invoice={r.invoice} />
                 </span>
               </span>
-              <span className="text-lg font-bold">{jobTotal(job) ? money(jobTotal(job)) : "—"}</span>
+              <span className="text-lg font-bold">{r.total ? money(r.total) : "—"}</span>
               <ChevronRight className="size-5 text-muted" />
             </Link>
           </li>

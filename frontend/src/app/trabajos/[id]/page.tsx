@@ -167,13 +167,14 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
   return (
     <WithPreview job={job}>
-      {/* desktop: name, then the actions bar (lg:order), then the rest */}
-      <div className="lg:order-[-2]">
+      {/* three regions: phone = head, job, actions (bottom); desktop = head, actions, job (see WithPreview) */}
+      <div className="[grid-area:head]">
         <PageHeader backHref="/inicio" right={<JobActions job={job} setJob={setJob} />} />
         <Title>{job.customer_name || t.newJob}</Title>
         <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang, job.service_es)}</p>
         <SyncNote job={job} />
       </div>
+      <div className="flex min-w-0 flex-col [grid-area:body]">
 
       {/* Ojo verdict — light; the missing FIELDS carry the highlight, tap an item to jump to it */}
       {missing.length ? (
@@ -587,7 +588,8 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </div>
       )}
 
-      <div className="mt-auto pt-8 lg:order-[-1] lg:mt-4 lg:flex lg:flex-wrap lg:items-center lg:gap-2 lg:pt-0 lg:[&>*]:mt-0">
+      </div>
+      <div className="pt-8 [grid-area:actions] lg:mt-4 lg:flex lg:flex-wrap lg:items-center lg:gap-2 lg:pt-0 lg:[&>*]:mt-0">
         {missing.length > 0 && (
           <p className="mb-2 text-center text-sm font-semibold text-ojo-ink lg:mb-0 lg:basis-full lg:text-left">{t.completeFirst(missing.map((m) => t.missing[m]))}</p>
         )}
@@ -644,7 +646,9 @@ function WithPreview({ job, children }: { job: Job; children: React.ReactNode })
   return (
     <Screen className="lg:max-w-[1180px]!">
       <div className="flex flex-1 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-8">
-        <div className="flex flex-1 flex-col">{children}</div>
+        <div className="grid flex-1 grid-rows-[auto_1fr_auto] [grid-template-areas:'head'_'body'_'actions'] lg:grid-rows-[auto_auto_1fr] lg:[grid-template-areas:'head'_'actions'_'body']">
+          {children}
+        </div>
         <aside className="hidden lg:sticky lg:top-10 lg:block">
           <p className="mb-2 text-sm font-semibold text-muted">{t.whatClientGets}</p>
           <DocumentCard kind={isInvoiceJob(job) ? "invoice" : "estimate"} job={job} biz={biz} view="en" />
@@ -677,13 +681,14 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
   return (
     <WithPreview job={job}>
-      {/* desktop: name, then the actions bar (lg:order), then the rest */}
-      <div className="lg:order-[-2]">
+      {/* three regions: phone = head, job, actions (bottom); desktop = head, actions, job (see WithPreview) */}
+      <div className="[grid-area:head]">
         <PageHeader backHref="/trabajos" right={<JobActions job={job} setJob={setJob} />} />
         <Title>{job.customer_name}</Title>
         <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang, job.service_es)}</p>
         <SyncNote job={job} />
       </div>
+      <div className="flex min-w-0 flex-col [grid-area:body]">
 
       {job.status === "ACCEPTED" && (
         <section className="mt-5 rounded-[24px] glass-sage p-5 motion-safe:animate-[pop-in_300ms_ease-out]">
@@ -822,7 +827,8 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </p>
       )}
 
-      <div className="mt-auto space-y-3 pt-8 lg:order-[-1] lg:mt-4 lg:flex lg:flex-wrap lg:items-center lg:gap-2 lg:space-y-0 lg:pt-0 lg:[&>*]:mt-0">
+      </div>
+      <div className="space-y-3 pt-8 [grid-area:actions] lg:mt-4 lg:flex lg:flex-wrap lg:items-center lg:gap-2 lg:space-y-0 lg:pt-0 lg:[&>*]:mt-0">
         {job.status === "CANCELLED" ? (
           <button type="button" onClick={async () => setJob(await reactivateJob(job.id))} className={btnPrimary}>
             <RotateCcw className="size-5" strokeWidth={2.25} />

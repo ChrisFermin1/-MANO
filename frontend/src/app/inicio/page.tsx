@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, Eye, FileText, PartyPopper, Plus, Sparkles, Users } from "lucide-react";
 import { firstName, getJobs, onJobsChange, invoiceNo, invoiceState, jobBadge, jobTotal, moneySummary, money, type Job, type JobBadge, isInvoiceJob } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, firstNameOf } from "@/lib/business";
+import { jobRow } from "@/lib/rows";
 import { useLang, type Strings } from "@/lib/i18n";
 import { prioritized, type Alert } from "@/lib/ojo";
-import { jobSubtitle } from "@/lib/services";
 
 // Neutral grey for every fact; only "Pagado" is colored (good news). Warnings live in Ojo.
 const BADGE_STYLE: Record<JobBadge, string> = {
@@ -100,8 +100,9 @@ export default function Inicio() {
     );
   const approval = next?.kind === "to_schedule" && next.job.approved_by ? next : null;
   const cash = jobs ? moneySummary(jobs) : null;
-  const recent = (jobs ?? []).filter((j) => j.status !== "CANCELLED").slice(0, 3); // getJobs() is newest first
-  const recentDesk = (jobs ?? []).filter((j) => j.status !== "CANCELLED").slice(0, 6); // desktop has room for more
+  // same rows as the Jobs list (lib/rows.ts); getJobs() is newest first. Phone: 3, desktop: room for 6
+  const recentRows = (jobs ?? []).filter((j) => j.status !== "CANCELLED").slice(0, 6).map((j) => jobRow(j, lang));
+  const recent = recentRows.slice(0, 3);
   const waiting = (jobs ?? []).filter((j) => j.status === "QUOTE_SENT"); // estimates out, no answer yet
 
   return (
@@ -245,7 +246,7 @@ export default function Inicio() {
         )}
 
         {/* desktop: recent jobs as a table */}
-        {recentDesk.length > 0 && (
+        {recentRows.length > 0 && (
           <section className="mt-7 hidden overflow-hidden rounded-[20px] border border-black/5 bg-white lg:block">
             <div className="flex items-center justify-between px-4 pb-2 pt-4">
               <h2 className="text-base font-semibold">{t.recentJobs}</h2>
@@ -256,13 +257,13 @@ export default function Inicio() {
             </div>
             <table className="w-full text-left text-sm">
               <tbody>
-                {recentDesk.map((j) => {
-                  const b = jobBadge(j);
-                  const total = jobTotal(j);
+                {recentRows.map((r) => {
+                  const b = jobBadge(r.job);
+                  const total = r.total;
                   return (
-                    <tr key={j.id} onClick={() => router.push(`/trabajos/${j.id}`)} className="cursor-pointer border-t border-black/5 transition hover:bg-ivory/70">
-                      <td className="max-w-[180px] truncate py-3 pl-4 pr-2 font-semibold">{j.customer_name || "—"}</td>
-                      <td className="max-w-[200px] truncate px-2 py-3 text-charcoal/70">{jobSubtitle(j, lang)}</td>
+                    <tr key={r.id} onClick={() => router.push(r.href)} className="cursor-pointer border-t border-black/5 transition hover:bg-ivory/70">
+                      <td className="max-w-[180px] truncate py-3 pl-4 pr-2 font-semibold">{r.client}</td>
+                      <td className="max-w-[200px] truncate px-2 py-3 text-charcoal/70">{r.subtitle}</td>
                       <td className="px-2 py-3">
                         <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold ${BADGE_STYLE[b]}`}>{t.badge[b]}</span>
                       </td>
@@ -288,16 +289,16 @@ export default function Inicio() {
               </Link>
             </div>
             <ul className="mt-2 divide-y divide-black/5">
-              {recent.map((j) => {
-                const b = jobBadge(j);
-                const total = jobTotal(j);
+              {recent.map((r) => {
+                const b = jobBadge(r.job);
+                const total = r.total;
                 return (
-                  <li key={j.id}>
-                    <Link href={`/trabajos/${j.id}`} className="flex items-center gap-3 py-3">
+                  <li key={r.id}>
+                    <Link href={r.href} className="flex items-center gap-3 py-3">
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[15px] font-semibold leading-5">{j.customer_name || "—"}</span>
+                        <span className="block truncate text-[15px] font-semibold leading-5">{r.client}</span>
                         <span className="block truncate text-sm text-muted">
-                          {jobSubtitle(j, lang)}
+                          {r.subtitle}
                           {total > 0 && ` · ${money(total)}`}
                         </span>
                       </span>
