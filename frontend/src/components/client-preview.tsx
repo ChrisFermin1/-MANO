@@ -12,14 +12,17 @@ import { getPlan } from "@/lib/plan";
 
 type Kind = "estimate" | "invoice";
 
-// "Ver como tu cliente": the two things the client actually gets.
-//  · Link — the real client page (/e/…), in a phone frame on desktop; approving is off in the preview.
-//  · PDF  — the real PDF's pages, drawn here with pdf.js (an iPhone can't show a PDF inside a page).
+// "Ver como tu cliente": what the client actually gets.
+//  · Phone / tablet: two tabs. Link — the real client page (/e/…), approving off. PDF — the real PDF's pages,
+//    drawn here with pdf.js (an iPhone can't show a PDF inside a page).
+//  · Desktop: the PDF only (that's what gets printed, filed and emailed from a computer).
 export function ClientPreview({ kind, job: given, biz: givenBiz, onClose }: { kind: Kind; job: Job; biz: Business; onClose: () => void }) {
   const { t } = useLang();
   // what it looked like when he opened the preview (the page re-renders; the PDF shouldn't remake itself)
   const [{ job, biz }] = useState(() => ({ job: given, biz: givenBiz }));
-  const [tab, setTab] = useState<"link" | "pdf">("link");
+  // desktop (sidebar layout, ≥1024px): PDF only, no tabs
+  const [desktop] = useState(() => window.matchMedia("(min-width: 1024px)").matches);
+  const [tab, setTab] = useState<"link" | "pdf">(desktop ? "pdf" : "link");
   const [branded] = useState(() => !getPlan().hideBranding);
 
   useEffect(() => {
@@ -49,6 +52,7 @@ export function ClientPreview({ kind, job: given, biz: givenBiz, onClose }: { ki
           <h2 className="flex-1 font-serif text-[24px] leading-7">{t.previewTitle}</h2>
         </header>
         <div className="px-4 md:px-6">
+          {!desktop && (
           <div className="glass grid grid-cols-2 rounded-[14px] p-1" role="tablist">
             {(["link", "pdf"] as const).map((k) => (
               <button
@@ -63,6 +67,7 @@ export function ClientPreview({ kind, job: given, biz: givenBiz, onClose }: { ki
               </button>
             ))}
           </div>
+          )}
           <p className="mt-2 text-sm leading-5 text-charcoal/70">{tab === "link" ? t.previewLinkHint : t.previewPdfHint}</p>
         </div>
 
