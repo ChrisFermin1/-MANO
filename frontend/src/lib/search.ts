@@ -1,4 +1,4 @@
-// Search: "perez" finds "Pérez", "inv 1" finds INV-0001, "maria oak" needs both words.
+// Search: "perez" finds "Pérez", "190" finds invoice 190, "maria oak" needs both words.
 
 import { estimateNo, invoiceNo, type Job } from "@/lib/api";
 

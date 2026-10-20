@@ -133,7 +133,8 @@ export const defaultDue = (from = new Date()) => {
 /** "2026-10-31" from a stored due date, for a date input. */
 export const dueDay = (iso: string) => dayOf(new Date(iso));
 export const estimateNo = (n: number) => `EST-${String(n).padStart(4, "0")}`;
-export const invoiceNo = (n: number) => `INV-${String(n).padStart(4, "0")}`;
+/** Plain number, like Wave ("190"), not "INV-0190". Estimates stay EST-0001. */
+export const invoiceNo = (n: number) => String(n);
 
 const KEY = "mano.jobs";
 const DAY = 86_400_000;

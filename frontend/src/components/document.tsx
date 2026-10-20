@@ -72,7 +72,7 @@ export function docData(kind: "estimate" | "invoice", job: Job, view: "en" | "es
   };
 }
 
-/** "INV-0003 Ana Garcia.pdf" */
+/** "190 Ana Garcia.pdf" */
 export function pdfName(kind: "estimate" | "invoice", job: Job) {
   const d = docData(kind, job);
   const who = (job.customer_name ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/[^\w ]+/g, "").trim();

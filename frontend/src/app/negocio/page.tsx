@@ -203,7 +203,6 @@ export default function Negocio() {
         <label className="block">
           <span className="mb-1.5 block text-sm text-charcoal/70">{t.nextInvoiceLabel}</span>
           <span className={`${input} flex items-center font-mono`}>
-            <span className="text-muted">INV-</span>
             <input
               value={nextInv}
               onChange={(e) => {
