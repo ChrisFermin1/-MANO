@@ -137,6 +137,7 @@ Update this table (status + commit) after each task.
 | Payment reminder says the due date ("was due on October 13" when overdue); optional "Cómo te pagan" in onboarding step 2. Paid message sits under the approval line | `7966f05`, `490e886` | — |
 | Invoice due dates: default terms in Tu negocio (on receipt / 7 / 15 / 30 days) and a date picker per invoice; due dates run to the end of the day | `3da1ed4` | Josh: `invoice_due_days` on the business (default 15); invoices already have `invoice_due_at`, and it should be settable on the invoice |
 | PDF download: real PDF of the estimate/invoice (Carlos's pages: English customer version; customer link: their language). Phone opens the share sheet, computer downloads. New dependency `@react-pdf/renderer` → run `npm ci` after pulling | `1ea4ded` | — (made on the phone, no backend). Later, for email: the backend could make the same PDF |
+| PDF with the app's fonts; PDF in the send box ("Copiar · QR · PDF", counts as sending). Bug: "Facturar sin estimado" still showed "send the estimate" on Home until sent — fixed with `isInvoiceJob()` | `422dadd` | — |
 
 
 ## After this list
