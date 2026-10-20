@@ -205,6 +205,7 @@ Update this table (status + commit) after each task.
 | Ojo's "¿se te olvidó cobrar…?" questions off by default (switch in Tu negocio; no AI call when off). Ojo = missing info + what's next. Ask in contractor interviews if they forget to charge | `c0af5ce` | Chris: no change; backend Ojo (progress / what's stuck) is the main Ojo |
 | Desktop layout (phase 1): sidebar with separate Estimados / Facturas, wider pages, two-column job page with the live document, typing-first New job. Phone unchanged. Next: tables for lists, client page (with the CRM) | `9b3bdf6` | — |
 | Desktop that feels like desktop: full-width pages, breadcrumbs, compact buttons, centered dialogs, tables (jobs, estimates, invoices, clients), Home dashboard, job page actions bar. Phone unchanged | `333cde1`, `d8504e8` | — |
+| Desktop made solid: visual pass fixes, shared job rows (`lib/rows.ts`) for phone cards and desktop tables, named layout regions instead of reordering | `f278453`, `6e723d3` | — |
 
 
 ## After this list
