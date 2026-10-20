@@ -9,11 +9,12 @@ import { useParams } from "next/navigation";
 import { CheckCircle2, FileText, Loader2, MessageCircle, Phone, X } from "lucide-react";
 import { DocumentCard } from "@/components/document";
 import { PdfButton } from "@/components/pdf-button";
-import { approveEstimate, balanceDue, firstName, fmtDate, paidSoFar, getJobByToken, money, type Job } from "@/lib/api";
+import { approveEstimate, balanceDue, defaultDue, firstName, fmtDate, paidSoFar, getJob, getJobByToken, money, peekInvoiceNumber, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { approveRemote, fetchEstimate, type RelayEntry } from "@/lib/relay";
 import { formatPhone } from "@/lib/phone";
 import { fetchPublicFiles, publicFiles, type PublicAttachment } from "@/lib/attachments";
+import { getPlan } from "@/lib/plan";
 
 // relay entry → the job as this page shows it (approval lives next to the snapshot)
 const withApproval = (r: RelayEntry): Job =>
@@ -50,6 +51,7 @@ const copy = {
     questionsTo: (b: string) => `Questions? Contact ${b}.`,
     photos: "Photos & files",
     close: "Close",
+    previewNote: "Preview: your client approves here.",
   },
   es: {
     hi: (n: string) => `Hola ${n},`,
@@ -79,6 +81,7 @@ const copy = {
     questionsTo: (b: string) => `¿Preguntas? Contacta a ${b}.`,
     photos: "Fotos y archivos",
     close: "Cerrar",
+    previewNote: "Vista previa: aquí aprueba tu cliente.",
   },
 };
 
@@ -95,15 +98,33 @@ export default function CustomerEstimate() {
   const [remote, setRemote] = useState(false); // loaded from the relay (a phone), not this browser
   const [files, setFiles] = useState<PublicAttachment[]>([]); // the contractor's photos / PDFs (not the private ones)
   const [viewing, setViewing] = useState<PublicAttachment | null>(null);
+  // "Ver como tu cliente" (inside Carlos's app): shows it as if sent, approving is off
+  const [preview, setPreview] = useState<"estimate" | "invoice" | null>(null);
 
   useEffect(() => {
     if (!token) return;
     (async () => {
-      const local = await getJobByToken(token);
+      const q = new URLSearchParams(window.location.search);
+      const mode = q.get("preview") === "invoice" ? "invoice" : q.get("preview") === "estimate" ? "estimate" : null;
+      setPreview(mode);
+      // not prepared yet: no link exists, so the preview asks for the job itself ("_job-12")
+      const draftId = token.startsWith("_job-") ? Number(token.slice(5)) : null;
+      const found = draftId ? await getJob(draftId) : await getJobByToken(token);
+      const local =
+        found && mode === "invoice"
+          ? {
+              ...found,
+              invoice_number: Number(q.get("num")) || found.invoice_number || peekInvoiceNumber(),
+              invoice_due_at: q.get("due") || found.invoice_due_at || defaultDue(),
+              status: found.invoice_number ? found.status : ("PAYMENT_PENDING" as const),
+            }
+          : found && mode === "estimate" && !found.estimate_sent_at
+            ? { ...found, status: "QUOTE_SENT" as const }
+            : found;
       if (local) {
         setJob(local);
         void publicFiles(local.id).then(setFiles);
-        setBiz({ ...DEMO_BUSINESS, ...loadBusiness() });
+        setBiz({ ...DEMO_BUSINESS, ...loadBusiness(), hideBranding: getPlan().hideBranding });
         if (local.customer_name) setName(local.customer_name);
         return;
       }
@@ -276,13 +297,14 @@ export default function CustomerEstimate() {
                 <button
                   type="button"
                   onClick={approve}
-                  disabled={name.trim().length < 2 || busy}
+                  disabled={name.trim().length < 2 || busy || !!preview}
                   className="mt-4 flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40"
                 >
                   {busy ? <Loader2 className="size-5 animate-spin" /> : <CheckCircle2 className="size-5" />}
                   {c.approve}
                 </button>
                 <p className="mt-3 text-center text-xs leading-4 text-muted">{c.terms}</p>
+                {preview && <p className="mt-2 text-center text-xs font-semibold text-forest">{c.previewNote}</p>}
 
                 <button
                   type="button"
@@ -344,7 +366,7 @@ export default function CustomerEstimate() {
               </section>
             )}
 
-            <p className="mt-auto pt-10 text-center font-logo text-sm text-muted">{c.poweredBy}</p>
+            {biz.hideBranding ? <div className="mt-auto" /> : <p className="mt-auto pt-10 text-center font-logo text-sm text-muted">{c.poweredBy}</p>}
           </>
         )}
       </div>

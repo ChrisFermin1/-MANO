@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Loader2, Mic, RotateCcw, Sparkles, Trash2, Undo2, UserRound, X, Image as ImageIcon, FileText, Receipt } from "lucide-react";
-import { PageHeader, Screen, Title, btnPrimary } from "@/components/ui";
-import { createJob, getJobs } from "@/lib/api";
+import { Camera, Loader2, Mic, PencilLine, RotateCcw, Sparkles, Trash2, Undo2, UserRound, X, Image as ImageIcon, FileText, Receipt } from "lucide-react";
+import { PageHeader, Screen, Title, btnGhost, btnPrimary } from "@/components/ui";
+import { createBlankJob, createJob, getJobs } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 import { ManoBusyError, ManoBusyReadingError, organizeAhead, readNote } from "@/lib/mano";
 import { loadBusiness } from "@/lib/business";
@@ -61,6 +61,7 @@ export default function NuevoTrabajo() {
   // what Carlos is writing: an estimate (before the work) or an invoice (work already done).
   // Nothing pre-selected: he picks on Home ("+ Estimado" / "+ Factura") or on this screen first.
   const [docKind, setDocKind] = useState<"estimate" | "invoice" | null>(null);
+  const [blanking, setBlanking] = useState(false); // "Prefiero llenarlo yo" tapped: opening the empty form
   // Started from a client card ("Nuevo trabajo para Maria"): the job is for them, whatever the note says
   const [client, setClient] = useState<ClientPick | null>(null);
   const rec = useRef<Recognition | null>(null);
@@ -506,6 +507,19 @@ export default function NuevoTrabajo() {
         >
           <Sparkles className="size-5" strokeWidth={2.5} />
           {t.organize}
+        </button>
+        {/* no voice, no note: an empty form, line by line (like Wave) */}
+        <button
+          type="button"
+          onClick={async () => {
+            setBlanking(true);
+            router.push(`/trabajos/${(await createBlankJob({ docIntent: docKind ?? "estimate", client })).id}`);
+          }}
+          disabled={isRecording || transcribing || blanking}
+          className={`mt-1 ${btnGhost}`}
+        >
+          {blanking ? <Loader2 className="size-4 animate-spin" /> : <PencilLine className="size-4" strokeWidth={2.25} />}
+          {t.fillMyself}
         </button>
       </div>
     </Screen>

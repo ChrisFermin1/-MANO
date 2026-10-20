@@ -3,6 +3,7 @@
 import type { Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
 import { publishFiles } from "@/lib/attachments";
+import { getPlan } from "@/lib/plan";
 
 export type RelayEntry = { job: Job; biz: Partial<Business>; approved_at: string | null; approved_by: string | null };
 
@@ -17,7 +18,7 @@ export async function publishEstimate(job: Job, biz: Partial<Business> | null) {
       body: JSON.stringify({
         token: job.public_token,
         job,
-        biz: { businessName: biz?.businessName ?? "", phone: biz?.phone ?? "", ownerName: biz?.ownerName ?? "", payInfo: biz?.payInfo ?? "", email: biz?.email ?? "", address: biz?.address ?? "" },
+        biz: { businessName: biz?.businessName ?? "", phone: biz?.phone ?? "", ownerName: biz?.ownerName ?? "", payInfo: biz?.payInfo ?? "", email: biz?.email ?? "", address: biz?.address ?? "", hideBranding: getPlan().hideBranding },
       }),
     });
   } catch {}

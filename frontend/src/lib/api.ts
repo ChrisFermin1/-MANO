@@ -455,6 +455,32 @@ export async function createJob(
   return draft;
 }
 
+// POST /jobs {blank} — "Llenarlo yo": no voice, no note, no Mano. An empty estimate / invoice with one
+// empty line, opened straight in the editor (client details already filled when started from a client).
+export async function createBlankJob(opts: { docIntent?: "estimate" | "invoice"; client?: KnownClient | null } = {}): Promise<Job> {
+  const jobs = read();
+  const now = new Date().toISOString();
+  const c = opts.client;
+  const draft: Job = {
+    id: Math.max(0, ...jobs.map((j) => j.id)) + 1,
+    customer_name: c?.name.trim() || null,
+    customer_phone: c?.phone?.trim() || null,
+    customer_email: c?.email?.trim() || null,
+    address: c?.address?.trim() || null,
+    service: "General Work",
+    description: "",
+    line_items: [{ id: crypto.randomUUID(), description: "", description_es: "", amount: null }],
+    backend_sync: "pending",
+    doc_intent: opts.docIntent === "invoice" ? "invoice" : null,
+    status: "NEEDS_INFORMATION",
+    created_at: now,
+    updated_at: now,
+    ...NO_DOCS,
+  };
+  write([...jobs, draft]);
+  return draft;
+}
+
 // PATCH /jobs/:id  — Ojo re-validates whenever details change before the quote is sent
 export async function updateJob(id: number, patch: Partial<Job>): Promise<Job> {
   const jobs = read();

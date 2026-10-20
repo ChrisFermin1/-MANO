@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Loader2, Pencil, Send } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, Pencil, Send } from "lucide-react";
 import { DocLangSwitch, DocumentCard } from "@/components/document";
 import { ShareEstimate } from "@/components/share-estimate";
 import { PdfButton } from "@/components/pdf-button";
+import { ClientPreview } from "@/components/client-preview";
 import { PageHeader, Screen, SuccessScreen, Title, btnGhost, btnPrimary, btnSecondary } from "@/components/ui";
 import { estimateNo, firstName, getJob, isUnsent, prepareEstimate, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
@@ -21,6 +22,7 @@ export default function Estimado() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [docView, setDocView] = useState<"es" | "en">("es");
+  const [previewing, setPreviewing] = useState(false);
 
   useEffect(() => {
     getJob(Number(id)).then(setJob);
@@ -64,7 +66,12 @@ export default function Estimado() {
         {/* Spanish-speaking owner: read it in Spanish, or flip to what the customer actually gets */}
         {lang === "es" && <DocLangSwitch view={docView} onChange={setDocView} labels={{ es: t.docViewEs, en: t.docViewEn }} />}
         <DocumentCard kind="estimate" job={job} biz={biz} view={lang === "es" ? docView : "en"} />
+        {/* the link page and the PDF, exactly as the client gets them */}
+        <button type="button" onClick={() => setPreviewing(true)} className="flex h-11 w-full items-center justify-center gap-2 text-sm font-semibold text-forest underline-offset-4 hover:underline">
+          <Eye className="size-4" strokeWidth={2.25} /> {t.previewOpen}
+        </button>
       </div>
+      {previewing && <ClientPreview kind="estimate" job={job} biz={biz} onClose={() => setPreviewing(false)} />}
 
       {draft && (
         <div className="mt-auto space-y-1 pt-8">

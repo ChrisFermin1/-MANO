@@ -19,6 +19,8 @@ export type Business = {
   // Where his invoice numbers continue from (coming from Wave at #189 → 190). Mano never goes below the
   // highest number it already used, so this can't create a duplicate.
   nextInvoiceNumber?: number;
+  // Copied from his plan when an estimate is published, so the client's phone knows (never saved by Tu negocio)
+  hideBranding?: boolean;
   trades: TradeId[];
   otherTrade?: OtherTrade | null;
   // Ojo's "¿se te olvidó cobrar…?" questions. Off unless he turns them on in Tu negocio: contractors

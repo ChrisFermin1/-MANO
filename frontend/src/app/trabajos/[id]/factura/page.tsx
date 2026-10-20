@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Loader2, Send } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, Send } from "lucide-react";
 import { DocLangSwitch, DocumentCard } from "@/components/document";
 import { PageHeader, Screen, SuccessScreen, Title, btnGhost, btnPrimary, btnSecondary } from "@/components/ui";
 import { ShareEstimate } from "@/components/share-estimate";
 import { PdfButton } from "@/components/pdf-button";
+import { ClientPreview } from "@/components/client-preview";
 import {
   canSendInvoice,
   defaultDue,
@@ -38,6 +39,7 @@ export default function Factura() {
   const [due, setDue] = useState(""); // "2026-10-31": before preparing, the date Carlos picked; after, it saves right away
   const [num, setNum] = useState(""); // invoice number, same idea: picked before preparing, saved right away after
   const [numError, setNumError] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState(false);
 
   useEffect(() => {
     getJob(Number(id)).then((j) => {
@@ -107,7 +109,19 @@ export default function Factura() {
           biz={biz}
           view={lang === "es" ? docView : "en"}
         />
+        {/* the link page and the PDF, exactly as the client gets them */}
+        <button type="button" onClick={() => setPreviewing(true)} className="flex h-11 w-full items-center justify-center gap-2 text-sm font-semibold text-forest underline-offset-4 hover:underline">
+          <Eye className="size-4" strokeWidth={2.25} /> {t.previewOpen}
+        </button>
       </div>
+      {previewing && (
+        <ClientPreview
+          kind="invoice"
+          job={{ ...job, invoice_number: shownNumber ?? null, ...(due ? { invoice_due_at: endOfDay(due) } : {}) }}
+          biz={biz}
+          onClose={() => setPreviewing(false)}
+        />
+      )}
 
       {/* invoice number: the next one by default; he can change it (e.g. to keep Wave's numbering) */}
       {(canSend || job.invoice_number) && num && (

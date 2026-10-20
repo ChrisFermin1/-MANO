@@ -60,6 +60,7 @@ export function DocumentPdf({
   view?: "en" | "es";
   files?: PublicAttachment[];
 }) {
+  const branded = !biz.hideBranding; // Solo / Crew: no "Sent with Mano"
   const d = docData(kind, job, view);
   const photos = files.filter((f) => f.kind === "image");
   const docs = files.filter((f) => f.kind === "pdf"); // can't go inside this PDF: listed by name (they're on the link)
@@ -150,9 +151,11 @@ export function DocumentPdf({
         ) : null}
         <Text style={s.terms}>{d.terms}</Text>
 
-        <Text style={s.footer} fixed>
-          {d.L("Sent with Mano", "Enviado con Mano")}
-        </Text>
+        {branded ? (
+          <Text style={s.footer} fixed>
+            {d.L("Sent with Mano", "Enviado con Mano")}
+          </Text>
+        ) : null}
       </Page>
 
       {/* the contractor's photos, two to a page, each with its caption */}
@@ -178,9 +181,11 @@ export function DocumentPdf({
               ))}
             </View>
           ) : null}
-          <Text style={s.footer} fixed>
-            {d.L("Sent with Mano", "Enviado con Mano")}
-          </Text>
+          {branded ? (
+            <Text style={s.footer} fixed>
+              {d.L("Sent with Mano", "Enviado con Mano")}
+            </Text>
+          ) : null}
         </Page>
       ) : null}
     </Document>
