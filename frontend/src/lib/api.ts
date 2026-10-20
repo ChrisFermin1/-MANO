@@ -139,8 +139,9 @@ export const jobTotal = (job: Job) => (isLumpSum(job) ? job.job_total! : job.lin
 export const money = (n: number) => `$${n.toLocaleString("en-US")}`;
 export const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / DAY);
 // "Maria Lopez" → "Maria". A company keeps its full name ("ATL Homeiker", not "ATL"):
-// an all-caps first word, or a business word in the name.
-const COMPANY = /\b(llc|inc|co|corp|company|group|homes?|builders?|construction|properties|property|realty|services|management|contractors?)\b\.?/i;
+// an all-caps first word, an "&", or a business word in the name.
+const COMPANY =
+  /\b(llc|inc|co|corp|company|group|homes?|homemakers?|homeiker|builders?|building|construction|properties|property|realty|services|management|contractors?|renovations?|remodel\w*|painting|roofing|plumbing|electric\w*|hvac|flooring|design|solutions|enterprises?|investments?|holdings|partners|ventures|development|studio)\b\.?|&/i;
 export const firstName = (name: string | null) => {
   const full = (name ?? "").trim();
   if (!full) return "—";
@@ -417,8 +418,14 @@ export async function createJob(
   const known = !opts.client?.name.trim() ? matchClient([parsed.customer_name, parsed.customer_name_suggested], opts.clients ?? []) : null;
   if (known) {
     const filled: NonNullable<Job["client_match"]>["filled"] = [];
-    if (!parsed.address?.trim() && known.address?.trim()) (parsed.address = known.address.trim()), filled.push("address");
-    if (!parsed.customer_phone?.trim() && known.phone?.trim()) (parsed.customer_phone = known.phone.trim()), filled.push("customer_phone");
+    if (!parsed.address?.trim() && known.address?.trim()) {
+      parsed.address = known.address.trim();
+      filled.push("address");
+    }
+    if (!parsed.customer_phone?.trim() && known.phone?.trim()) {
+      parsed.customer_phone = known.phone.trim();
+      filled.push("customer_phone");
+    }
     const customer_email = known.email?.trim() || null;
     if (customer_email) filled.push("customer_email");
     if (known.name !== parsed.customer_name || filled.length) {

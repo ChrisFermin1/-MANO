@@ -9,7 +9,7 @@ import { useParams } from "next/navigation";
 import { CheckCircle2, Loader2, MessageCircle, Phone } from "lucide-react";
 import { DocumentCard } from "@/components/document";
 import { PdfButton } from "@/components/pdf-button";
-import { approveEstimate, balanceDue, fmtDate, paidSoFar, getJobByToken, money, type Job } from "@/lib/api";
+import { approveEstimate, balanceDue, firstName, fmtDate, paidSoFar, getJobByToken, money, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { approveRemote, fetchEstimate, type RelayEntry } from "@/lib/relay";
 
@@ -168,7 +168,7 @@ export default function CustomerEstimate() {
                 </section>
               ) : (
                 <section className="mt-6">
-                  <h1 className="font-serif text-[32px] leading-9">{c.hi((job.customer_name ?? "").split(" ")[0])}</h1>
+                  <h1 className="font-serif text-[32px] leading-9">{c.hi(firstName(job.customer_name))}</h1>
                   {/* overdue: no "please pay by" a date that already passed · partly paid: thank them, show the balance */}
                   {overdue ? (
                     <p className="mt-2 text-base font-semibold leading-6 text-overdue-ink">{c.overdueIntro(money(balanceDue(job)), due)}</p>
@@ -190,7 +190,7 @@ export default function CustomerEstimate() {
               <p className="mt-6 rounded-[16px] bg-black/5 p-4 text-sm">{c.unavailable}</p>
             ) : (
               <section className="mt-6">
-                <h1 className="font-serif text-[32px] leading-9">{c.hi((job.customer_name ?? "").split(" ")[0])}</h1>
+                <h1 className="font-serif text-[32px] leading-9">{c.hi(firstName(job.customer_name))}</h1>
                 <p className="mt-2 text-base leading-6 text-charcoal/75">{c.intro}</p>
               </section>
             )}
