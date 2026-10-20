@@ -120,7 +120,10 @@ A working app for contractors (web app; works from Safari and as a Home Screen a
 - **Lists**: jobs (with search), estimates and invoices, clients (saved clients, "new job for…").
 - **Onboarding**: trade, first and last name, business, phone, email, address, how clients pay.
 
-**Not built yet (so not "existing")**: accounts and login, hosting (client links only work on the
+- **Accounts (screens only)**: sign in with a text code, email code, Google or Apple; sign out; delete
+  account. The login behind it is still fake until the team picks a service.
+
+**Not built yet (so not "existing")**: real login (the screens exist), hosting (client links only work on the
 developer's Wi-Fi today), the database as the main record (data lives in the phone's browser), emailing from
 Mano, deposits, change orders, revising a sent estimate, sales tax, notifications when the app is closed,
 App Store / Google Play apps, online card payments.

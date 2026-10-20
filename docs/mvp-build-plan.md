@@ -27,8 +27,9 @@ npm run dev -- -p 3002      # http://localhost:3002
 ```
 
 Keys go in `frontend/.env.local` (git-ignored): `GEMINI_API_KEY`, `ELEVENLABS_API_KEY`.
-App data lives in the browser (localStorage). To start fresh, clear site data. "Ya tengo cuenta" on the
-Welcome screen loads sample jobs. The backend (port 8000) doesn't need to run; the app shows
+App data lives in the browser (localStorage). To start fresh, clear site data. Signing in is fake for now:
+any 6-digit code works (000000 tests a wrong code), and Google / Apple sign you in right away. "Solo quiero
+ver un ejemplo" on the sign-in screen (or "Ver un ejemplo" on the desktop Welcome) loads sample jobs. The backend (port 8000) doesn't need to run; the app shows
 "Sin conexión con la base de datos" and keeps working.
 
 ## Order
@@ -206,6 +207,7 @@ Update this table (status + commit) after each task.
 | Desktop layout (phase 1): sidebar with separate Estimados / Facturas, wider pages, two-column job page with the live document, typing-first New job. Phone unchanged. Next: tables for lists, client page (with the CRM) | `9b3bdf6` | — |
 | Desktop that feels like desktop: full-width pages, breadcrumbs, compact buttons, centered dialogs, tables (jobs, estimates, invoices, clients), Home dashboard, job page actions bar. Phone unchanged | `333cde1`, `d8504e8` | — |
 | Desktop made solid: visual pass fixes, shared job rows (`lib/rows.ts`) for phone cards and desktop tables, named layout regions instead of reordering | `f278453`, `6e723d3` | — |
+| Accounts (frontend): one sign-in screen (`/entrar`) for new and returning people: phone + text code (main), Continue with Google, Continue with Apple, email code as backup, no passwords. New person → onboarding, existing business → Inicio. App pages need a session (Welcome, sign in and the client link `/e/…` stay open). Sign out (sidebar, Tu negocio), "Borrar mi cuenta" with a confirmation. Login is fake, all in `lib/auth.ts` | `fdd3fb3` | Team: pick the login service (Clerk, Supabase Auth, Firebase Auth, or Josh's own). Then only `lib/auth.ts` changes (same function names). Backend: every job, client and business row belongs to a user; check the session on every request; delete-account endpoint. Apple sign-in is required on the App Store if Google is offered |
 
 
 ## After this list
