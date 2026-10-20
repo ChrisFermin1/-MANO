@@ -73,6 +73,8 @@ export function PdfButton({
     try {
       const file = await makePdf(kind, job, biz, view, photos);
       const phone = window.matchMedia("(pointer: coarse)").matches;
+      // Share box: only mark sent when the OS share sheet actually opened (WhatsApp, Mail…).
+      // A computer download (or a refused share that falls back to download) is not sending it.
       if (share && phone && typeof navigator.canShare === "function") {
         const { title, en: text } = shareCopy(job, kind, "pdf", biz.businessName);
         // Mail often uses title as subject and text as the body; file is the attachment
@@ -91,11 +93,11 @@ export function PdfButton({
           }
         } catch (err) {
           if ((err as Error).name === "AbortError") return; // he closed the share sheet: not sent
-          // the share sheet can refuse after the wait (no tap anymore): download instead
+          // the share sheet can refuse after the wait (no tap anymore): download instead, still not sent
         }
       }
       download(file);
-      onDone?.();
+      if (!share) onDone?.();
     } catch (err) {
       console.warn("PDF failed:", err);
       setFailed(true);

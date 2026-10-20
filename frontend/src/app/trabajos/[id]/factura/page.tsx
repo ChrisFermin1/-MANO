@@ -73,24 +73,39 @@ export default function Factura() {
   // Only a finished job without an invoice yet can be sent
   const canSend = canSendInvoice(job); // after the work, or directly without an estimate
 
-  const send = async () => {
-    setSending(true);
-    setJob(await prepareInvoice(job.id, due, Number(num)));
-    setSent(true);
-  };
-
-  // check the number when he leaves the box (or presses Enter); a prepared invoice saves it right away
-  const commitNumber = async () => {
+  // check the number when he leaves the box (or presses Enter); a prepared invoice saves it right away.
+  // Returns the number to use, or null if it's taken (error shown).
+  const commitNumber = async (): Promise<number | null> => {
     const n = Number(num);
     if (!num || !Number.isInteger(n) || n < 1) {
-      setNum(String(job.invoice_number ?? job.invoice_number_planned ?? peekInvoiceNumber()));
+      const fallback = job.invoice_number ?? job.invoice_number_planned ?? peekInvoiceNumber();
+      setNum(String(fallback));
       setNumError(null);
-      return;
+      return fallback;
     }
-    if (n === (job.invoice_number ?? job.invoice_number_planned)) return setNumError(null);
-    if (invoiceNumberTaken(n, job.id)) return setNumError(t.invoiceNumberTaken(invoiceNo(n)));
+    if (n === (job.invoice_number ?? job.invoice_number_planned)) {
+      setNumError(null);
+      return n;
+    }
+    if (invoiceNumberTaken(n, job.id)) {
+      setNumError(t.invoiceNumberTaken(invoiceNo(n)));
+      return null;
+    }
     setNumError(null);
     setJob(await setInvoiceNumber(job.id, n)); // made: changes it · not made yet: remembered for when it is
+    return n;
+  };
+
+  const send = async () => {
+    const n = await commitNumber();
+    if (n == null) return; // taken — stay on the form with the error
+    setSending(true);
+    try {
+      setJob(await prepareInvoice(job.id, due, n));
+      setSent(true);
+    } finally {
+      setSending(false);
+    }
   };
   const shownNumber = Number(num) >= 1 && !numError ? Number(num) : job.invoice_number;
 

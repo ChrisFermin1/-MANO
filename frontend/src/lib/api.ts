@@ -554,15 +554,21 @@ export async function sendMessage(id: number): Promise<Job> {
 
 // Next number = highest used + 1. On the backend this should be a DB sequence per business.
 // Invoices can start higher: "Tu próxima factura" in Tu negocio (to continue from Wave).
+// Planned numbers on drafts count too — otherwise two jobs can both get "190".
 function nextNumber(field: "estimate_number" | "invoice_number") {
-  const next = Math.max(0, ...read().map((j) => j[field] ?? 0)) + 1;
+  const used =
+    field === "invoice_number"
+      ? read().flatMap((j) => [j.invoice_number ?? 0, j.invoice_number_planned ?? 0])
+      : read().map((j) => j.estimate_number ?? 0);
+  const next = Math.max(0, ...used) + 1;
   return field === "invoice_number" ? Math.max(next, loadBusiness()?.nextInvoiceNumber ?? 1) : next;
 }
 
 /** The number the next invoice will get (shown before it's prepared, and in Tu negocio). */
 export const peekInvoiceNumber = () => nextNumber("invoice_number");
-/** Highest invoice number already used (0 = none). */
-export const highestInvoiceNumber = () => Math.max(0, ...read().map((j) => j.invoice_number ?? 0));
+/** Highest invoice number already used or reserved on a draft (0 = none). */
+export const highestInvoiceNumber = () =>
+  Math.max(0, ...read().flatMap((j) => [j.invoice_number ?? 0, j.invoice_number_planned ?? 0]));
 /** Another invoice already has this number. */
 export const invoiceNumberTaken = (n: number, exceptJobId?: number) =>
   read().some((j) => j.id !== exceptJobId && (j.invoice_number === n || (!j.invoice_number && j.invoice_number_planned === n)));
