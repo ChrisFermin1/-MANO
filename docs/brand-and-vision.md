@@ -76,7 +76,6 @@ Proposed brand lines to explore (not all simultaneous slogans):
 
 - Échame la mano.
 - Para que nunca emprendas solo.
-- Built by hand. Powered by voice.
 - Made for the ones who build. / Built for the ones who build.
 - Tú hablas. Mano escribe.
 - Less paperwork. More work.
@@ -188,7 +187,7 @@ AI startup. Photography should feature authentic people and real work wherever p
 
 **Campaign 001 — Built by hand.** The people behind the work. Editorial portraits of contractors; close-ups
 of hands, tools, workwear and jobsites; documentary-style video; minimal text; warm neutral colors. Messaging:
-"Estas manos construyen." "Built by hand. Powered by voice." "The work is human." Possible first subject:
+"Estas manos construyen." "The work is human." Possible first subject:
 Edgar, owner of Nabe Painting & Remodeling — walking through a house, describing the work in Spanish, then
 Mano turning it into a professional English estimate. Emotional connection before selling software.
 
