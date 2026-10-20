@@ -7,7 +7,7 @@ import { ArrowLeft, Loader2, Send } from "lucide-react";
 import { DocLangSwitch, DocumentCard } from "@/components/document";
 import { PageHeader, Screen, SuccessScreen, Title, btnGhost, btnPrimary, btnSecondary } from "@/components/ui";
 import { ShareEstimate } from "@/components/share-estimate";
-import { PdfPreviewButton } from "@/components/pdf-button";
+import { PdfButton } from "@/components/pdf-button";
 import { canSendInvoice, defaultDue, dueDay, endOfDay, firstName, getJob, invoiceNo, isUnsent, prepareInvoice, setInvoiceDue, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
@@ -100,7 +100,15 @@ export default function Factura() {
       {!canSend && (
         <div className="mt-auto space-y-1 pt-8">
           {/* the customer's version (English): to print, save or send */}
-          <PdfPreviewButton kind="invoice" job={job} biz={biz} label={t.seePdf} className={btnSecondary} />
+          <PdfButton
+            kind="invoice"
+            job={job}
+            biz={biz}
+            label={t.downloadPdf}
+            busyLabel={t.makingPdf}
+            errorLabel={t.pdfFailed}
+            className={btnSecondary}
+          />
           <Link href={`/trabajos/${job.id}`} className={btnGhost}>
             <ArrowLeft className="size-5" strokeWidth={2.25} />
             {t.backToJob}

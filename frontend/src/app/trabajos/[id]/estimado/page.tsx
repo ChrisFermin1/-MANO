@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { ArrowLeft, Loader2, Pencil, Send } from "lucide-react";
 import { DocLangSwitch, DocumentCard } from "@/components/document";
 import { ShareEstimate } from "@/components/share-estimate";
-import { PdfPreviewButton } from "@/components/pdf-button";
+import { PdfButton } from "@/components/pdf-button";
 import { PageHeader, Screen, SuccessScreen, Title, btnGhost, btnPrimary, btnSecondary } from "@/components/ui";
 import { estimateNo, firstName, getJob, isUnsent, prepareEstimate, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
@@ -81,7 +81,15 @@ export default function Estimado() {
       {!draft && (
         <div className="mt-auto space-y-1 pt-8">
           {/* the customer's version (English): to print, save or send */}
-          <PdfPreviewButton kind="estimate" job={job} biz={biz} label={t.seePdf} className={btnSecondary} />
+          <PdfButton
+            kind="estimate"
+            job={job}
+            biz={biz}
+            label={t.downloadPdf}
+            busyLabel={t.makingPdf}
+            errorLabel={t.pdfFailed}
+            className={btnSecondary}
+          />
           <Link href={`/trabajos/${job.id}`} className={btnGhost}>
             <ArrowLeft className="size-5" strokeWidth={2.25} />
             {t.backToJob}
