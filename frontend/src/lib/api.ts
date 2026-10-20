@@ -69,6 +69,7 @@ export type Job = {
   // One price for the whole job ("Total 1400$ only labor"): items list the work, no per-item prices.
   // Set → the job total is this; null/absent → the total is the sum of the items.
   job_total?: number | null;
+  client_id?: string | null; // the saved client this job belongs to (app only until the backend's customers table)
   invoice_number_planned?: number | null; // the number he picked before making the invoice (app only); used when it's made
   invoice_due_custom?: boolean; // Carlos picked this invoice's due date himself → sending doesn't reset it (app only)
   note_totals?: number[]; // "Total" amounts written on a scanned/typed note, to check against the item prices (app only)
@@ -515,6 +516,15 @@ export async function createBlankJob(opts: { docIntent?: "estimate" | "invoice";
   };
   write([...jobs, draft]);
   return draft;
+}
+
+// Several jobs at once (a client's contact fix, linking a client's jobs to its id). `keepDates`: a link, not
+// an edit, so lists don't reorder.
+export function patchJobs(patches: { id: number; patch: Partial<Job> }[], { keepDates = false } = {}) {
+  if (!patches.length) return;
+  const now = new Date().toISOString();
+  const byId = new Map(patches.map((p) => [p.id, p.patch]));
+  write(read().map((j) => (byId.has(j.id) ? { ...j, ...byId.get(j.id), ...(keepDates ? {} : { updated_at: now }) } : j)));
 }
 
 // PATCH /jobs/:id  — Ojo re-validates whenever details change before the quote is sent

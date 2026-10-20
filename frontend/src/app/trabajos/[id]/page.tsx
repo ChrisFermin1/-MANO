@@ -55,6 +55,7 @@ import {
 } from "@/lib/api";
 import { ShareEstimate } from "@/components/share-estimate";
 import { JobFiles } from "@/components/job-files";
+import { clientHrefForJob } from "@/lib/clients";
 import { DocumentCard } from "@/components/document";
 import { DEMO_BUSINESS, loadBusiness, rememberNameFix, saveBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
@@ -784,6 +785,15 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         <PageHeader backHref="/trabajos" right={<JobActions job={job} setJob={setJob} />} />
         <Title>{job.customer_name}</Title>
         <p className="mt-1 text-sm text-muted">
+          {/* the client's page: their other jobs, what they owe, notes */}
+          {job.customer_name?.trim() && (
+            <>
+              <Link href={clientHrefForJob(job)} className="font-semibold text-forest hover:underline">
+                {t.seeClient}
+              </Link>
+              {" · "}
+            </>
+          )}
           {serviceLabel(job.service, lang, job.service_es)}
           {/* what he's still owed, right under the name — red once it's late */}
           {(invoiceState(job) === "unpaid" || invoiceState(job) === "overdue") && (

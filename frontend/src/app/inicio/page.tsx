@@ -94,7 +94,7 @@ export default function Inicio() {
         type="button"
         onClick={() => setShowAll((v) => !v)}
         aria-expanded={showAll}
-        className={`mt-4 w-full py-1 text-center text-sm font-semibold short:mt-2 md:mt-4 underline-offset-4 hover:underline md:w-auto md:self-start md:text-left ${dark ? "text-white/80" : "text-forest"}`}
+        className={`mt-4 w-full py-1 text-center text-sm font-semibold short:mt-2 md:mt-4 underline-offset-4 hover:underline md:w-auto md:self-start md:text-left xl:hidden ${dark ? "text-white/80" : "text-forest"}`}
       >
         {showAll ? t.showLess : `+${t.nMore(ojoAlerts.length)}`}
       </button>
@@ -200,8 +200,11 @@ export default function Inicio() {
                 />
               </div>
             )}
+            {/* desktop: what comes after the next step, always visible (no "+N más": there's room) */}
+            {next && ojoAlerts.length > 0 && <OjoQueue alerts={ojoAlerts} t={t} />}
+
             {jobs && jobs.length > 0 && ((showAll && ojoAlerts.length > 0) || !next) && (
-              <section className={`${next ? "mt-4 md:mt-6" : "mt-8 md:mt-6 xl:mt-0"} rounded-[20px] glass-peach p-4 md:rounded-[24px] md:p-6 md:[box-shadow:none]`}>
+              <section className={`${next ? "mt-4 md:mt-6 xl:hidden" : "mt-8 md:mt-6 xl:mt-0"} rounded-[20px] glass-peach p-4 md:rounded-[24px] md:p-6 md:[box-shadow:none]`}>
                 <div className="flex items-center gap-2">
                   <Eye className="size-6 text-[#b8803f]" strokeWidth={1.75} />
                   <span className="font-mono text-xs font-medium uppercase tracking-[1.44px]">Ojo</span>
@@ -365,6 +368,35 @@ export default function Inicio() {
         </div>
       </div>
     </main>
+  );
+}
+
+// Desktop: the rest of Ojo's list under the next step. One line each, the first 5, then "Ver los N".
+function OjoQueue({ alerts, t }: { alerts: Alert[]; t: Strings }) {
+  const [all, setAll] = useState(false);
+  const shown = all ? alerts : alerts.slice(0, 5);
+  return (
+    <section className="mt-6 hidden rounded-[20px] glass xl:block">
+      <h2 className="flex items-center gap-2 px-5 pb-2 pt-4 text-sm font-semibold">
+        <Eye className="size-4 text-ojo" strokeWidth={2} /> {t.ojoNext} <span className="font-normal text-muted">· {alerts.length}</span>
+      </h2>
+      <ul className="divide-y divide-black/5">
+        {shown.map((a) => (
+          <li key={a.job.id}>
+            <Link href={alertHref(a)} className="flex items-center gap-3 px-5 py-2.5 text-sm transition hover:bg-ivory/70">
+              <span className="w-[38%] shrink-0 truncate font-semibold">{a.job.customer_name || "—"}</span>
+              <span className={`min-w-0 flex-1 truncate ${a.kind === "payment" && invoiceState(a.job) === "overdue" ? "text-overdue-ink" : "text-charcoal/65"}`}>{alertText(a, t)}</span>
+              <ChevronRight className="size-4 shrink-0 text-muted" strokeWidth={2.5} />
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {alerts.length > 5 && (
+        <button type="button" onClick={() => setAll((v) => !v)} className="w-full border-t border-black/5 px-5 py-2.5 text-left text-sm font-semibold text-forest hover:underline">
+          {all ? t.showLess : t.seeAllN(alerts.length)}
+        </button>
+      )}
+    </section>
   );
 }
 

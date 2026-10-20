@@ -6,7 +6,7 @@ import { ChevronRight, FileText, Mail, MapPin, Phone, Plus, Users } from "lucide
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader, Screen, Sheet, StatusBadge, Title, btnPrimary, btnSecondary, input } from "@/components/ui";
 import { getJobs, money, onJobsChange, phoneDigits, type Job, isInvoiceJob } from "@/lib/api";
-import { groupClients, loadSavedClients, newJobHref, saveClient, type Client } from "@/lib/clients";
+import { clientHref, groupClients, loadSavedClients, newJobHref, saveClient, type Client } from "@/lib/clients";
 import { useLang } from "@/lib/i18n";
 import { formatPhone, nextPhone } from "@/lib/phone";
 
@@ -89,7 +89,11 @@ export default function Clientes() {
                 const tel = phoneDigits(c.phone);
                 return (
                   <tr key={c.key} className="border-b border-black/5 transition last:border-0 hover:bg-ivory/70">
-                    <td className="max-w-[220px] truncate px-4 py-3 font-semibold">{c.name}</td>
+                    <td className="max-w-[220px] truncate px-4 py-3 font-semibold">
+                      <Link href={clientHref(c)} className="hover:underline">
+                        {c.name}
+                      </Link>
+                    </td>
                     <td className="whitespace-nowrap px-4 py-3">
                       {c.phone && tel ? (
                         <a href={`tel:+${tel}`} className="text-forest hover:underline">
@@ -134,7 +138,10 @@ export default function Clientes() {
               <div className="md:flex-1 md:pb-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-base font-semibold leading-5">{c.name}</p>
+                  <Link href={clientHref(c)} className="flex items-center gap-1 text-base font-semibold leading-5">
+                    <span className="truncate">{c.name}</span>
+                    <ChevronRight className="size-4 shrink-0 text-muted" />
+                  </Link>
                   {c.address && (
                     <p className="mt-1 flex items-center gap-1 truncate text-sm text-muted">
                       <MapPin className="size-3.5 shrink-0" /> {c.address}

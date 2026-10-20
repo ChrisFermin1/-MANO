@@ -11,12 +11,13 @@ export type PlanInfo = {
   photosPerJob: number; // photos on one job (Infinity = no limit)
   files: boolean; // PDFs (drawings, contracts, receipts) besides photos
   hideBranding: boolean; // no "Sent with Mano" on the client's link and PDF
+  notes: boolean; // private notes on clients (the start of the CRM)
 };
 
 export const PLANS: Record<PlanId, PlanInfo> = {
-  free: { id: "free", price: 0, photosPerJob: 3, files: false, hideBranding: false },
-  solo: { id: "solo", price: 19, photosPerJob: Infinity, files: true, hideBranding: true },
-  crew: { id: "crew", price: 49, photosPerJob: Infinity, files: true, hideBranding: true },
+  free: { id: "free", price: 0, photosPerJob: 3, files: false, hideBranding: false, notes: false },
+  solo: { id: "solo", price: 19, photosPerJob: Infinity, files: true, hideBranding: true, notes: true },
+  crew: { id: "crew", price: 49, photosPerJob: Infinity, files: true, hideBranding: true, notes: true },
 };
 
 const KEY = "mano.plan";
