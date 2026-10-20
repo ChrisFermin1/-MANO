@@ -122,7 +122,7 @@ function Documentos() {
       </div>
 
       {tab === "invoices" && (
-        <div className="mt-4 grid grid-cols-2 gap-3 lg:mt-5 lg:max-w-[560px]">
+        <div className="mt-4 grid grid-cols-2 gap-3 md:mt-5 md:max-w-[560px]">
           <div className="rounded-[16px] glass-peach p-4">
             <p className="text-xs font-medium">{t.outstanding}</p>
             <p className="mt-1 text-2xl font-bold">{money(outstanding)}</p>
@@ -136,9 +136,9 @@ function Documentos() {
 
       {jobs && rows.length === 0 && <p className="mt-8 text-base text-muted">{t.noDocs}</p>}
 
-      {/* desktop: a table; click a row to open it */}
+      {/* tablet + desktop: a table; click a row to open it */}
       {rows.length > 0 && (
-        <div className="mt-5 hidden overflow-hidden rounded-[16px] border border-black/5 bg-white lg:block">
+        <div className="mt-5 hidden overflow-hidden rounded-[16px] border border-black/5 bg-white md:block">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-black/5 bg-ivory/60 font-mono text-[11px] uppercase tracking-[1px] text-muted">
               <tr>
@@ -158,7 +158,7 @@ function Documentos() {
                       {r.number}
                     </Link>
                   </td>
-                  <td className="max-w-[260px] truncate px-4 py-3 font-semibold">{r.job.customer_name}</td>
+                  <td className="max-w-[180px] truncate px-4 py-3 font-semibold lg:max-w-[260px]">{r.job.customer_name}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-charcoal/70">{fmtDate(r.date, lang)}</td>
                   {tab === "invoices" && (
                     <td className="whitespace-nowrap px-4 py-3 text-charcoal/70">{r.due && r.state !== "paid" ? fmtDate(r.due, lang) : "—"}</td>
@@ -179,7 +179,7 @@ function Documentos() {
         </div>
       )}
 
-      <ul className="mt-4 space-y-3 lg:hidden">
+      <ul className="mt-4 space-y-3 md:hidden">
         {rows.map((r) => (
           <li key={r.number}>
             <Link href={r.href} className="flex items-center gap-3 rounded-[20px] glass p-4 transition active:scale-[0.99]">

@@ -25,8 +25,8 @@ export const input =
 export function Screen({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <main className="min-h-dvh bg-mano-light text-charcoal">
-      {/* desktop: a wide page aligned to the left (next to the sidebar), height = its content */}
-      <div className={`mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] lg:mx-0 lg:min-h-0 lg:max-w-[1100px] lg:px-12 lg:pb-16 lg:pt-8 ${className}`}>{children}</div>
+      {/* tablet: a wider centered column (no sidebar yet) · desktop: a wide page aligned to the left (next to the sidebar), height = its content */}
+      <div className={`mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] md:max-w-[720px] md:px-12 lg:mx-0 lg:min-h-0 lg:max-w-[1100px] lg:px-12 lg:pb-16 lg:pt-8 ${className}`}>{children}</div>
     </main>
   );
 }
@@ -137,15 +137,15 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-[3px] lg:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-[3px] md:items-center md:p-6" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[430px] rounded-t-[28px] border-t border-white/80 bg-ivory/90 lg:max-w-[480px] lg:rounded-[24px] lg:border lg:pb-8 lg:pt-6 px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_-12px_rgba(15,61,46,0.35)] backdrop-blur-2xl"
+        className="w-full max-w-[430px] rounded-t-[28px] border-t border-white/80 bg-ivory/90 md:max-w-[480px] md:rounded-[24px] md:border md:pb-8 md:pt-6 px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_-12px_rgba(15,61,46,0.35)] backdrop-blur-2xl"
       >
-        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-black/15 lg:hidden" />
+        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-black/15 md:hidden" />
         <h2 className="font-serif text-[28px] leading-8 tracking-[-0.56px]">{title}</h2>
         {children}
       </div>

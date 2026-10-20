@@ -51,7 +51,7 @@ export default function Trabajos() {
       <Title>{t.jobsTitle}</Title>
 
       {jobs && jobs.length > 0 && (
-        <label className="glass mt-5 flex h-12 items-center gap-2 rounded-[16px] px-4 lg:max-w-[420px] lg:h-11 lg:rounded-[12px]">
+        <label className="glass mt-5 flex h-12 items-center gap-2 rounded-[16px] px-4 md:max-w-[420px] lg:h-11 lg:rounded-[12px]">
           <Search className="size-5 shrink-0 text-muted" />
           <input
             type="search"
@@ -72,27 +72,28 @@ export default function Trabajos() {
       {jobs && active.length === 0 && !searching && <p className="mt-6 text-base text-muted">{t.noJobs}</p>}
       {results && results.length === 0 && <p className="mt-6 text-base text-muted">{t.noResults(query.trim())}</p>}
 
-      {/* the same rows (lib/rows.ts) in two layouts: a table on desktop, cards on the phone */}
+      {/* the same rows (lib/rows.ts) in two layouts: a table on tablet and desktop, cards on the phone.
+          Tablet keeps the 4 columns that matter; address, document and date join on desktop. */}
       {rows.length > 0 && (
-        <div className="mt-5 hidden overflow-hidden rounded-[16px] border border-black/5 bg-white lg:block">
+        <div className="mt-5 hidden overflow-hidden rounded-[16px] border border-black/5 bg-white md:block">
           <table className="w-full table-fixed text-left text-sm">
             <colgroup>
-              <col className="w-[17%]" />
-              <col className="w-[16%]" />
-              <col className="w-[19%]" />
-              <col className="w-[9%]" />
-              <col className="w-[19%]" />
-              <col className="w-[11%]" />
-              <col className="w-[9%]" />
+              <col className="w-[28%] lg:w-[17%]" />
+              <col className="w-[33%] lg:w-[16%]" />
+              <col className="hidden lg:table-column lg:w-[19%]" />
+              <col className="hidden lg:table-column lg:w-[9%]" />
+              <col className="w-[23%] lg:w-[19%]" />
+              <col className="hidden lg:table-column lg:w-[11%]" />
+              <col className="w-[16%] lg:w-[9%]" />
             </colgroup>
             <thead className="border-b border-black/5 bg-ivory/60 font-mono text-[11px] uppercase tracking-[1px] text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">{t.colClient}</th>
                 <th className="px-4 py-3 font-medium">{t.colJob}</th>
-                <th className="px-4 py-3 font-medium">{t.colAddress}</th>
-                <th className="px-4 py-3 font-medium">{t.colDoc}</th>
+                <th className="hidden px-4 py-3 font-medium lg:table-cell">{t.colAddress}</th>
+                <th className="hidden px-4 py-3 font-medium lg:table-cell">{t.colDoc}</th>
                 <th className="px-4 py-3 font-medium">{t.colStatus}</th>
-                <th className="px-4 py-3 font-medium">{t.colUpdated}</th>
+                <th className="hidden px-4 py-3 font-medium lg:table-cell">{t.colUpdated}</th>
                 <th className="px-4 py-3 text-right font-medium">{t.colTotal}</th>
               </tr>
             </thead>
@@ -109,12 +110,12 @@ export default function Trabajos() {
                     </Link>
                   </td>
                   <td className="truncate px-4 py-3">{r.service || "—"}</td>
-                  <td className="truncate px-4 py-3 text-charcoal/70">{r.place ?? (r.sites > 1 ? t.nSites(r.sites) : "—")}</td>
-                  <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-charcoal/70">{r.doc ?? "—"}</td>
+                  <td className="hidden truncate px-4 py-3 text-charcoal/70 lg:table-cell">{r.place ?? (r.sites > 1 ? t.nSites(r.sites) : "—")}</td>
+                  <td className="hidden whitespace-nowrap px-4 py-3 font-mono text-xs text-charcoal/70 lg:table-cell">{r.doc ?? "—"}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={r.job.status} invoice={r.invoice} />
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-charcoal/70">{fmtDate(r.updated, lang)}</td>
+                  <td className="hidden whitespace-nowrap px-4 py-3 text-charcoal/70 lg:table-cell">{fmtDate(r.updated, lang)}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-right font-bold">{r.total ? money(r.total) : "—"}</td>
                 </tr>
               ))}
@@ -123,7 +124,7 @@ export default function Trabajos() {
         </div>
       )}
 
-      <ul className="mt-4 space-y-3 lg:hidden">
+      <ul className="mt-4 space-y-3 md:hidden">
         {rows.map((r) => (
           <li key={r.id}>
             <Link
