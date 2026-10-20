@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Loader2, Mic, RotateCcw, Sparkles, Trash2, Undo2, UserRound, X } from "lucide-react";
+import { Camera, Loader2, Mic, RotateCcw, Sparkles, Trash2, Undo2, UserRound, X, Image as ImageIcon } from "lucide-react";
 import { PageHeader, Screen, Title, btnPrimary } from "@/components/ui";
 import { createJob, getJobs } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
@@ -330,15 +330,29 @@ export default function NuevoTrabajo() {
         onChange={(e) => void scanNote(e.target.files?.[0])}
         disabled={reading}
       />
-      <button
-        type="button"
-        onClick={() => (canUseLiveCamera() ? setScanning(true) : photoInput.current?.click())}
-        disabled={reading || isRecording || transcribing}
-        className="mt-4 flex h-11 items-center justify-center gap-2 self-center rounded-full glass px-5 text-sm font-semibold text-forest transition active:scale-[0.97] disabled:opacity-50"
-      >
-        {reading ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" strokeWidth={2.25} />}
-        {reading ? t.scanReading : t.scanNote}
-      </button>
+      {/* a note on paper → the camera; a photo he already has (note, WhatsApp screenshot) → his photos */}
+      <div className="mt-4 flex justify-center gap-2">
+        <button
+          type="button"
+          onClick={() => (canUseLiveCamera() ? setScanning(true) : photoInput.current?.click())}
+          disabled={reading || isRecording || transcribing}
+          className="flex h-11 items-center justify-center gap-2 rounded-full glass px-4 text-sm font-semibold text-forest transition active:scale-[0.97] disabled:opacity-50"
+        >
+          {reading ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" strokeWidth={2.25} />}
+          {reading ? t.scanReading : t.scanNote}
+        </button>
+        {!reading && (
+          <button
+            type="button"
+            onClick={() => photoInput.current?.click()}
+            disabled={isRecording || transcribing}
+            className="flex h-11 items-center justify-center gap-2 rounded-full glass px-4 text-sm font-semibold text-forest transition active:scale-[0.97] disabled:opacity-50"
+          >
+            <ImageIcon className="size-4" strokeWidth={2.25} />
+            {t.uploadNote}
+          </button>
+        )}
+      </div>
       {scanning && (
         <NoteScanner
           onCapture={(photo) => {
