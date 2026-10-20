@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Briefcase, FileText, Home, Plus, Receipt, Settings, Users } from "lucide-react";
+import { Briefcase, FileText, Home, LogOut, Plus, Receipt, Settings, Users } from "lucide-react";
+import { signOut } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
 
-// Desktop only (≥1024px): the phone keeps its own navigation. Hidden on Welcome, onboarding and the client link.
+// Desktop only (≥1024px): the phone keeps its own navigation. Hidden on Welcome, sign in, onboarding and the client link.
 export function AppSidebar() {
   const { t } = useLang();
   const path = usePathname() ?? "/";
   const tab = useSearchParams()?.get("tab");
-  if (path === "/" || path.startsWith("/onboarding") || path.startsWith("/e/")) return null;
+  if (path === "/" || path === "/entrar" || path.startsWith("/onboarding") || path.startsWith("/e/")) return null;
 
   const docs = path.startsWith("/documentos");
   const items = [
@@ -49,6 +50,14 @@ export function AppSidebar() {
       <nav className="mt-6 space-y-1">{items.map(item)}</nav>
       <div className="mt-auto">
         {item({ href: "/negocio", label: t.navBusiness, icon: Settings, on: path.startsWith("/negocio") })}
+        <button
+          type="button"
+          onClick={signOut}
+          className="mt-1 flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-[15px] font-semibold text-charcoal/50 transition hover:bg-black/5 hover:text-charcoal/80"
+        >
+          <LogOut className="size-5 shrink-0" strokeWidth={2} />
+          {t.signOut}
+        </button>
       </div>
     </aside>
   );

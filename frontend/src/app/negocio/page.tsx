@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Eye } from "lucide-react";
+import { Check, Eye, LogOut, Trash2 } from "lucide-react";
 import { LangToggle } from "@/components/lang-toggle";
-import { PageHeader, Screen, Title, btnPrimary, input } from "@/components/ui";
+import { PageHeader, Screen, Sheet, Title, btnDanger, btnPrimary, btnSecondary, input } from "@/components/ui";
+import { deleteAccount, getSession, signOut, type Session } from "@/lib/auth";
 import { DEMO_BUSINESS, DUE_OPTIONS, loadBusiness, saveBusiness, type Business } from "@/lib/business";
 import { checklistItemByKey } from "@/lib/checklists";
 import { useLang, type TradeId } from "@/lib/i18n";
 import { TRADES } from "@/lib/trades";
-import { isFullPhone, nextPhone } from "@/lib/phone";
+import { formatPhone, isFullPhone, nextPhone } from "@/lib/phone";
 
 // "Tu negocio": everything onboarding asked, editable later (the "C" on the dashboard opens it)
 export default function Negocio() {
@@ -245,6 +246,59 @@ export default function Negocio() {
           )}
         </button>
       </div>
+
+      <Account />
     </Screen>
+  );
+}
+
+// Who's signed in, sign out, and delete the account (stores ask for this; it's also just fair)
+function Account() {
+  const { t } = useLang();
+  const [session, setSession] = useState<Session | null>(null);
+  const [confirm, setConfirm] = useState(false);
+  useEffect(() => setSession(getSession()), []);
+  if (!session) return null;
+
+  const via =
+    session.method === "phone"
+      ? formatPhone(session.phone)
+      : session.method === "email"
+        ? session.email
+        : session.method === "demo"
+          ? t.seeDemo
+          : `${session.method === "google" ? "Google" : "Apple"}${session.email ? ` · ${session.email}` : ""}`;
+
+  return (
+    <section className="mt-10 border-t border-black/10 pt-6">
+      <h2 className="text-sm font-semibold">{t.account}</h2>
+      <p className="mt-1 text-sm leading-5 text-charcoal/70">
+        {t.signedInWith} <span className="font-semibold text-charcoal">{via}</span>
+      </p>
+      <div className="mt-4 flex flex-col gap-3 desk:flex-row desk:items-center">
+        <button type="button" onClick={signOut} className={btnSecondary}>
+          <LogOut className="size-5" strokeWidth={2} /> {t.signOut}
+        </button>
+        <button
+          type="button"
+          onClick={() => setConfirm(true)}
+          className="flex h-11 items-center justify-center gap-2 text-sm font-semibold text-overdue-ink lg:ml-auto"
+        >
+          <Trash2 className="size-4" strokeWidth={2} /> {t.deleteAccount}
+        </button>
+      </div>
+
+      <Sheet open={confirm} onClose={() => setConfirm(false)} title={t.deleteAccountTitle}>
+        <p className="text-base leading-6 text-charcoal/80">{t.deleteAccountBody}</p>
+        <div className="mt-6 space-y-3">
+          <button type="button" onClick={deleteAccount} className={btnDanger}>
+            {t.deleteAccountConfirm}
+          </button>
+          <button type="button" onClick={() => setConfirm(false)} className={btnSecondary}>
+            {t.deleteAccountNo}
+          </button>
+        </div>
+      </Sheet>
+    </section>
   );
 }

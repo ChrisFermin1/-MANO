@@ -3,6 +3,7 @@ import { Hedvig_Letters_Serif, JetBrains_Mono, Montserrat, Righteous } from "nex
 import { Suspense } from "react";
 import { ApprovalToast } from "@/components/approval-toast";
 import { AppSidebar } from "@/components/app-sidebar";
+import { AuthGate } from "@/components/auth-gate";
 import { RelaySync } from "@/components/relay-sync";
 import { LangProvider } from "@/lib/i18n";
 import "./globals.css";
@@ -37,7 +38,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <Suspense>
             <AppSidebar />
           </Suspense>
-          {children}
+          <AuthGate>{children}</AuthGate>
           <ApprovalToast />
           <RelaySync />
         </LangProvider>

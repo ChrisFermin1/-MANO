@@ -4,8 +4,9 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { useLang } from "@/lib/i18n";
 
-// Desktop onboarding: a forest panel on the left (brand + the 3 steps), the form on the right. Phone: hidden.
-export function OnboardingAside({ step }: { step: 1 | 2 | 3 }) {
+// Desktop onboarding and sign in: a forest panel on the left (brand + the 3 steps), the form on the right.
+// Sign in passes no step: it shows the same 3 steps as what comes next. Phone: hidden.
+export function OnboardingAside({ step }: { step?: 1 | 2 | 3 }) {
   const { t } = useLang();
   const steps = [t.obStep1, t.obStep2, t.obStep3];
   return (
@@ -22,7 +23,7 @@ export function OnboardingAside({ step }: { step: 1 | 2 | 3 }) {
         <ol className="mt-12 space-y-5">
           {steps.map((label, i) => {
             const n = i + 1;
-            const done = n < step;
+            const done = !!step && n < step;
             const now = n === step;
             return (
               <li key={label} className={`flex items-center gap-4 text-lg ${now ? "font-bold text-white" : done ? "text-white/80" : "text-white/45"}`}>

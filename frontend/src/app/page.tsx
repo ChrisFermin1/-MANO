@@ -4,7 +4,7 @@ import Link from "next/link";
 import { btnPrimary } from "@/components/ui";
 import { Camera, Eye, FileText, Mic, Wallet } from "lucide-react";
 import { LangToggle } from "@/components/lang-toggle";
-import { resetJobs } from "@/lib/api";
+import { startDemo } from "@/components/auth-gate";
 import { useLang } from "@/lib/i18n";
 
 // one side of the waveform (shown on both sides of the mic, mirrored)
@@ -57,11 +57,11 @@ function WelcomeDesktop() {
         <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest">mano</span>
         <nav className="flex items-center gap-6">
           <LangToggle light />
-          <Link href="/inicio" onClick={() => resetJobs({ demo: true })} className="text-[15px] font-semibold text-forest hover:underline">
+          <Link href="/entrar" className="text-[15px] font-semibold text-forest hover:underline">
             {t.haveAccount}
           </Link>
           <Link
-            href="/onboarding/oficio"
+            href="/entrar"
             className="flex h-11 items-center rounded-[12px] bg-forest px-5 text-[15px] font-bold text-white transition hover:bg-forest/90"
           >
             {t.start} →
@@ -80,18 +80,18 @@ function WelcomeDesktop() {
           <p className="mt-6 max-w-[500px] text-lg leading-7 text-charcoal/70">{t.welcomeBody}</p>
           <div className="mt-9 flex items-center gap-4">
             <Link
-              href="/onboarding/oficio"
+              href="/entrar"
               className="flex h-14 items-center rounded-[16px] bg-forest px-8 text-base font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition hover:bg-forest/90"
             >
               {t.start} →
             </Link>
-            <Link
-              href="/inicio"
-              onClick={() => resetJobs({ demo: true })}
+            <button
+              type="button"
+              onClick={startDemo} // the sign-in check then opens Inicio
               className="flex h-14 items-center rounded-[16px] border border-forest/25 bg-white/60 px-6 text-base font-semibold text-forest transition hover:bg-white"
             >
               {t.seeDemo}
-            </Link>
+            </button>
           </div>
           <ul className="mt-14 grid grid-cols-3 gap-6 border-t border-black/10 pt-8">
             {benefits.map((b) => (
@@ -238,14 +238,13 @@ function WelcomePhone() {
       <div className="fixed inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ivory from-70% to-ivory/0 pt-6">
         <div className="mx-auto max-w-[430px] px-[25px] pb-[max(20px,env(safe-area-inset-bottom))]">
           <Link
-            href="/onboarding/oficio"
+            href="/entrar"
             className={btnPrimary}
           >
             {t.start} →
           </Link>
           <Link
-            href="/inicio"
-            onClick={() => resetJobs({ demo: true })}
+            href="/entrar"
             className="relative mt-3 block text-center text-sm font-semibold leading-4 text-forest after:absolute after:inset-x-0 after:-inset-y-3"
           >
             {t.haveAccount}
