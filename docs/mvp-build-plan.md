@@ -218,6 +218,26 @@ Update this table (status + commit) after each task.
 | "Prefiero llenarlo yo" on New job (empty form, no Mano); "Ver como tu cliente" on the estimate / invoice screens: Link (the real client page) and PDF (the real file, drawn with pdf.js); Solo / Crew hide "Sent with Mano" on the link and PDF. Next: quantity × unit price per line | `d494fbe` | Josh: nothing new for the fill-in form (same job). Branding: the public estimate endpoint returns whether the business's plan hides it |
 
 
+## Where we left off (2026-10-20, for the next tool picking this up)
+
+State: everything above is committed on `abe/experiments` (not pushed). Run it with `npm run dev -- -p 3002` in
+`frontend/`. Login, plans/checkout and file storage are FAKE on purpose, each in one file: `lib/auth.ts`,
+`lib/plan.ts`, `lib/attachments.ts` (IndexedDB) — keep the function names when the real services come.
+
+Open questions for Abe:
+- Invoice number format: Mano shows `INV-0190`; Wave (what Edgar's clients know) shows a plain `190`. Switch?
+- Optional P.O. number on invoices (company clients like ATL Homemaker)?
+
+Next, in order:
+1. Quantity × unit price per line (e.g. "450 ft² × $12"): line stays one amount when no quantity. Touches
+   `lib/api.ts` (LineItem), the job editor, `components/document.tsx` + `document-pdf.tsx`, Ojo's total checks.
+2. Payments the owner never marks (the person billing isn't the one getting paid): ideas in chat were a
+   client "Ya pagué" button on the link and a one-tap "Ya me pagó" on Home. Abe parked it.
+
+Rules that still apply: Spanish-first copy (es + en in `lib/i18n.tsx`), design for all trades (not just
+painting), phone + tablet + desktop each checked, no push / PR unless Abe says, never commit `.env.local`.
+Careful: don't run `npm ci` anywhere `node_modules` is a symlink to this project's (it deletes the real one).
+
 ## After this list
 Tasks 0–9 are done on `abe/experiments`; task 10 came from testing on a phone. Next step: a pull request into `dev` when Abe says so.
 
