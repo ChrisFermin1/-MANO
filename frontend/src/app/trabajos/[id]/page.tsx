@@ -250,7 +250,11 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           </div>
         )}
         <label className="block">
-          <FieldLabel text={sites.length ? t.billingAddress : t.address} missingTag={missing.includes("address") ? t.missingTag : null} />
+          <FieldLabel
+            text={sites.length ? t.billingAddress : t.address}
+            hint={sites.length ? t.optional : undefined} // several houses: the lines have the addresses
+            missingTag={missing.includes("address") ? t.missingTag : null}
+          />
           <input
             id="f-address"
             className={field(missing.includes("address"))}
@@ -1183,10 +1187,13 @@ function JobActions({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   );
 }
 
-function FieldLabel({ text, missingTag }: { text: string; missingTag: string | null }) {
+function FieldLabel({ text, missingTag, hint }: { text: string; missingTag: string | null; hint?: string }) {
   return (
     <span className="mb-1.5 flex items-center gap-2 text-sm font-semibold">
-      {text}
+      <span>
+        {text}
+        {hint && <span className="font-normal text-muted"> · {hint}</span>}
+      </span>
       {missingTag && <span className="rounded-full bg-flag/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-ojo-ink">{missingTag}</span>}
     </span>
   );
