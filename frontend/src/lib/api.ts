@@ -5,6 +5,7 @@ import { loadBusiness, knownNameFix } from "@/lib/business";
 import { interpret } from "@/lib/mano";
 import { validate } from "@/lib/ojo";
 import { publishEstimate } from "@/lib/relay";
+import { matchClient } from "@/lib/match";
 
 export type JobStatus =
   | "NEW"
@@ -53,6 +54,9 @@ export type OjoAiQuestion = { key: string; es: string; en: string; item: string;
 export type Job = {
   id: number;
   customer_name: string | null;
+  customer_email?: string | null; // optional — printed under "Bill to"; later, where Mano emails the PDF (app only)
+  // Mano matched the note to a saved client: their spelling + the details it filled in (✕ puts it back)
+  client_match?: { name: string; heard: string | null; filled: ("address" | "customer_phone" | "customer_email")[] } | null;
   customer_phone?: string | null; // optional — never required by Ojo; enables one-tap WhatsApp / SMS
   address: string | null;
   service: string;
@@ -384,7 +388,11 @@ export async function getJob(id: number): Promise<Job | null> {
 // POST /jobs  — backend runs Mano (interpret) then Ojo (validate)
 export async function createJob(
   description: string,
-  opts: { docIntent?: "estimate" | "invoice"; client?: { name: string; phone: string | null; address: string | null } | null } = {},
+  opts: {
+    docIntent?: "estimate" | "invoice";
+    client?: KnownClient | null; // started from a client card: theirs, whatever the note says
+    clients?: KnownClient[]; // otherwise: Carlos's saved and past clients, to recognize the name in the note
+  } = {},
 ): Promise<Job> {
   const jobs = read();
   const now = new Date().toISOString();
@@ -396,12 +404,28 @@ export async function createJob(
       customer_name_suggested: null,
       address: opts.client.address?.trim() || parsed.address,
       customer_phone: opts.client.phone?.trim() || parsed.customer_phone,
+      customer_email: opts.client.email?.trim() || null,
     });
   }
   // Carlos already corrected this name on an earlier job → use his spelling
   const heard = parsed.customer_name ?? null;
   const fixed = knownNameFix(heard);
   if (fixed) Object.assign(parsed, { customer_name: fixed, customer_name_suggested: null });
+  // A client he already has ("Atlanta Homeiker" = his saved "ATL Homemaker"): their spelling, and the
+  // details the note didn't say (office address, phone, email). The note's own details always win.
+  let client_match: Job["client_match"] = null;
+  const known = !opts.client?.name.trim() ? matchClient([parsed.customer_name, parsed.customer_name_suggested], opts.clients ?? []) : null;
+  if (known) {
+    const filled: NonNullable<Job["client_match"]>["filled"] = [];
+    if (!parsed.address?.trim() && known.address?.trim()) (parsed.address = known.address.trim()), filled.push("address");
+    if (!parsed.customer_phone?.trim() && known.phone?.trim()) (parsed.customer_phone = known.phone.trim()), filled.push("customer_phone");
+    const customer_email = known.email?.trim() || null;
+    if (customer_email) filled.push("customer_email");
+    if (known.name !== parsed.customer_name || filled.length) {
+      client_match = { name: known.name, heard: parsed.customer_name ?? null, filled };
+      Object.assign(parsed, { customer_name: known.name, customer_name_suggested: null, customer_email });
+    }
+  }
   parsed.line_items = parsed.line_items.map((item) => ({
     ...item,
     ...(item.amount != null ? { price_source: "spoken" as const } : {}),
@@ -413,6 +437,7 @@ export async function createJob(
     backend_sync: "pending",
     doc_intent: opts.docIntent === "invoice" ? "invoice" : null,
     customer_name_heard: heard,
+    client_match,
     status: "NEW",
     created_at: now,
     updated_at: now,
@@ -438,7 +463,7 @@ export async function updateJob(id: number, patch: Partial<Job>): Promise<Job> {
 
 // PATCH /jobs/:id — fix the client's name, phone or address after sending. Price and work stay locked.
 // Keeps updated_at: a spelling fix shouldn't restart the "no answer in 2 days" clock.
-export async function updateContact(id: number, contact: Pick<Job, "customer_name" | "customer_phone" | "address">): Promise<Job> {
+export async function updateContact(id: number, contact: Pick<Job, "customer_name" | "customer_phone" | "customer_email" | "address">): Promise<Job> {
   const jobs = read();
   const i = jobs.findIndex((j) => j.id === id);
   jobs[i] = { ...jobs[i], ...contact };
@@ -510,6 +535,9 @@ export function linesBySite<T extends { site?: string | null }>(lines: T[]): { s
   }
   return groups;
 }
+
+/** A client Carlos already has (saved on Clientes, or from an earlier job). */
+export type KnownClient = { name: string; phone: string | null; email: string | null; address: string | null };
 
 /** An invoice job: Carlos picked "Factura" on New job, or he invoiced it directly ("Facturar sin estimado"). */
 export const isInvoiceJob = (j: Job) => j.doc_intent === "invoice" || !!j.invoice_number;

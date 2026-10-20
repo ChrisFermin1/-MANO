@@ -7,7 +7,7 @@ import { jobTotal, type Job } from "@/lib/api";
 export type SavedClient = { id: string; name: string; phone: string | null; email: string | null; address: string | null; created_at: string };
 export type Client = { key: string; savedId: string | null; name: string; phone: string | null; email: string | null; address: string | null; jobs: Job[]; billed: number; since: string };
 // The client a new job starts with ("Nuevo trabajo para Maria")
-export type ClientPick = Pick<Client, "name" | "phone" | "address">;
+export type ClientPick = Pick<Client, "name" | "phone" | "email" | "address">;
 
 const KEY = "mano.clients";
 const keyOf = (name: string) => name.trim().toLowerCase().replace(/\s+/g, " ");
@@ -44,6 +44,7 @@ export function groupClients(jobs: Job[], saved: SavedClient[]): Client[] {
     c.jobs.push(job);
     c.phone ||= job.customer_phone?.trim() || null;
     c.address ||= job.address?.trim() || null;
+    c.email ||= job.customer_email?.trim() || null;
     if (job.status !== "CANCELLED") c.billed += jobTotal(job);
     if (job.updated_at > c.since) c.since = job.updated_at;
     byKey.set(key, c);
@@ -58,8 +59,8 @@ export const newJobHref = (c: Client) =>
 /** The client New job was opened for, from the link's id. */
 export function clientFromLink(params: URLSearchParams, jobs: Job[]): ClientPick | null {
   const saved = params.get("client") && loadSavedClients().find((c) => c.id === params.get("client"));
-  if (saved) return { name: saved.name, phone: saved.phone, address: saved.address };
+  if (saved) return { name: saved.name, phone: saved.phone, email: saved.email, address: saved.address };
   const job = params.get("job") && jobs.find((j) => String(j.id) === params.get("job"));
-  if (job && job.customer_name) return { name: job.customer_name, phone: job.customer_phone ?? null, address: job.address };
+  if (job && job.customer_name) return { name: job.customer_name, phone: job.customer_phone ?? null, email: job.customer_email ?? null, address: job.address };
   return null;
 }

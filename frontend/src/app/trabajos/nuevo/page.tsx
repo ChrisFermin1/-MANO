@@ -8,7 +8,7 @@ import { createJob, getJobs } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 import { ManoBusyError, ManoBusyReadingError, organizeAhead, readNote } from "@/lib/mano";
 import { loadBusiness } from "@/lib/business";
-import { clientFromLink, type ClientPick } from "@/lib/clients";
+import { clientFromLink, groupClients, loadSavedClients, type ClientPick } from "@/lib/clients";
 import { NoteScanner, canUseLiveCamera } from "@/components/note-scanner";
 
 // ElevenLabs voice, through this app's own /api/voice (works on a phone over the https link, no backend needed).
@@ -251,7 +251,9 @@ export default function NuevoTrabajo() {
     setBusy(true);
     setSubmitError("");
     try {
-      const job = await createJob(text.trim(), { docIntent: docKind ?? "estimate", client });
+      // his saved and past clients: Mano recognizes the name in the note ("Atlanta Homeiker" = ATL Homemaker)
+      const clients = client ? [] : groupClients(await getJobs(), loadSavedClients()).map(({ name, phone, email, address }) => ({ name, phone, email, address }));
+      const job = await createJob(text.trim(), { docIntent: docKind ?? "estimate", client, clients });
       router.push(`/trabajos/${job.id}`);
     } catch (err) {
       setSubmitError(err instanceof ManoBusyError ? t.extractBusy : t.extractError);

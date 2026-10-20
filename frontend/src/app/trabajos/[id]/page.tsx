@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Archive, CalendarDays, Check, Database, Ellipsis, Eye, PartyPopper, Pencil, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X, MapPin } from "lucide-react";
+import { Archive, CalendarDays, Check, Database, Ellipsis, Eye, PartyPopper, Pencil, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X, MapPin, UserRound } from "lucide-react";
 import { AutoTextarea, DocStateBadge, PageHeader, Screen, Sheet, StatusBadge, Title, btnDanger, btnGhost, btnPrimary, btnSage, btnSecondary } from "@/components/ui";
 import {
   CANCEL_REASONS,
@@ -204,6 +204,30 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
             placeholder={t.namePlaceholder}
           />
         </label>
+        {job.client_match && (
+          // Mano recognized a client he already has; ✕ = not them, put back what the note said
+          <div className="-mt-1 flex items-center gap-2 rounded-[12px] glass-sage px-3 py-2 text-sm text-forest">
+            <UserRound className="size-4 shrink-0" strokeWidth={2.25} />
+            <span className="min-w-0 flex-1">
+              <b>{t.savedClient}</b>
+              {job.client_match.filled.length > 0 && <span className="text-forest/80"> · {t.savedClientFilled(job.client_match.filled.map((f) => t.clientFields[f]))}</span>}
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                patch({
+                  customer_name: job.client_match!.heard,
+                  ...Object.fromEntries(job.client_match!.filled.map((f) => [f, null])),
+                  client_match: null,
+                })
+              }
+              aria-label={t.notThisClient}
+              className="shrink-0 p-1 text-forest/70"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        )}
         {/* Mano's spelling fix — only a suggestion; one tap to accept, and it's remembered */}
         {job.customer_name_suggested && job.customer_name_suggested !== job.customer_name && (
           <div className="-mt-1 flex items-center gap-2 rounded-[12px] glass-peach px-3 py-2 text-sm">
@@ -248,6 +272,19 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
             placeholder={t.phonePlaceholder}
             type="tel"
             inputMode="tel"
+            autoComplete="off"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold">
+            {t.clientEmail} <span className="font-normal text-muted">· {t.optional}</span>
+          </span>
+          <input
+            className={field(false)}
+            value={job.customer_email ?? ""}
+            onChange={(e) => patch({ customer_email: e.target.value || null })}
+            type="email"
+            inputMode="email"
             autoComplete="off"
           />
         </label>
@@ -828,17 +865,24 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
 function ContactSheet({ open, job, onClose, onSaved }: { open: boolean; job: Job; onClose: () => void; onSaved: (j: Job) => void }) {
   const { t } = useLang();
-  const [form, setForm] = useState({ name: "", phone: "", address: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "" });
   useEffect(() => {
-    if (open) setForm({ name: job.customer_name ?? "", phone: job.customer_phone ?? "", address: job.address ?? "" });
-  }, [open, job.customer_name, job.customer_phone, job.address]);
+    if (open) setForm({ name: job.customer_name ?? "", phone: job.customer_phone ?? "", email: job.customer_email ?? "", address: job.address ?? "" });
+  }, [open, job.customer_name, job.customer_phone, job.customer_email, job.address]);
 
   const save = async () => {
     if (!form.name.trim()) return;
     const name = form.name.trim();
     // Mano misheard the name → remember the right spelling for next time
     if (name !== job.customer_name) rememberNameFix(job.customer_name_heard ?? job.customer_name, name);
-    onSaved(await updateContact(job.id, { customer_name: name, customer_phone: form.phone.trim() || null, address: form.address.trim() || null }));
+    onSaved(
+      await updateContact(job.id, {
+        customer_name: name,
+        customer_phone: form.phone.trim() || null,
+        customer_email: form.email.trim() || null,
+        address: form.address.trim() || null,
+      }),
+    );
   };
   const field = "h-[48px] w-full rounded-[14px] glass-field px-4 text-base outline-none ring-forest/60 focus:ring-2";
 
@@ -860,6 +904,10 @@ function ContactSheet({ open, job, onClose, onSaved }: { open: boolean; job: Job
             inputMode="tel"
             placeholder="(555) 123-4567"
           />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold">{t.clientEmail}</span>
+          <input className={field} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} type="email" inputMode="email" autoComplete="off" />
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm font-semibold">{t.address}</span>

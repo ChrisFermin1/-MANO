@@ -116,6 +116,7 @@ export function DocumentCard({
           <p className="font-mono uppercase tracking-[1px] text-muted">{d.toLabel}</p>
           <p className="mt-1 text-sm font-semibold">{job.customer_name}</p>
           <p className="text-muted">{job.address}</p>
+          {job.customer_email && <p className="text-muted">{job.customer_email}</p>}
         </div>
         <div className="text-right">
           <p className="font-mono uppercase tracking-[1px] text-muted">{d.dateLabel}</p>

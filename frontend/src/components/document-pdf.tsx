@@ -71,6 +71,7 @@ export function DocumentPdf({ kind, job, biz, view = "en" }: { kind: "estimate" 
             <Text style={s.label}>{d.toLabel}</Text>
             <Text style={[s.value, { fontWeight: 600 }]}>{job.customer_name ?? ""}</Text>
             {job.address ? <Text style={s.small}>{job.address}</Text> : null}
+            {job.customer_email ? <Text style={s.small}>{job.customer_email}</Text> : null}
           </View>
           <View style={{ alignItems: "flex-end" }}>
             <Text style={s.label}>{d.dateLabel}</Text>
