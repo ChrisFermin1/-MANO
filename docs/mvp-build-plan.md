@@ -50,6 +50,7 @@ ver un ejemplo" on the sign-in screen (or "Ver un ejemplo" on the desktop Welcom
 | 11 | Estimate or invoice: required choice, nothing pre-selected | ✅ Done | `7459e94`, `eb90662` |
 | 12 | Company clients + several sites on one invoice | ✅ Done (needs Josh later) | `b484aae` |
 | 13 | Recognize saved clients in a note + client email | ✅ Done (needs Josh later) | `0475105` |
+| 14 | Quantity × unit price per line | ✅ Done (needs Josh later) | `ef492be` |
 
 Update this table (status + commit) after each task.
 
@@ -186,6 +187,10 @@ Update this table (status + commit) after each task.
   email (`client_match` remembers what it filled; the chip's ✕ puts it back). `customer_email` on the job.
 - **Josh later:** `customer_email` on the customer/job.
 
+### 14. Quantity × unit price per line
+- **Built:** a line stays one amount until Carlos taps "Precio por cantidad". Then he types quantity, a unit ("ft²", "hr"…), and a unit price. The line total is quantity × unit price, rounded to cents ("450 ft² × $12" = $5,400). "Un solo precio" goes back to one amount and keeps that total. The estimate, invoice, PDF, job page, and Ojo's missing-price and note-total checks all use that total. A line with no quantity looks the same as before.
+- **Josh proposal:** `line_items.quantity` numeric null, `line_items.unit` text null, `line_items.unit_price` numeric(10,2) null. When quantity and unit_price are both set, `amount` is their product (cents). When both are null, `amount` is the single line price, as today. The app sync still sends only that `amount`.
+
 ## Extra changes (done, after the list)
 
 | Change | Commit | Josh / Chris |
@@ -220,18 +225,17 @@ Update this table (status + commit) after each task.
 
 ## Where we left off (2026-10-20, for the next tool picking this up)
 
-State: everything above is committed on `abe/experiments` (not pushed). Run it with `npm run dev -- -p 3002` in
-`frontend/`. Login, plans/checkout and file storage are FAKE on purpose, each in one file: `lib/auth.ts`,
-`lib/plan.ts`, `lib/attachments.ts` (IndexedDB) — keep the function names when the real services come.
+State: everything above is committed on `abe/experiments` (not pushed), including quantity × unit price
+(`ef492be`). Run it with `npm run dev -- -p 3002` in `frontend/`. Login, plans/checkout and file storage are
+FAKE on purpose, each in one file: `lib/auth.ts`, `lib/plan.ts`, `lib/attachments.ts` (IndexedDB) — keep the
+function names when the real services come.
 
 Open questions for Abe:
 - Invoice number format: Mano shows `INV-0190`; Wave (what Edgar's clients know) shows a plain `190`. Switch?
 - Optional P.O. number on invoices (company clients like ATL Homemaker)?
 
 Next, in order:
-1. Quantity × unit price per line (e.g. "450 ft² × $12"): line stays one amount when no quantity. Touches
-   `lib/api.ts` (LineItem), the job editor, `components/document.tsx` + `document-pdf.tsx`, Ojo's total checks.
-2. Payments the owner never marks (the person billing isn't the one getting paid): ideas in chat were a
+1. Payments the owner never marks (the person billing isn't the one getting paid): ideas in chat were a
    client "Ya pagué" button on the link and a one-tap "Ya me pagó" on Home. Abe parked it.
 
 Rules that still apply: Spanish-first copy (es + en in `lib/i18n.tsx`), design for all trades (not just
