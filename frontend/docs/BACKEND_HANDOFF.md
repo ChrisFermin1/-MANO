@@ -69,7 +69,7 @@ PriceUnit = "hour" | "project" | "sqft" | "room"
   // Documents
   estimate_number: number | null  // shown as EST-0001
   estimate_sent_at: ISODate | null
-  invoice_number: number | null   // shown as 190 (plain, like Wave)
+  invoice_number: number | null   // shown as INV-0001
   invoice_sent_at: ISODate | null
   invoice_due_at: ISODate | null  // sent_at + 15 days
   paid_at: ISODate | null
@@ -126,7 +126,7 @@ The UI hides buttons, but **the backend must reject** invalid requests too.
 
 1. **Auto-status while drafting.** On `POST /jobs` and on `PATCH` while the job is still a draft (`NEW`, `NEEDS_INFORMATION`, `READY_FOR_QUOTE`): status = `NEEDS_INFORMATION` if Ojo finds anything missing, else `READY_FOR_QUOTE`.
 2. **Can't send an estimate with missing info** (Ojo `validate()` must return nothing).
-3. **Numbering:** `estimate_number` / `invoice_number` are assigned **only on send**, never on drafts → no gaps. Sequential **per business** (Postgres sequence or `MAX()+1` in a transaction). Re-sending keeps the same number. Display format is done in the frontend: estimates `EST-0001`, invoices a plain number (`190`).
+3. **Numbering:** `estimate_number` / `invoice_number` are assigned **only on send**, never on drafts → no gaps. Sequential **per business** (Postgres sequence or `MAX()+1` in a transaction). Re-sending keeps the same number. Display format `EST-0001` / `INV-0001` is done in the frontend.
 4. **Delete** only if: no `estimate_number` AND status is `NEW` / `NEEDS_INFORMATION` / `READY_FOR_QUOTE` (`canDelete` in `api.ts`).
 5. **Cancel** only if: has `estimate_number`, has **no** `invoice_number`, status not `CANCELLED` / `PAID` (`canCancel`). Invoiced jobs are financial records — never delete/cancel.
 6. **Invoice** from `COMPLETED`, **or "Facturar sin estimado"**: directly from a complete draft (`NEW`/`NEEDS_INFORMATION`/`READY_FOR_QUOTE`, no `estimate_number`, Ojo finds nothing missing) → `PAYMENT_PENDING`, skipping the estimate states. Never twice (`invoice_number` already set → reject). Due = sent + **15 days**. ⚠️ Team decision: this skips QUOTE_SENT…COMPLETED in `docs/architecture.md`; the backend state rules must allow `READY_FOR_QUOTE → PAYMENT_PENDING`.

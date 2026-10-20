@@ -144,6 +144,7 @@ export default function Factura() {
           <label className="mt-4 flex h-[52px] items-center justify-between gap-3 rounded-[14px] glass px-4">
             <span className="text-sm font-semibold">{t.invoiceNumberLabel}</span>
             <span className="flex items-center font-mono text-base font-semibold text-forest">
+              INV-
               <input
                 value={num}
                 onChange={(e) => (setNum(e.target.value.replace(/\D/g, "").slice(0, 6)), setNumError(null))}
@@ -152,8 +153,8 @@ export default function Factura() {
                 inputMode="numeric"
                 aria-label={t.invoiceNumberLabel}
                 aria-invalid={!!numError}
-                style={{ width: `${Math.max(num.length, 3)}ch` }} // grows with the number; "190" fits
-                className="bg-transparent text-right font-mono outline-none"
+                style={{ width: `${Math.max(num.length, 1) + 0.5}ch` }} // grows with the number, right next to "INV-"
+                className="bg-transparent font-mono outline-none"
               />
             </span>
           </label>

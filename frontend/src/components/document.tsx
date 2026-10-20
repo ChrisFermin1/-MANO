@@ -72,7 +72,7 @@ export function docData(kind: "estimate" | "invoice", job: Job, view: "en" | "es
   };
 }
 
-/** "190 Ana Garcia 2026.pdf" — the year of the date printed on the document. */
+/** "INV-0190 Ana Garcia 2026.pdf" — the year of the date printed on the document. */
 export function pdfName(kind: "estimate" | "invoice", job: Job) {
   const d = docData(kind, job);
   const who = (job.customer_name ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/[^\w ]+/g, "").trim();

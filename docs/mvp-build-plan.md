@@ -235,7 +235,7 @@ FAKE on purpose, each in one file: `lib/auth.ts`, `lib/plan.ts`, `lib/attachment
 function names when the real services come.
 
 Open questions for Abe:
-- Optional P.O. number on invoices (company clients like ATL Homemaker)? Invoice numbers are decided: a plain `190`, like Wave (`914c1ab`).
+- Optional P.O. number on invoices (company clients like ATL Homemaker)? Invoice numbers: `INV-0190` (Abe chose it after trying plain `190`, `914c1ab` was reverted).
 
 Next, in order:
 1. ~~Payments the owner never marks~~ — skipped (Abe). Was: client "Ya pagué" on the link + "Ya me pagó" on Home.

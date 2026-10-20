@@ -13,7 +13,7 @@ export type JobRow = {
   place: string | null; // the address, or null (then use `sites`)
   sites: number; // several houses on one invoice
   subtitle: string; // phone cards: the address, else the first line of work
-  doc: string | null; // "190" / "EST-0002"
+  doc: string | null; // "INV-0003" / "EST-0002"
   invoice: boolean; // an invoice job (for the status label)
   updated: string; // ISO date
   total: number; // 0 = no price yet

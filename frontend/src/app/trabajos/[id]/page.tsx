@@ -1356,6 +1356,7 @@ function InvoiceDetails({ job, setJob }: { job: Job; setJob: (j: Job) => void })
         <label className="block min-w-0">
           <FieldLabel text={t.invoiceNumberLabel} missingTag={null} />
           <span className={`${box} font-mono`}>
+            <span className="text-muted">INV-</span>
             <input
               value={num}
               onChange={(e) => (setNum(e.target.value.replace(/\D/g, "").slice(0, 6)), setError(null))}
