@@ -227,6 +227,7 @@ Update this table (status + commit) after each task.
 | Bugbot fixes: planned invoice numbers count toward next/peek; prepare validates the number first; PDF download no longer marks sent (only the share sheet does) | `512f639` | — |
 | UX audit round 1 (Abe approved 1, 2, 3, 4, 9): invoice numbers back to INV-0190; overdue shown at the top of the job; labeled progress; send box quiet after sending (no raw link, Spanish + "Ver en inglés"); one outline style for secondary actions | `42ae06c` | — |
 | UX audit 5: calmer look. `glass-*` styles are flat (white, thin border, no blur / shadow); colored panels solid; Facturas summary like Home; softer main-button shadow | `d27d171` | — |
+| UX audit 6, 7, 8: Tu negocio autosaves (+ desktop section menu); Jobs list two-line rows, red Vencida, filter chips; empty states for brand-new accounts (Home, Jobs, Documents, Clients) | `7847c67`, `bc335b7` | — |
 
 
 ## Where we left off (2026-10-20, for the next tool picking this up)
@@ -239,7 +240,7 @@ function names when the real services come.
 Open questions for Abe:
 - Optional P.O. number on invoices (company clients like ATL Homemaker)? Invoice numbers: `INV-0190` (Abe chose it after trying plain `190`, `914c1ab` was reverted).
 
-UX audit (2026-10-20), still to do: 6 Tu negocio autosave + desktop sections, 7 Jobs list rows + filter chips, 8 empty states, 10 client page.
+UX audit (2026-10-20), still to do: 10 client page (its own project).
 
 Next, in order:
 1. ~~Payments the owner never marks~~ — skipped (Abe). Was: client "Ya pagué" on the link + "Ya me pagó" on Home.
