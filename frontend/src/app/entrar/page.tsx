@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2, Mail, Phone } from "lucide-react";
 import { LangToggle } from "@/components/lang-toggle";
 import { OnboardingAside } from "@/components/onboarding-aside";
@@ -16,9 +16,18 @@ type Step = "start" | "email" | "code";
 
 // Sign in and sign up are the same thing: a new person goes to onboarding, someone who already has
 // a business goes to Inicio. No passwords: a code by text or email, or Google / Apple.
-export default function Entrar() {
+export default function EntrarPage() {
+  return (
+    <Suspense>
+      <Entrar />
+    </Suspense>
+  );
+}
+
+function Entrar() {
   const { t } = useLang();
   const router = useRouter();
+  const isNew = useSearchParams()?.has("crear"); // "Crear cuenta" vs "Iniciar sesión": same steps, the title matches the click
   const [step, setStep] = useState<Step>("start");
   const [method, setMethod] = useState<"phone" | "email">("phone");
   const [phone, setPhone] = useState("");
@@ -104,7 +113,7 @@ export default function Entrar() {
 
         {step === "start" && (
           <>
-            <h1 className="mt-10 font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.authTitle}</h1>
+            <h1 className="mt-10 font-serif text-[36px] leading-10 tracking-[-0.72px]">{isNew ? t.authTitleNew : t.authTitle}</h1>
             <p className="mt-2 text-base leading-6 text-charcoal/70">{t.authBody}</p>
 
             <label className="mt-8 block">

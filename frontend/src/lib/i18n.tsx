@@ -13,7 +13,10 @@ const strings = {
     welcomeBody:
       "Estimados y facturas en inglés, sin escribir nada. Tú hablas en español, Mano hace el papeleo.",
     start: "Empezar",
-    haveAccount: "Ya tengo cuenta",
+    logIn: "Iniciar sesión",
+    createAccount: "Crear cuenta",
+    navMain: "Principal",
+    authTitleNew: "Crea tu cuenta",
     ojoHint: "“Maria no contestó. ¿Le escribimos?”",
     step: (n: number, total: number) => `paso ${n} de ${total}`,
     tradeTitle: "¿Qué tipo de trabajo haces?",
@@ -449,7 +452,10 @@ const strings = {
     welcomeBody:
       "Estimates and invoices in English, without typing. You speak Spanish, Mano does the paperwork.",
     start: "Get started",
-    haveAccount: "I already have an account",
+    logIn: "Log in",
+    createAccount: "Create account",
+    navMain: "Main",
+    authTitleNew: "Create your account",
     ojoHint: "“Maria hasn't replied. Follow up?”",
     step: (n: number, total: number) => `step ${n} of ${total}`,
     tradeTitle: "What kind of work do you do?",
@@ -887,6 +893,10 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
       if (saved === "es" || saved === "en") setLangState(saved);
     } catch {}
   }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = lang; // screen readers read the page in the right language
+  }, [lang]);
 
   const setLang = (l: Lang) => {
     setLangState(l);

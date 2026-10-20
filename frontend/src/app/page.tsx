@@ -4,6 +4,7 @@ import Link from "next/link";
 import { btnPrimary } from "@/components/ui";
 import { Camera, Eye, FileText, Mic, Wallet } from "lucide-react";
 import { LangToggle } from "@/components/lang-toggle";
+import { SiteNav } from "@/components/site-nav";
 import { startDemo } from "@/components/auth-gate";
 import { useLang } from "@/lib/i18n";
 
@@ -61,21 +62,7 @@ function WelcomeWide() {
   ];
   return (
     <div className="flex min-h-screen flex-col bg-mano-light text-charcoal">
-      <header className={`${wrap} flex h-24 items-center justify-between`}>
-        <span className="font-logo text-[32px] leading-none tracking-[-0.03em] text-forest">mano</span>
-        <nav className="flex items-center gap-6">
-          <LangToggle light />
-          <Link href="/entrar" className="text-[15px] font-semibold text-forest hover:underline">
-            {t.haveAccount}
-          </Link>
-          <Link
-            href="/entrar"
-            className="flex h-11 items-center rounded-[12px] bg-forest px-6 text-[15px] font-bold text-white transition hover:bg-forest/90"
-          >
-            {t.start} →
-          </Link>
-        </nav>
-      </header>
+      <SiteNav className={wrap} />
 
       <main className="flex-1">
         <section className={`${wrap} ${grid} gap-y-16 pb-24 pt-16 lg:items-center lg:pb-32 lg:pt-24`}>
@@ -90,7 +77,7 @@ function WelcomeWide() {
             <p className="mt-8 max-w-[29rem] text-lg leading-7 text-charcoal/70">{t.welcomeBody}</p>
             <div className="mt-12 flex items-center gap-4">
               <Link
-                href="/entrar"
+                href="/entrar?crear=1"
                 className="flex h-14 items-center rounded-[16px] bg-forest px-8 text-base font-bold text-white shadow-[0_8px_24px_-12px_rgba(7,61,45,0.55)] transition hover:bg-forest/90"
               >
                 {t.start} →
@@ -263,17 +250,14 @@ function WelcomePhone() {
           the link takes the same room as their "Puedes cambiar esto después" line (its tap area is bigger). */}
       <div className="fixed inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ivory from-70% to-ivory/0 pt-6">
         <div className="mx-auto max-w-[430px] px-[25px] pb-[max(20px,env(safe-area-inset-bottom))]">
-          <Link
-            href="/entrar"
-            className={btnPrimary}
-          >
-            {t.start} →
+          <Link href="/entrar?crear=1" className={btnPrimary}>
+            {t.createAccount} →
           </Link>
           <Link
             href="/entrar"
             className="relative mt-3 block text-center text-sm font-semibold leading-4 text-forest after:absolute after:inset-x-0 after:-inset-y-3"
           >
-            {t.haveAccount}
+            {t.logIn}
           </Link>
         </div>
       </div>
