@@ -13,12 +13,14 @@ const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["lati
 export const metadata: Metadata = {
   title: "MANO",
   description: "Tú hablas, Mano escribe.",
-  // iPhone "Add to Home Screen": opens full screen with its own name
-  appleWebApp: { capable: true, title: "mano", statusBarStyle: "black-translucent" },
+  // iPhone "Add to Home Screen": opens full screen with its own name. "default" = a normal light bar with a
+  // dark clock, content starts below it. ("black-translucent" put a white clock over the now-light pages, and
+  // the saved app jumped on the first scroll while iOS caught up on the bar's height.)
+  appleWebApp: { capable: true, title: "mano", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#073d2d",
+  themeColor: "#f5f5ed", // ivory, the app's background (Safari tints its bars with it)
   // draw behind the iPhone's clock and battery (each screen pads itself with the safe-area insets)
   viewportFit: "cover",
 };

@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Tú hablas, Mano escribe.",
     start_url: "/",
     display: "standalone",
-    background_color: "#073d2d",
-    theme_color: "#073d2d",
+    background_color: "#f5f5ed",
+    theme_color: "#f5f5ed",
     lang: "es",
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
