@@ -216,3 +216,8 @@ html:has(.bg-mano-dark) body {
     padding-left: 240px;
   }
 }
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}

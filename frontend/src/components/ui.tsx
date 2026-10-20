@@ -2,40 +2,48 @@
 
 import { useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, Eye } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, Eye } from "lucide-react";
 import type { JobStatus } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 
 export const btnPrimary =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40 disabled:shadow-none";
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40 disabled:shadow-none lg:inline-flex lg:h-11 lg:w-auto lg:self-start lg:rounded-[12px] lg:px-6 lg:text-[15px] lg:active:scale-100";
 export const btnSage =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-sage text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40";
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-sage text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40 lg:inline-flex lg:h-11 lg:w-auto lg:self-start lg:rounded-[12px] lg:px-6 lg:text-[15px] lg:active:scale-100";
 // main button on dark green screens and cards
 export const btnWhite =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-white text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40";
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-white text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40 lg:inline-flex lg:h-11 lg:w-auto lg:self-start lg:rounded-[12px] lg:px-6 lg:text-[15px] lg:active:scale-100";
 export const btnDanger =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-overdue-ink text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-40";
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-overdue-ink text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-40 lg:inline-flex lg:h-11 lg:w-auto lg:self-start lg:rounded-[12px] lg:px-6 lg:text-[15px] lg:active:scale-100";
 export const btnSecondary =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] border border-forest/25 bg-white/50 text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40";
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] border border-forest/25 bg-white/50 text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40 lg:inline-flex lg:h-11 lg:w-auto lg:self-start lg:rounded-[12px] lg:px-6 lg:text-[15px] lg:active:scale-100";
 export const btnGhost =
-  "flex h-[48px] w-full items-center justify-center gap-2 rounded-[20px] text-sm font-semibold text-forest";
+  "flex h-[48px] w-full items-center justify-center gap-2 rounded-[20px] text-sm font-semibold text-forest lg:inline-flex lg:h-11 lg:w-auto lg:self-start lg:px-3 lg:hover:underline";
 export const input =
   "h-[52px] w-full rounded-[14px] glass-field px-4 text-base outline-none ring-forest/60 placeholder:text-muted focus:ring-2";
 
 export function Screen({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <main className="min-h-dvh bg-mano-light text-charcoal">
-      <div className={`mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] lg:max-w-[760px] lg:px-10 lg:pt-10 ${className}`}>{children}</div>
+      {/* desktop: a wide page aligned to the left (next to the sidebar), height = its content */}
+      <div className={`mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] lg:mx-0 lg:min-h-0 lg:max-w-[1100px] lg:px-12 lg:pb-16 lg:pt-8 ${className}`}>{children}</div>
     </main>
   );
 }
 
+// Phone: a back arrow. Desktop: a breadcrumb to the parent page ("Trabajos ›"); the sidebar does the rest.
 export function PageHeader({ backHref, right }: { backHref: string; right?: React.ReactNode }) {
   const { t } = useLang();
+  const parent =
+    backHref === "/inicio" ? t.navHome : backHref === "/trabajos" ? t.navJobs : backHref.startsWith("/trabajos/") ? t.theJob : t.back;
   return (
     <header className="flex h-10 items-center justify-between">
-      <Link href={backHref} aria-label={t.back} className="-ml-1 p-1">
+      <Link href={backHref} aria-label={t.back} className="-ml-1 p-1 lg:hidden">
         <ArrowLeft className="size-7" strokeWidth={1.75} />
+      </Link>
+      <Link href={backHref} className="hidden items-center gap-1 text-sm font-semibold text-muted transition hover:text-forest lg:flex">
+        {parent}
+        <ChevronRight className="size-4" strokeWidth={2.25} />
       </Link>
       {right}
     </header>
@@ -43,7 +51,7 @@ export function PageHeader({ backHref, right }: { backHref: string; right?: Reac
 }
 
 export function Title({ children }: { children: React.ReactNode }) {
-  return <h1 className="mt-6 font-serif text-[36px] leading-10 tracking-[-0.72px]">{children}</h1>;
+  return <h1 className="mt-6 font-serif text-[36px] leading-10 tracking-[-0.72px] lg:mt-2 lg:text-[32px] lg:leading-10">{children}</h1>;
 }
 
 const STATUS_STYLE: Record<JobStatus, string> = {
@@ -125,15 +133,15 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-[3px]" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 backdrop-blur-[3px] lg:items-center" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[430px] rounded-t-[28px] border-t border-white/80 bg-ivory/90 px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_-12px_rgba(15,61,46,0.35)] backdrop-blur-2xl"
+        className="w-full max-w-[430px] rounded-t-[28px] border-t border-white/80 bg-ivory/90 lg:max-w-[480px] lg:rounded-[24px] lg:border lg:pb-8 lg:pt-6 px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_-12px_rgba(15,61,46,0.35)] backdrop-blur-2xl"
       >
-        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-black/15" />
+        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-black/15 lg:hidden" />
         <h2 className="font-serif text-[28px] leading-8 tracking-[-0.56px]">{title}</h2>
         {children}
       </div>

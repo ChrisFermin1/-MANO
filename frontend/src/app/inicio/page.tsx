@@ -102,7 +102,7 @@ export default function Inicio() {
 
   return (
     <main className="min-h-dvh bg-mano-light text-charcoal">
-      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[calc(120px+env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] lg:max-w-[880px] lg:px-10 lg:pb-12 lg:pt-10">
+      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[calc(120px+env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] lg:mx-0 lg:min-h-0 lg:max-w-[1100px] lg:px-12 lg:pb-16 lg:pt-8">
         {/* desktop: the sidebar has the logo and Tu negocio */}
         <header className="flex items-center justify-between lg:hidden">
           <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest">mano</span>

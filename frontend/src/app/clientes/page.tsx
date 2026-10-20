@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, FileText, Mail, MapPin, Phone, Plus } from "lucide-react";
-import { PageHeader, Screen, Sheet, StatusBadge, Title, btnPrimary, input } from "@/components/ui";
+import { PageHeader, Screen, Sheet, StatusBadge, Title, btnPrimary, btnSecondary, input } from "@/components/ui";
 import { getJobs, money, onJobsChange, phoneDigits, type Job, isInvoiceJob } from "@/lib/api";
 import { groupClients, loadSavedClients, newJobHref, saveClient, type Client } from "@/lib/clients";
 import { useLang } from "@/lib/i18n";
@@ -39,20 +39,84 @@ export default function Clientes() {
       <PageHeader
         backHref="/inicio"
         right={
-          <button
-            type="button"
-            onClick={() => setAdding(true)}
-            aria-label={t.newClient}
-            className="flex size-10 items-center justify-center rounded-full bg-forest"
-          >
-            <Plus className="size-5 text-white" strokeWidth={2.75} />
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              aria-label={t.newClient}
+              className="flex size-10 items-center justify-center rounded-full bg-forest lg:hidden"
+            >
+              <Plus className="size-5 text-white" strokeWidth={2.75} />
+            </button>
+            <span className="hidden lg:block">
+              <button type="button" onClick={() => setAdding(true)} className={btnPrimary}>
+                <Plus className="size-5" strokeWidth={2.75} />
+                {t.newClient}
+              </button>
+            </span>
+          </>
         }
       />
       <Title>{t.clientsTitle}</Title>
       {clients && clients.length === 0 && <p className="mt-6 text-base text-muted">{t.clientsEmpty}</p>}
 
-      <ul className="mt-6 space-y-3">
+      {/* desktop: a table */}
+      {clients && clients.length > 0 && (
+        <div className="mt-6 hidden overflow-hidden rounded-[16px] border border-black/5 bg-white lg:block">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-black/5 bg-ivory/60 font-mono text-[11px] uppercase tracking-[1px] text-muted">
+              <tr>
+                <th className="px-4 py-3 font-medium">{t.colClient}</th>
+                <th className="px-4 py-3 font-medium">{t.colPhone}</th>
+                <th className="px-4 py-3 font-medium">{t.colEmail}</th>
+                <th className="px-4 py-3 font-medium">{t.colAddress}</th>
+                <th className="px-4 py-3 text-right font-medium">{t.colJobs}</th>
+                <th className="px-4 py-3 text-right font-medium">{t.colBilled}</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {clients.map((c) => {
+                const tel = phoneDigits(c.phone);
+                return (
+                  <tr key={c.key} className="border-b border-black/5 transition last:border-0 hover:bg-ivory/70">
+                    <td className="max-w-[220px] truncate px-4 py-3 font-semibold">{c.name}</td>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      {c.phone && tel ? (
+                        <a href={`tel:+${tel}`} className="text-forest hover:underline">
+                          {formatPhone(c.phone)}
+                        </a>
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </td>
+                    <td className="max-w-[200px] truncate px-4 py-3">
+                      {c.email ? (
+                        <a href={`mailto:${c.email}`} className="text-forest hover:underline">
+                          {c.email}
+                        </a>
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </td>
+                    <td className="max-w-[240px] truncate px-4 py-3 text-charcoal/70">{c.address || "—"}</td>
+                    <td className="px-4 py-3 text-right">{c.jobs.length}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right font-bold">{c.billed > 0 ? money(c.billed) : "—"}</td>
+                    <td className="px-4 py-2 text-right">
+                      <Link href={newJobHref(c)} className={`${btnSecondary} lg:h-9! lg:px-3! lg:text-sm!`}>
+                        <FileText className="size-4" strokeWidth={2.25} />
+                        {t.newJob}
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <ul className="mt-6 space-y-3 lg:hidden">
         {clients?.map((c) => {
           const tel = phoneDigits(c.phone);
           return (

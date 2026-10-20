@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, Plus } from "lucide-react";
-import { DocStateBadge, PageHeader, Screen, Title, type DocState } from "@/components/ui";
+import { DocStateBadge, PageHeader, Screen, Title, btnPrimary, type DocState } from "@/components/ui";
 import { estimateNo, fmtDate, getJobs, onJobsChange, invoiceNo, invoiceState, jobTotal, money, paidSoFar, STATUS_FLOW, type Job, balanceDue } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 
@@ -81,18 +81,32 @@ function Documentos() {
       <PageHeader
         backHref="/inicio"
         right={
-          <Link
-            href={tab === "invoices" ? "/trabajos/nuevo?doc=invoice" : "/trabajos/nuevo?doc=estimate"}
-            aria-label={tab === "invoices" ? t.docInvoice : t.docEstimate}
-            className="flex size-10 items-center justify-center rounded-full bg-forest"
-          >
-            <Plus className="size-5 text-white" strokeWidth={2.75} />
-          </Link>
+          <>
+            <Link
+              href={tab === "invoices" ? "/trabajos/nuevo?doc=invoice" : "/trabajos/nuevo?doc=estimate"}
+              aria-label={tab === "invoices" ? t.docInvoice : t.docEstimate}
+              className="flex size-10 items-center justify-center rounded-full bg-forest lg:hidden"
+            >
+              <Plus className="size-5 text-white" strokeWidth={2.75} />
+            </Link>
+            <span className="hidden lg:block">
+              <Link href={tab === "invoices" ? "/trabajos/nuevo?doc=invoice" : "/trabajos/nuevo?doc=estimate"} className={btnPrimary}>
+                <Plus className="size-5" strokeWidth={2.75} />
+                {tab === "invoices" ? t.newInvoice : t.newEstimate}
+              </Link>
+            </span>
+          </>
         }
       />
-      <Title>{t.docsTitle}</Title>
+      {/* desktop: Estimados and Facturas are separate sections in the sidebar */}
+      <span className="lg:hidden">
+        <Title>{t.docsTitle}</Title>
+      </span>
+      <span className="hidden lg:block">
+        <Title>{tab === "invoices" ? t.navInvoices : t.navEstimates}</Title>
+      </span>
 
-      <div className="glass mt-6 grid grid-cols-2 rounded-[14px] p-1" role="tablist">
+      <div className="glass mt-6 grid grid-cols-2 rounded-[14px] p-1 lg:hidden" role="tablist">
         {(["estimates", "invoices"] as Tab[]).map((k) => (
           <button
             key={k}
@@ -108,7 +122,7 @@ function Documentos() {
       </div>
 
       {tab === "invoices" && (
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-2 gap-3 lg:mt-5 lg:max-w-[560px]">
           <div className="rounded-[16px] glass-peach p-4">
             <p className="text-xs font-medium">{t.outstanding}</p>
             <p className="mt-1 text-2xl font-bold">{money(outstanding)}</p>
@@ -122,7 +136,50 @@ function Documentos() {
 
       {jobs && rows.length === 0 && <p className="mt-8 text-base text-muted">{t.noDocs}</p>}
 
-      <ul className="mt-4 space-y-3">
+      {/* desktop: a table; click a row to open it */}
+      {rows.length > 0 && (
+        <div className="mt-5 hidden overflow-hidden rounded-[16px] border border-black/5 bg-white lg:block">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-black/5 bg-ivory/60 font-mono text-[11px] uppercase tracking-[1px] text-muted">
+              <tr>
+                <th className="px-4 py-3 font-medium">{t.colNumber}</th>
+                <th className="px-4 py-3 font-medium">{t.colClient}</th>
+                <th className="px-4 py-3 font-medium">{t.colDate}</th>
+                {tab === "invoices" && <th className="px-4 py-3 font-medium">{t.colDue}</th>}
+                <th className="px-4 py-3 font-medium">{t.colStatus}</th>
+                <th className="px-4 py-3 text-right font-medium">{t.colTotal}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.number} onClick={() => router.push(r.href)} className="cursor-pointer border-b border-black/5 transition last:border-0 hover:bg-ivory/70">
+                  <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">
+                    <Link href={r.href} onClick={(e) => e.stopPropagation()}>
+                      {r.number}
+                    </Link>
+                  </td>
+                  <td className="max-w-[260px] truncate px-4 py-3 font-semibold">{r.job.customer_name}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-charcoal/70">{fmtDate(r.date, lang)}</td>
+                  {tab === "invoices" && (
+                    <td className="whitespace-nowrap px-4 py-3 text-charcoal/70">{r.due && r.state !== "paid" ? fmtDate(r.due, lang) : "—"}</td>
+                  )}
+                  <td className="px-4 py-3">
+                    <DocStateBadge state={r.state} label={t.docState[r.state]} />
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-right">
+                    <span className="font-bold">{money(jobTotal(r.job))}</span>
+                    {tab === "invoices" && r.state !== "paid" && paidSoFar(r.job) > 0 && (
+                      <span className="block text-xs text-muted">{t.leftToPay(money(balanceDue(r.job)))}</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <ul className="mt-4 space-y-3 lg:hidden">
         {rows.map((r) => (
           <li key={r.number}>
             <Link href={r.href} className="flex items-center gap-3 rounded-[20px] glass p-4 transition active:scale-[0.99]">
