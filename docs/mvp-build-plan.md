@@ -223,6 +223,7 @@ Update this table (status + commit) after each task.
 | "Prefiero llenarlo yo" on New job (empty form, no Mano); "Ver como tu cliente" on the estimate / invoice screens: Link (the real client page) and PDF (the real file, drawn with pdf.js); Solo / Crew hide "Sent with Mano" on the link and PDF. Next: quantity × unit price per line | `d494fbe` | Josh: nothing new for the fill-in form (same job). Branding: the public estimate endpoint returns whether the business's plan hides it |
 | Invoice numbers are a plain `190`, like Wave (was `INV-0190`). Estimates stay `EST-0001`. The number on the job, Tu negocio, the invoice, the PDF, and search | `914c1ab` | Josh: still stores the integer. Display is the frontend's |
 | Downloaded PDF is named with that number and the document's year: `190 Ana Garcia 2026.pdf` | `153ce8f` | — |
+| PDF share sheet includes subject + message (e.g. "Invoice from Visão" / "Hi Maria, here's your invoice…"). Same copy as the link; PDF drops "see it here". Phone only; computer still downloads | `20e9bef` | — (OS Mail may use them; not a server send) |
 
 
 ## Where we left off (2026-10-20, for the next tool picking this up)
