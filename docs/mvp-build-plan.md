@@ -204,6 +204,7 @@ Update this table (status + commit) after each task.
 | Phone numbers formatted as you type ((404) 555-0123); business phone must include the area code; "+" numbers left as typed | `d53eff7` | Josh: store phones as typed (formatted) or digits only; the app formats either |
 | Ojo's "¿se te olvidó cobrar…?" questions off by default (switch in Tu negocio; no AI call when off). Ojo = missing info + what's next. Ask in contractor interviews if they forget to charge | `c0af5ce` | Chris: no change; backend Ojo (progress / what's stuck) is the main Ojo |
 | Desktop layout (phase 1): sidebar with separate Estimados / Facturas, wider pages, two-column job page with the live document, typing-first New job. Phone unchanged. Next: tables for lists, client page (with the CRM) | `9b3bdf6` | — |
+| Desktop that feels like desktop: full-width pages, breadcrumbs, compact buttons, centered dialogs, tables (jobs, estimates, invoices, clients), Home dashboard, job page actions bar. Phone unchanged | `333cde1`, `d8504e8` | — |
 
 
 ## After this list
