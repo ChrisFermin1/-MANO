@@ -240,7 +240,10 @@ function names when the real services come.
 Open questions for Abe:
 - Optional P.O. number on invoices (company clients like ATL Homemaker)? Invoice numbers: `INV-0190` (Abe chose it after trying plain `190`, `914c1ab` was reverted).
 
-UX audit (2026-10-20), still to do: 10 client page (its own project).
+Client page (Abe, 2026-10-20): v1 in progress. Free: the page itself (contact + call/WhatsApp/email, addresses, money
+billed/paid/owed/overdue, their jobs, "Nuevo trabajo para…", fix contact info → also updates their UNSENT jobs,
+never sent documents). Solo (paid, the CRM): private notes now; later leads won/lost, "¿Cómo te conoció?",
+repeat-work reminders. Clients get a real id (`client_id` on jobs) so a name typo fix doesn't split history.
 
 Next, in order:
 1. ~~Payments the owner never marks~~ — skipped (Abe). Was: client "Ya pagué" on the link + "Ya me pagó" on Home.
