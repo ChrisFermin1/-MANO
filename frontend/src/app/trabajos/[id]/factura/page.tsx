@@ -8,7 +8,22 @@ import { DocLangSwitch, DocumentCard } from "@/components/document";
 import { PageHeader, Screen, SuccessScreen, Title, btnGhost, btnPrimary, btnSecondary } from "@/components/ui";
 import { ShareEstimate } from "@/components/share-estimate";
 import { PdfButton } from "@/components/pdf-button";
-import { canSendInvoice, defaultDue, dueDay, endOfDay, firstName, getJob, invoiceNo, isUnsent, prepareInvoice, setInvoiceDue, type Job } from "@/lib/api";
+import {
+  canSendInvoice,
+  defaultDue,
+  dueDay,
+  endOfDay,
+  firstName,
+  getJob,
+  invoiceNo,
+  invoiceNumberTaken,
+  isUnsent,
+  peekInvoiceNumber,
+  prepareInvoice,
+  setInvoiceDue,
+  setInvoiceNumber,
+  type Job,
+} from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 
@@ -21,11 +36,16 @@ export default function Factura() {
   const [sent, setSent] = useState(false);
   const [docView, setDocView] = useState<"es" | "en">("es");
   const [due, setDue] = useState(""); // "2026-10-31": before preparing, the date Carlos picked; after, it saves right away
+  const [num, setNum] = useState(""); // invoice number, same idea: picked before preparing, saved right away after
+  const [numError, setNumError] = useState<string | null>(null);
 
   useEffect(() => {
     getJob(Number(id)).then((j) => {
       setJob(j);
-      if (j) setDue(dueDay(j.invoice_due_at ?? defaultDue()));
+      if (j) {
+        setDue(dueDay(j.invoice_due_at ?? defaultDue()));
+        setNum(String(j.invoice_number ?? peekInvoiceNumber()));
+      }
     });
     setBiz({ ...DEMO_BUSINESS, ...loadBusiness() });
   }, [id]);
@@ -53,9 +73,24 @@ export default function Factura() {
 
   const send = async () => {
     setSending(true);
-    setJob(await prepareInvoice(job.id, due));
+    setJob(await prepareInvoice(job.id, due, Number(num)));
     setSent(true);
   };
+
+  // check the number when he leaves the box (or presses Enter); a prepared invoice saves it right away
+  const commitNumber = async () => {
+    const n = Number(num);
+    if (!num || !Number.isInteger(n) || n < 1) {
+      setNum(String(job.invoice_number ?? peekInvoiceNumber()));
+      setNumError(null);
+      return;
+    }
+    if (n === job.invoice_number) return setNumError(null);
+    if (invoiceNumberTaken(n, job.id)) return setNumError(t.invoiceNumberTaken(invoiceNo(n)));
+    setNumError(null);
+    if (job.invoice_number) setJob(await setInvoiceNumber(job.id, n));
+  };
+  const shownNumber = Number(num) >= 1 && !numError ? Number(num) : job.invoice_number;
 
   return (
     <Screen className="lg:max-w-[760px]!">
@@ -66,8 +101,41 @@ export default function Factura() {
       <div className="mt-6 space-y-3">
         {/* Spanish-speaking owner: read it in Spanish, or flip to what the customer actually gets */}
         {lang === "es" && <DocLangSwitch view={docView} onChange={setDocView} labels={{ es: t.docViewEs, en: t.docViewEn }} />}
-        <DocumentCard kind="invoice" job={due ? { ...job, invoice_due_at: endOfDay(due) } : job} biz={biz} view={lang === "es" ? docView : "en"} />
+        <DocumentCard
+          kind="invoice"
+          job={{ ...job, invoice_number: shownNumber ?? null, ...(due ? { invoice_due_at: endOfDay(due) } : {}) }}
+          biz={biz}
+          view={lang === "es" ? docView : "en"}
+        />
       </div>
+
+      {/* invoice number: the next one by default; he can change it (e.g. to keep Wave's numbering) */}
+      {(canSend || job.invoice_number) && num && (
+        <>
+          <label className="mt-4 flex h-[52px] items-center justify-between gap-3 rounded-[14px] glass px-4">
+            <span className="text-sm font-semibold">{t.invoiceNumberLabel}</span>
+            <span className="flex items-center font-mono text-base font-semibold text-forest">
+              INV-
+              <input
+                value={num}
+                onChange={(e) => (setNum(e.target.value.replace(/\D/g, "").slice(0, 6)), setNumError(null))}
+                onBlur={() => void commitNumber()}
+                onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                inputMode="numeric"
+                aria-label={t.invoiceNumberLabel}
+                aria-invalid={!!numError}
+                style={{ width: `${Math.max(num.length, 1) + 0.5}ch` }} // grows with the number, right next to "INV-"
+                className="bg-transparent font-mono outline-none"
+              />
+            </span>
+          </label>
+          {numError && (
+            <p role="alert" className="mt-2 text-sm font-semibold text-overdue-ink">
+              {numError}
+            </p>
+          )}
+        </>
+      )}
 
       {/* due date: his terms by default; a client who asked for more time gets another date */}
       {(canSend || (job.invoice_number && !job.paid_at)) && due && (
@@ -90,7 +158,7 @@ export default function Factura() {
 
       {canSend && (
         <div className="mt-auto pt-8">
-          <button type="button" onClick={send} disabled={sending} className={btnPrimary}>
+          <button type="button" onClick={send} disabled={sending || !!numError} className={btnPrimary}>
             {sending ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" strokeWidth={2.25} />}
             {t.prepareSend}
           </button>

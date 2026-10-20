@@ -490,8 +490,27 @@ export async function sendMessage(id: number): Promise<Job> {
 }
 
 // Next number = highest used + 1. On the backend this should be a DB sequence per business.
+// Invoices can start higher: "Tu próxima factura" in Tu negocio (to continue from Wave).
 function nextNumber(field: "estimate_number" | "invoice_number") {
-  return Math.max(0, ...read().map((j) => j[field] ?? 0)) + 1;
+  const next = Math.max(0, ...read().map((j) => j[field] ?? 0)) + 1;
+  return field === "invoice_number" ? Math.max(next, loadBusiness()?.nextInvoiceNumber ?? 1) : next;
+}
+
+/** The number the next invoice will get (shown before it's prepared, and in Tu negocio). */
+export const peekInvoiceNumber = () => nextNumber("invoice_number");
+/** Highest invoice number already used (0 = none). */
+export const highestInvoiceNumber = () => Math.max(0, ...read().map((j) => j.invoice_number ?? 0));
+/** Another invoice already has this number. */
+export const invoiceNumberTaken = (n: number, exceptJobId?: number) =>
+  read().some((j) => j.id !== exceptJobId && j.invoice_number === n);
+const validInvoiceNumber = (n: number) => Number.isInteger(n) && n >= 1 && n <= 999999;
+
+// PATCH /jobs/:id {invoice_number} — fix an invoice's number (e.g. to match what he used in Wave)
+export async function setInvoiceNumber(id: number, n: number): Promise<Job> {
+  if (!validInvoiceNumber(n) || invoiceNumberTaken(n, id)) throw new Error("taken");
+  const saved = await updateJob(id, { invoice_number: n });
+  if (saved.public_token) void publishEstimate(saved, loadBusiness()); // the customer's link shows the new number
+  return saved;
 }
 
 // Preparing ≠ sending: "Preparar" gives the document its number and the customer link, but the job only
@@ -551,13 +570,15 @@ export const isInvoiceJob = (j: Job) => j.doc_intent === "invoice" || !!j.invoic
 export const canInvoiceDirectly = (j: Job) => canDelete(j) && validate(j).length === 0;
 export const canSendInvoice = (j: Job) => !j.invoice_number && (j.status === "COMPLETED" || canInvoiceDirectly(j));
 
-export async function prepareInvoice(id: number, due?: string): Promise<Job> {
+export async function prepareInvoice(id: number, due?: string, number?: number): Promise<Job> {
   await wait(600);
   const job = (await getJob(id))!;
   if (!canSendInvoice(job)) throw new Error("This job can't be invoiced yet");
   const now = new Date();
+  // a number he typed (if it's free), else the next one
+  const picked = number && validInvoiceNumber(number) && !invoiceNumberTaken(number, id) ? number : null;
   const ready = await updateJob(id, {
-    invoice_number: job.invoice_number ?? nextNumber("invoice_number"),
+    invoice_number: job.invoice_number ?? picked ?? nextNumber("invoice_number"),
     // Carlos's date if he changed it; otherwise his terms, restarted by markSent() on the day it's really sent
     invoice_due_at: due && endOfDay(due) !== defaultDue(now) ? endOfDay(due) : defaultDue(now),
     invoice_due_custom: !!due && endOfDay(due) !== defaultDue(now),

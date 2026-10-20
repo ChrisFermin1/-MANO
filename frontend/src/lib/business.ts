@@ -16,6 +16,9 @@ export type Business = {
   payInfo?: string;
   // Invoices are due this many days after sending (0 = on receipt). Default 15.
   invoiceDueDays?: number;
+  // Where his invoice numbers continue from (coming from Wave at #189 → 190). Mano never goes below the
+  // highest number it already used, so this can't create a duplicate.
+  nextInvoiceNumber?: number;
   trades: TradeId[];
   otherTrade?: OtherTrade | null;
   // Ojo's "¿se te olvidó cobrar…?" questions. Off unless he turns them on in Tu negocio: contractors

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, Eye, LogOut, Trash2 } from "lucide-react";
 import { LangToggle } from "@/components/lang-toggle";
 import { PageHeader, Screen, Sheet, Title, btnDanger, btnPrimary, btnSecondary, input } from "@/components/ui";
+import { highestInvoiceNumber, invoiceNo, peekInvoiceNumber } from "@/lib/api";
 import { deleteAccount, getSession, signOut, type Session } from "@/lib/auth";
 import { DEMO_BUSINESS, DUE_OPTIONS, loadBusiness, saveBusiness, type Business } from "@/lib/business";
 import { checklistItemByKey } from "@/lib/checklists";
@@ -17,8 +18,14 @@ export default function Negocio() {
   const [biz, setBiz] = useState<Business | null>(null);
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false); // nothing to save until something changes
+  const [nextInv, setNextInv] = useState(""); // "190": where invoice numbers continue (from Wave, etc.)
+  const [used, setUsed] = useState(0); // highest invoice number already in Mano
 
-  useEffect(() => setBiz({ ...DEMO_BUSINESS, ...loadBusiness() }), []);
+  useEffect(() => {
+    setBiz({ ...DEMO_BUSINESS, ...loadBusiness() });
+    setNextInv(String(peekInvoiceNumber()));
+    setUsed(highestInvoiceNumber());
+  }, []);
   if (!biz) return <Screen className="lg:max-w-[760px]!">{null}</Screen>;
 
   const change = (patch: Partial<Business>) => {
@@ -37,7 +44,10 @@ export default function Negocio() {
     key,
     label: checklistItemByKey(key)?.label[lang] ?? biz.ojoIgnoreLabels?.[key]?.[lang] ?? key,
   }));
+  const nextInvTooLow = nextInv !== "" && Number(nextInv) <= used; // can't reuse a number Mano already gave out
   const canSave =
+    Number(nextInv) >= 1 &&
+    !nextInvTooLow &&
     biz.ownerName.trim() !== "" &&
     biz.businessName.trim() !== "" &&
     isFullPhone(biz.phone) && // it's on every estimate and invoice: a number the client can call
@@ -53,6 +63,7 @@ export default function Negocio() {
       phone: biz.phone.trim(),
       payInfo: biz.payInfo?.trim() ?? "",
       invoiceDueDays: biz.invoiceDueDays ?? 15,
+      nextInvoiceNumber: Number(nextInv),
       trades: biz.trades,
       otherTrade: otherOn ? { name: biz.otherTrade?.name.trim() ?? "", unit: biz.otherTrade?.unit ?? "project" } : null,
       ojoIgnore: biz.ojoIgnore ?? [],
@@ -187,6 +198,31 @@ export default function Negocio() {
             })}
           </div>
         </div>
+        <label className="block">
+          <span className="mb-1.5 block text-sm text-charcoal/70">{t.nextInvoiceLabel}</span>
+          <span className={`${input} flex items-center font-mono`}>
+            <span className="text-muted">INV-</span>
+            <input
+              value={nextInv}
+              onChange={(e) => {
+                setNextInv(e.target.value.replace(/\D/g, "").slice(0, 6));
+                setSaved(false);
+                setDirty(true);
+              }}
+              inputMode="numeric"
+              aria-label={t.nextInvoiceLabel}
+              aria-invalid={nextInvTooLow}
+              className="min-w-0 flex-1 bg-transparent outline-none"
+            />
+          </span>
+          {nextInvTooLow ? (
+            <span role="alert" className="mt-1.5 block text-xs font-semibold text-overdue-ink">
+              {t.nextInvoiceTooLow(invoiceNo(used))}
+            </span>
+          ) : (
+            <span className="mt-1.5 block text-xs text-muted">{t.nextInvoiceHelp}</span>
+          )}
+        </label>
       </section>
 
       <section className="mt-8">
