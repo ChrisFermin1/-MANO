@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronRight, Eye, FileText, PartyPopper, Plus, Sparkles, Users } from "lucide-react";
 import { firstName, getJobs, onJobsChange, invoiceNo, invoiceState, jobBadge, jobTotal, moneySummary, money, type Job, type JobBadge, isInvoiceJob } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, firstNameOf } from "@/lib/business";
@@ -67,6 +68,7 @@ function actionCopy(a: Alert, t: Strings) {
 
 export default function Inicio() {
   const { t, lang } = useLang();
+  const router = useRouter();
   const [name, setName] = useState(DEMO_BUSINESS.ownerName);
   const [hour, setHour] = useState<number | null>(null);
   const [jobs, setJobs] = useState<Job[] | null>(null);
@@ -99,6 +101,8 @@ export default function Inicio() {
   const approval = next?.kind === "to_schedule" && next.job.approved_by ? next : null;
   const cash = jobs ? moneySummary(jobs) : null;
   const recent = (jobs ?? []).filter((j) => j.status !== "CANCELLED").slice(0, 3); // getJobs() is newest first
+  const recentDesk = (jobs ?? []).filter((j) => j.status !== "CANCELLED").slice(0, 6); // desktop has room for more
+  const waiting = (jobs ?? []).filter((j) => j.status === "QUOTE_SENT"); // estimates out, no answer yet
 
   return (
     <main className="min-h-dvh bg-mano-light text-charcoal">
@@ -117,12 +121,39 @@ export default function Inicio() {
 
         <h1 className="mt-10 lg:mt-0 font-serif text-[36px] leading-10 tracking-[-0.72px]">
           {hour !== null && <>{t.greeting(hour)},</>}
-          <br />
+          <br className="lg:hidden" />
+          <span className="hidden lg:inline"> </span>
           <span className="text-forest">{name}!</span>
         </h1>
 
-        {/* desktop: next step on the left, money on the right */}
-        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
+        {/* desktop: the numbers that matter, in one row */}
+        {jobs && (
+          <div className="mt-6 hidden grid-cols-4 gap-4 lg:grid">
+            <Link href="/documentos?tab=invoices" className="rounded-[16px] border border-black/5 bg-white p-4 transition hover:border-forest/30">
+              <span className="block text-sm text-muted">{t.owedTitle}</span>
+              <span className="mt-1 block text-[28px] font-bold leading-8">{money(cash?.owed ?? 0)}</span>
+            </Link>
+            <Link
+              href="/documentos?tab=invoices"
+              className={`rounded-[16px] border p-4 transition hover:border-forest/30 ${cash && cash.overdue > 0 ? "border-overdue bg-overdue" : "border-black/5 bg-white"}`}
+            >
+              <span className={`block text-sm ${cash && cash.overdue > 0 ? "text-overdue-ink" : "text-muted"}`}>{t.overdueLabel}</span>
+              <span className={`mt-1 block text-[28px] font-bold leading-8 ${cash && cash.overdue > 0 ? "text-overdue-ink" : ""}`}>{money(cash?.overdue ?? 0)}</span>
+            </Link>
+            <Link href="/documentos?tab=invoices" className="rounded-[16px] border border-sage bg-sage p-4 transition hover:border-forest/30">
+              <span className="block text-sm text-forest">{t.paidThisMonth}</span>
+              <span className="mt-1 block text-[28px] font-bold leading-8 text-forest">{money(cash?.paidThisMonth ?? 0)}</span>
+            </Link>
+            <Link href="/documentos?tab=estimates" className="rounded-[16px] border border-black/5 bg-white p-4 transition hover:border-forest/30">
+              <span className="block text-sm text-muted">{t.waitingAnswer}</span>
+              <span className="mt-1 block text-[28px] font-bold leading-8">{waiting.length}</span>
+              {waiting.length > 0 && <span className="text-xs text-muted">{money(waiting.reduce((sum, j) => sum + jobTotal(j), 0))}</span>}
+            </Link>
+          </div>
+        )}
+
+        {/* desktop: next step on the left, recent jobs on the right */}
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start lg:gap-5">
         <div>
         {/* Next action — the ONE thing to do now. Turns into good news when a customer approved. */}
         {next && copy &&
@@ -194,7 +225,7 @@ export default function Inicio() {
         <div>
         {/* Money — how much Carlos is owed. Hidden until his first invoice (no wall of $0s for new users). */}
         {cash?.hasInvoices && (
-          <Link href="/documentos?tab=invoices" className={`mt-4 block rounded-[20px] glass p-5 transition active:scale-[0.99] lg:mt-7`}>
+          <Link href="/documentos?tab=invoices" className={`mt-4 block rounded-[20px] glass p-5 transition active:scale-[0.99] lg:hidden`}>
             <span className="flex items-center justify-between text-sm font-medium text-muted">
               {t.owedTitle}
               <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
@@ -213,12 +244,42 @@ export default function Inicio() {
           </Link>
         )}
 
+        {/* desktop: recent jobs as a table */}
+        {recentDesk.length > 0 && (
+          <section className="mt-7 hidden overflow-hidden rounded-[20px] border border-black/5 bg-white lg:block">
+            <div className="flex items-center justify-between px-4 pb-2 pt-4">
+              <h2 className="text-base font-semibold">{t.recentJobs}</h2>
+              <Link href="/trabajos" className="flex items-center text-sm font-bold text-forest hover:underline">
+                {t.seeAll}
+                <ChevronRight className="size-4" strokeWidth={2.5} />
+              </Link>
+            </div>
+            <table className="w-full text-left text-sm">
+              <tbody>
+                {recentDesk.map((j) => {
+                  const b = jobBadge(j);
+                  const total = jobTotal(j);
+                  return (
+                    <tr key={j.id} onClick={() => router.push(`/trabajos/${j.id}`)} className="cursor-pointer border-t border-black/5 transition hover:bg-ivory/70">
+                      <td className="max-w-[180px] truncate py-3 pl-4 pr-2 font-semibold">{j.customer_name || "—"}</td>
+                      <td className="max-w-[200px] truncate px-2 py-3 text-charcoal/70">{jobSubtitle(j, lang)}</td>
+                      <td className="px-2 py-3">
+                        <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold ${BADGE_STYLE[b]}`}>{t.badge[b]}</span>
+                      </td>
+                      <td className="whitespace-nowrap py-3 pl-2 pr-4 text-right font-bold">{total > 0 ? money(total) : "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </section>
+        )}
         </div>
         </div>
 
         {/* Recent jobs — what's going on with the latest work */}
         {recent.length > 0 && (
-          <section className="mt-4 rounded-[20px] glass p-4">
+          <section className="mt-4 rounded-[20px] glass p-4 lg:hidden">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold">{t.recentJobs}</h2>
               <Link href="/trabajos" className="flex items-center text-sm font-bold text-forest">
