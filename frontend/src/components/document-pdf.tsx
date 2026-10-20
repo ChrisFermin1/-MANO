@@ -42,7 +42,7 @@ const s = StyleSheet.create({
   total: { fontWeight: 700, fontSize: 20 },
   box: { backgroundColor: C.ivory, borderRadius: 6, padding: 10, marginTop: 18 },
   terms: { fontSize: 9, color: C.muted, marginTop: 18, lineHeight: 1.4 },
-  footer: { position: "absolute", bottom: 32, left: 48, right: 48, fontSize: 8, color: C.muted, textAlign: "center" },
+  footer: { position: "absolute", bottom: 32, left: 48, right: 48, fontFamily: "Righteous", fontSize: 9, color: C.muted, textAlign: "center" }, // like the customer page
 });
 
 export function DocumentPdf({ kind, job, biz, view = "en" }: { kind: "estimate" | "invoice"; job: Job; biz: Business; view?: "en" | "es" }) {
