@@ -37,7 +37,8 @@ export default function Welcome() {
     // buttons are pinned to the bottom of the screen. (A saved Home Screen app reports one height when it
     // opens and another a moment later, so height-based layouts loaded low and jumped on the first scroll.)
     <main className="bg-mano-light text-charcoal">
-      <div className="mx-auto max-w-[430px] px-[25px] pt-[max(16px,env(safe-area-inset-top))] tiny:pt-[max(8px,env(safe-area-inset-top))]">
+      {/* anchored like everything else on this screen: nothing is left to scroll or bounce */}
+      <div className="fixed inset-x-0 top-0 z-10 mx-auto max-w-[430px] px-[25px] pt-[max(16px,env(safe-area-inset-top))] tiny:pt-[max(8px,env(safe-area-inset-top))]">
         <header className="flex items-center justify-between">
           <span className="font-logo leading-none tracking-[-0.96px] text-forest text-[28px]">mano</span>
           <LangToggle light />
