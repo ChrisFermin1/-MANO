@@ -7,7 +7,7 @@ import type { JobStatus } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 
 export const btnPrimary =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40 disabled:shadow-none desk:inline-flex desk:h-11 desk:w-auto desk:self-start desk:rounded-[12px] desk:px-6 desk:text-[15px] desk:active:scale-100";
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-[0_6px_16px_-8px_rgba(7,61,45,0.45)] transition active:scale-[0.98] disabled:opacity-40 disabled:shadow-none desk:inline-flex desk:h-11 desk:w-auto desk:self-start desk:rounded-[12px] desk:px-6 desk:text-[15px] desk:active:scale-100";
 export const btnSage =
   "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-sage text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40 desk:inline-flex desk:h-11 desk:w-auto desk:self-start desk:rounded-[12px] desk:px-6 desk:text-[15px] desk:active:scale-100";
 // main button on dark green screens and cards

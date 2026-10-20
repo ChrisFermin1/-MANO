@@ -298,7 +298,7 @@ export default function CustomerEstimate() {
                   type="button"
                   onClick={approve}
                   disabled={name.trim().length < 2 || busy || !!preview}
-                  className="mt-4 flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40"
+                  className="mt-4 flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-[0_6px_16px_-8px_rgba(7,61,45,0.45)] transition active:scale-[0.98] disabled:opacity-40"
                 >
                   {busy ? <Loader2 className="size-5 animate-spin" /> : <CheckCircle2 className="size-5" />}
                   {c.approve}

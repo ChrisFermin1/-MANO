@@ -132,70 +132,40 @@ html:has(.bg-mano-dark) body {
 }
 
 /* Frosted panels. Every one has: see-through fill + blur + light edge + soft shadow. */
+/* Cards: flat. A thin border separates them from the ivory page; shadows are only for things that float
+   (dialogs, the document "paper", the pinned button). The names stay "glass" so every screen updates at once. */
 @utility glass {
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 10px 28px -12px rgba(15, 61, 46, 0.22);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  backdrop-filter: blur(20px) saturate(150%);
+  background-color: #ffffff;
+  border: 1px solid rgba(32, 37, 34, 0.07);
 }
-/* text fields & the estimate document: more solid so reading/typing stays easy */
+/* text fields */
 @utility glass-field {
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow:
-    inset 0 1px 2px rgba(15, 61, 46, 0.06),
-    0 1px 0 rgba(255, 255, 255, 0.6);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  backdrop-filter: blur(16px) saturate(140%);
+  background-color: #ffffff;
+  border: 1px solid rgba(32, 37, 34, 0.1);
 }
+/* the estimate / invoice document: a sheet of paper, the one card that keeps a soft shadow */
 @utility glass-paper {
-  background-color: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 18px 40px -16px rgba(4, 20, 14, 0.45);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  backdrop-filter: blur(24px) saturate(160%);
+  background-color: #ffffff;
+  border: 1px solid rgba(32, 37, 34, 0.06);
+  box-shadow: 0 1px 2px rgba(32, 37, 34, 0.04), 0 12px 32px -20px rgba(32, 37, 34, 0.25);
 }
-/* on dark backgrounds (welcome, success) */
+/* on dark backgrounds (success screens) */
 @utility glass-dark {
   background-color: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 12px 30px -12px rgba(0, 0, 0, 0.35);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  backdrop-filter: blur(20px) saturate(140%);
 }
+/* color only where it means something: forest = the next step, peach = Ojo, sage = good news / paid */
 @utility glass-forest {
-  background-color: rgba(7, 61, 45, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 14px 32px -12px rgba(15, 61, 46, 0.5);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  backdrop-filter: blur(20px) saturate(140%);
+  background-color: #073d2d;
+  border: 1px solid #073d2d;
 }
 @utility glass-peach {
-  background-color: rgba(242, 232, 214, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    0 10px 26px -14px rgba(122, 74, 18, 0.35);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  backdrop-filter: blur(20px) saturate(150%);
+  background-color: #f2e8d6;
+  border: 1px solid rgba(129, 92, 44, 0.12);
 }
 @utility glass-sage {
-  background-color: rgba(221, 231, 216, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    0 12px 28px -14px rgba(15, 61, 46, 0.35);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  backdrop-filter: blur(20px) saturate(150%);
+  background-color: #dde7d8;
+  border: 1px solid rgba(7, 61, 45, 0.08);
 }
 /* soft sage glow (mic, selected check) */
 @utility glow-sage {
@@ -204,24 +174,9 @@ html:has(.bg-mano-dark) body {
     0 0 32px rgba(221, 231, 216, 0.9);
 }
 
-/* Phones without blur support, or with "Reduce transparency" on: solid panels, same colors */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass, .glass-field, .glass-paper { background-color: rgba(255, 255, 255, 0.94); }
-  .glass-dark { background-color: rgba(255, 255, 255, 0.16); }
-  .glass-forest { background-color: #073d2d; }
-  .glass-peach { background-color: #f2e8d6; }
-  .glass-sage { background-color: #dde7d8; }
-}
+/* "Reduce transparency" on: no background texture (cards are already solid) */
 @media (prefers-reduced-transparency: reduce) {
-  .glass, .glass-field, .glass-paper, .glass-dark, .glass-forest, .glass-peach, .glass-sage {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  .glass, .glass-field, .glass-paper { background-color: #fff; }
   .glass-dark { background-color: #14493a; }
-  .glass-forest { background-color: #073d2d; }
-  .glass-peach { background-color: #f2e8d6; }
-  .glass-sage { background-color: #dde7d8; }
   .bg-mano-light::before, .bg-mano-dark::before { background-image: none; }
 }
 

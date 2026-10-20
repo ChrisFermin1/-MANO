@@ -123,13 +123,16 @@ function Documentos() {
 
       {tab === "invoices" && (
         <div className="mt-4 grid grid-cols-2 gap-3 md:mt-5 md:max-w-[560px]">
-          <div className="rounded-[16px] glass-peach p-4">
-            <p className="text-xs font-medium">{t.outstanding}</p>
-            <p className="mt-1 text-2xl font-bold">{money(outstanding)}</p>
+          {/* same as Home's numbers: white, the dot carries the meaning (peach is Ojo's color) */}
+          <div className="rounded-[16px] glass p-4">
+            <p className="text-xs font-medium text-charcoal/60">{t.outstanding}</p>
+            <p className="mt-1 text-2xl font-bold tabular-nums">{money(outstanding)}</p>
           </div>
-          <div className="rounded-[16px] glass-sage p-4">
-            <p className="text-xs font-medium">{t.collected}</p>
-            <p className="mt-1 text-2xl font-bold">{money(collected)}</p>
+          <div className="rounded-[16px] glass p-4">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-charcoal/60">
+              <span aria-hidden className="size-2 rounded-full bg-forest" /> {t.collected}
+            </p>
+            <p className="mt-1 text-2xl font-bold tabular-nums text-forest">{money(collected)}</p>
           </div>
         </div>
       )}
