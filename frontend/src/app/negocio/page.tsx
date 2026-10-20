@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, Eye, LogOut, Sparkles, Trash2 } from "lucide-react";
 import { LangToggle } from "@/components/lang-toggle";
-import { PageHeader, Screen, Sheet, Title, btnDanger, btnPrimary, btnSecondary, input } from "@/components/ui";
+import { PageHeader, Screen, Sheet, Title, btnDanger, btnSecondary, input } from "@/components/ui";
 import { highestInvoiceNumber, invoiceNo, peekInvoiceNumber } from "@/lib/api";
 import { deleteAccount, getSession, signOut, type Session } from "@/lib/auth";
 import { getPlan, onPlanChange, type PlanInfo } from "@/lib/plan";
@@ -23,12 +23,29 @@ export default function Negocio() {
   const [nextInv, setNextInv] = useState(""); // "190": where invoice numbers continue (from Wave, etc.)
   const [used, setUsed] = useState(0); // highest invoice number already in Mano
 
+  const saveRef = useRef<() => void>(() => {});
+  const okRef = useRef(false);
+
   useEffect(() => {
     setBiz({ ...DEMO_BUSINESS, ...loadBusiness() });
     setNextInv(String(peekInvoiceNumber()));
     setUsed(highestInvoiceNumber());
   }, []);
-  if (!biz) return <Screen className="lg:max-w-[760px]!">{null}</Screen>;
+
+  // Saves by itself half a second after he stops typing — only when everything required is filled in
+  useEffect(() => {
+    if (!dirty || !okRef.current) return;
+    const id = setTimeout(() => saveRef.current(), 600);
+    return () => clearTimeout(id);
+  }, [biz, nextInv, dirty]);
+  // "Guardado ✓" shows for a moment, then goes away
+  useEffect(() => {
+    if (!saved) return;
+    const id = setTimeout(() => setSaved(false), 2000);
+    return () => clearTimeout(id);
+  }, [saved]);
+
+  if (!biz) return <Screen className="lg:max-w-[1000px]!">{null}</Screen>;
 
   const change = (patch: Partial<Business>) => {
     setBiz({ ...biz, ...patch });
@@ -74,14 +91,37 @@ export default function Negocio() {
     setSaved(true);
     setDirty(false);
   };
+  saveRef.current = save;
+  okRef.current = canSave;
 
   return (
-    <Screen className="lg:max-w-[760px]!">
+    <Screen className="lg:max-w-[1000px]!">
       <PageHeader backHref="/inicio" right={<LangToggle light />} />
       <Title>{t.bizTitle}</Title>
       <p className="mt-2 text-base leading-5">{t.settingsBody}</p>
 
-      <section className="mt-8">
+      {/* desktop: a small menu on the left that jumps to each part; phone: one page, top to bottom */}
+      <div className="lg:mt-8 lg:grid lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-12">
+      <nav aria-label={t.bizTitle} className="hidden lg:block">
+        <ul className="sticky top-8 space-y-1">
+          {[
+            ["trabajo", t.yourWork],
+            ["datos", t.yourDetails],
+            ["ojo", "Ojo"],
+            ["plan", t.currentPlan],
+            ["cuenta", t.account],
+          ].map(([id, label]) => (
+            <li key={id}>
+              <a href={`#${id}`} className="block rounded-[10px] px-3 py-2 text-sm font-semibold text-charcoal/70 transition hover:bg-black/5 hover:text-charcoal">
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <div className="flex min-w-0 flex-col">
+
+      <section id="trabajo" className="mt-8 scroll-mt-8 lg:mt-0">
         <h2 className="text-sm font-semibold">{t.yourWork}</h2>
         <div className="mt-2 grid grid-cols-2 gap-2">
           {TRADES.map(({ id, icon: Icon }) => {
@@ -121,7 +161,7 @@ export default function Negocio() {
         )}
       </section>
 
-      <section className="mt-8 space-y-3">
+      <section id="datos" className="mt-8 scroll-mt-8 space-y-3">
         <h2 className="text-sm font-semibold">{t.yourDetails}</h2>
         <label className="block">
           <span className="mb-1.5 block text-sm text-charcoal/70">{t.fullName}</span>
@@ -227,7 +267,7 @@ export default function Negocio() {
         </label>
       </section>
 
-      <section className="mt-8">
+      <section id="ojo" className="mt-8 scroll-mt-8">
         {/* Ojo's "forgot to charge?" questions: off by default, one switch */}
         <button
           type="button"
@@ -273,20 +313,30 @@ export default function Negocio() {
       </section>
       )}
 
-      <div className="mt-auto pt-8">
-        <button type="button" onClick={save} disabled={!canSave || !dirty} className={btnPrimary}>
-          {saved ? (
-            <>
-              <Check className="size-5" strokeWidth={2.5} /> {t.savedChanges}
-            </>
-          ) : (
-            t.saveChanges
-          )}
-        </button>
-      </div>
+      {/* autosave status: a moment of "Guardado", or what's blocking it */}
+      {(saved || (dirty && !canSave)) && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-[max(20px,env(safe-area-inset-bottom))] z-40 flex justify-center px-4 lg:left-[240px]">
+          <p
+            role="status"
+            className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold shadow-[0_6px_20px_-8px_rgba(32,37,34,0.35)] ${
+              saved ? "bg-forest text-white" : "bg-peach text-ojo-ink"
+            }`}
+          >
+            {saved ? (
+              <>
+                <Check className="size-4" strokeWidth={3} /> {t.savedChanges}
+              </>
+            ) : (
+              t.fixToSave
+            )}
+          </p>
+        </div>
+      )}
 
       <YourPlan />
       <Account />
+      </div>
+      </div>
     </Screen>
   );
 }
@@ -301,7 +351,7 @@ function YourPlan() {
   }, []);
   if (!plan) return null;
   return (
-    <section className="mt-10 border-t border-black/10 pt-6">
+    <section id="plan" className="mt-10 scroll-mt-8 border-t border-black/10 pt-6">
       <h2 className="text-sm font-semibold">{t.currentPlan}</h2>
       <div className="mt-2 flex items-center justify-between gap-3">
         <p className="text-base font-semibold">{t.yourPlanLine(t.planName[plan.id])}</p>
@@ -331,7 +381,7 @@ function Account() {
           : `${session.method === "google" ? "Google" : "Apple"}${session.email ? ` · ${session.email}` : ""}`;
 
   return (
-    <section className="mt-8 border-t border-black/10 pt-6">
+    <section id="cuenta" className="mt-8 scroll-mt-8 border-t border-black/10 pt-6">
       <h2 className="text-sm font-semibold">{t.account}</h2>
       <p className="mt-1 text-sm leading-5 text-charcoal/70">
         {t.signedInWith} <span className="font-semibold text-charcoal">{via}</span>
