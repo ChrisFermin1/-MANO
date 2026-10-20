@@ -259,13 +259,19 @@ export default function Inicio() {
       {/* Primary action, always reachable */}
       <div className="fixed inset-x-0 bottom-0 bg-gradient-to-t from-ivory from-55% to-transparent pb-[max(24px,env(safe-area-inset-bottom))] pt-8">
         <div className="mx-auto max-w-[430px] px-[25px]">
-          <Link
-            href="/trabajos/nuevo"
-            className="flex h-[60px] items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-lg shadow-forest/20 transition active:scale-[0.98]"
-          >
-            <Plus className="size-5" strokeWidth={2.75} />
-            {t.newJob}
-          </Link>
+          {/* two starting points, like Wave: you can't forget which one you're making */}
+          <div className="grid grid-cols-2 gap-3">
+            {(["estimate", "invoice"] as const).map((k) => (
+              <Link
+                key={k}
+                href={`/trabajos/nuevo?doc=${k}`}
+                className="flex h-[60px] items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-lg shadow-forest/20 transition active:scale-[0.98]"
+              >
+                <Plus className="size-5" strokeWidth={2.75} />
+                {k === "estimate" ? t.docEstimate : t.docInvoice}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </main>

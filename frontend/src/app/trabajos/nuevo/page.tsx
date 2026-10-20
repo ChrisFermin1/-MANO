@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Loader2, Mic, RotateCcw, Sparkles, Trash2, Undo2, UserRound, X, Image as ImageIcon } from "lucide-react";
+import { Camera, Loader2, Mic, RotateCcw, Sparkles, Trash2, Undo2, UserRound, X, Image as ImageIcon, FileText, Receipt } from "lucide-react";
 import { PageHeader, Screen, Title, btnPrimary } from "@/components/ui";
 import { createJob, getJobs } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
@@ -58,8 +58,9 @@ export default function NuevoTrabajo() {
   const [scanMessage, setScanMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const photoInput = useRef<HTMLInputElement>(null);
   const [scanning, setScanning] = useState(false); // live camera with the paper outline (https only)
-  // what Carlos is writing: an estimate (before the work) or an invoice (work already done)
-  const [docKind, setDocKind] = useState<"estimate" | "invoice">("estimate");
+  // what Carlos is writing: an estimate (before the work) or an invoice (work already done).
+  // Nothing pre-selected: he picks on Home ("+ Estimado" / "+ Factura") or on this screen first.
+  const [docKind, setDocKind] = useState<"estimate" | "invoice" | null>(null);
   // Started from a client card ("Nuevo trabajo para Maria"): the job is for them, whatever the note says
   const [client, setClient] = useState<ClientPick | null>(null);
   const rec = useRef<Recognition | null>(null);
@@ -70,9 +71,10 @@ export default function NuevoTrabajo() {
 
   useEffect(() => {
     setCanListen(typeof MediaRecorder !== "undefined" || getRecognition() !== null);
-    // "+" on the Invoices list opens this screen ready for an invoice
+    // "+ Estimado" / "+ Factura" (Home, Documents tabs) say which one; other links ask first
     const params = new URLSearchParams(window.location.search);
-    if (params.get("doc") === "invoice") setDocKind("invoice");
+    const doc = params.get("doc");
+    if (doc === "invoice" || doc === "estimate") setDocKind(doc);
     if (params.has("client") || params.has("job")) void getJobs().then((jobs) => setClient(clientFromLink(params, jobs)));
   }, []);
   useEffect(() => {
@@ -249,7 +251,7 @@ export default function NuevoTrabajo() {
     setBusy(true);
     setSubmitError("");
     try {
-      const job = await createJob(text.trim(), { docIntent: docKind, client });
+      const job = await createJob(text.trim(), { docIntent: docKind ?? "estimate", client });
       router.push(`/trabajos/${job.id}`);
     } catch (err) {
       setSubmitError(err instanceof ManoBusyError ? t.extractBusy : t.extractError);
@@ -266,36 +268,59 @@ export default function NuevoTrabajo() {
     );
   }
 
+  const clientChip = client && (
+    <p className="mt-4 flex items-center gap-2 rounded-[14px] glass px-4 py-2.5 text-sm font-semibold text-forest">
+      <UserRound className="size-4 shrink-0" strokeWidth={2.25} />
+      <span className="min-w-0 flex-1 truncate">{t.forClient(client.name)}</span>
+      <button type="button" onClick={() => setClient(null)} aria-label={t.close} className="-mr-1 shrink-0 p-1 text-charcoal/50">
+        <X className="size-4" />
+      </button>
+    </p>
+  );
+
+  // Opened without a choice (jobs list "+", a client card): estimate or invoice first, nothing pre-selected
+  if (!docKind)
+    return (
+      <Screen>
+        <PageHeader backHref="/inicio" />
+        <Title>{t.docKindLabel}</Title>
+        {clientChip}
+        <div className="mt-6 space-y-3">
+          {(["estimate", "invoice"] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setDocKind(k)}
+              className="flex w-full items-center gap-4 rounded-[20px] glass p-5 text-left transition active:scale-[0.98]"
+            >
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-forest">
+                {k === "estimate" ? <FileText className="size-6 text-white" /> : <Receipt className="size-6 text-white" />}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-lg font-bold leading-6">{k === "estimate" ? t.docEstimate : t.docInvoice}</span>
+                <span className="block text-sm text-charcoal/60">{k === "estimate" ? t.estimateWhen : t.invoiceWhen}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </Screen>
+    );
+
   return (
     <Screen>
       <PageHeader backHref="/inicio" />
-      <Title>{t.newJob}</Title>
+      <Title>{docKind === "invoice" ? t.newInvoice : t.newEstimate}</Title>
       <p className="mt-2 text-base leading-5">{t.newJobBody}</p>
 
-      {client && (
-        <p className="mt-4 flex items-center gap-2 rounded-[14px] glass px-4 py-2.5 text-sm font-semibold text-forest">
-          <UserRound className="size-4 shrink-0" strokeWidth={2.25} />
-          <span className="min-w-0 flex-1 truncate">{t.forClient(client.name)}</span>
-          <button type="button" onClick={() => setClient(null)} aria-label={t.close} className="-mr-1 shrink-0 p-1 text-charcoal/50">
-            <X className="size-4" />
-          </button>
-        </p>
-      )}
+      {clientChip}
 
-      <div role="tablist" aria-label={t.docKindLabel} className="glass mt-5 grid grid-cols-2 rounded-[14px] p-1 text-sm font-semibold">
-        {(["estimate", "invoice"] as const).map((k) => (
-          <button
-            key={k}
-            type="button"
-            role="tab"
-            aria-selected={docKind === k}
-            onClick={() => setDocKind(k)}
-            className={`min-h-10 rounded-[10px] px-2 py-1.5 leading-4 transition ${docKind === k ? "bg-forest text-white" : "text-charcoal/60"}`}
-          >
-            {k === "estimate" ? t.docEstimate : t.docInvoice}
-          </button>
-        ))}
-      </div>
+      {/* tapped the wrong one: switch before Mano organizes it */}
+      <p className="mt-3 text-sm text-charcoal/60">
+        {docKind === "invoice" ? t.invoiceWhen : t.estimateWhen} ·{" "}
+        <button type="button" onClick={() => setDocKind(docKind === "invoice" ? "estimate" : "invoice")} className="font-semibold text-forest underline underline-offset-4">
+          {docKind === "invoice" ? t.switchToEstimate : t.switchToInvoice}
+        </button>
+      </p>
 
       {canListen && (
         <button

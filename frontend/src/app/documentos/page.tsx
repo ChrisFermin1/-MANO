@@ -63,7 +63,7 @@ export default function Documentos() {
         backHref="/inicio"
         right={
           <Link
-            href={tab === "invoices" ? "/trabajos/nuevo?doc=invoice" : "/trabajos/nuevo"}
+            href={tab === "invoices" ? "/trabajos/nuevo?doc=invoice" : "/trabajos/nuevo?doc=estimate"}
             aria-label={tab === "invoices" ? t.docInvoice : t.docEstimate}
             className="flex size-10 items-center justify-center rounded-full bg-forest"
           >
