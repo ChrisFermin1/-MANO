@@ -35,7 +35,15 @@ export function Screen({ children, className = "" }: { children: React.ReactNode
 export function PageHeader({ backHref, right }: { backHref: string; right?: React.ReactNode }) {
   const { t } = useLang();
   const parent =
-    backHref === "/inicio" ? t.navHome : backHref === "/trabajos" ? t.navJobs : backHref.startsWith("/trabajos/") ? t.theJob : t.back;
+    backHref === "/inicio"
+      ? t.navHome
+      : backHref === "/trabajos"
+        ? t.navJobs
+        : backHref === "/clientes"
+          ? t.navClients
+          : backHref.startsWith("/trabajos/")
+            ? t.theJob
+            : t.back;
   return (
     <header className="flex h-10 items-center justify-between">
       <Link href={backHref} aria-label={t.back} className="-ml-1 p-1 lg:hidden">
