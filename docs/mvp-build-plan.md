@@ -46,6 +46,8 @@ Welcome screen loads sample jobs. The backend (port 8000) doesn't need to run; t
 | 8 | Mark as paid: method and partial payments | ✅ Done (needs Josh later) | `67d2a8a` |
 | 9 | Edit contact details after sending | ✅ Done | `8476b3c` |
 | 10 | Voice hears only Carlos (no TV, right language) | ⏭ Next | |
+| 11 | Separate "+ Estimado" and "+ Factura" | To do | |
+| 12 | Company clients + several sites on one invoice | To do (needs Josh later) | |
 
 Update this table (status + commit) after each task.
 
@@ -125,6 +127,47 @@ Update this table (status + commit) after each task.
   to Carlos, not the room). Proposed: yes.
 - **Done when:** with a TV or another person talking in the background, the note has only Carlos's words, in
   the right language, in Spanish and English. The phone's own speech recognition (fallback) still works.
+
+### 11. Separate "+ Estimado" and "+ Factura"
+- **Problem (Abe, testing):** New job has an Estimado/Factura switch with Estimado already selected, so it's
+  easy to forget and make the wrong document. Undo exists (an estimate draft can still be invoiced, an
+  invoice draft can still become an estimate), but the mistake keeps happening.
+- **What other apps do:** Wave, QuickBooks and Joist have two separate starting points ("Create estimate" /
+  "Create invoice"), never a switch with a default.
+- **Build:**
+  - Home (`src/app/inicio/page.tsx`): replace the single "Nuevo trabajo" button with two equal buttons:
+    "+ Estimado" → `/trabajos/nuevo?doc=estimate`, "+ Factura" → `/trabajos/nuevo?doc=invoice`.
+  - `src/app/trabajos/nuevo/page.tsx`: remove the switch. The title says what's being made ("Nuevo estimado" /
+    "Nueva factura"). No `?doc` (old links): ask with two buttons before the mic, nothing pre-selected.
+  - Keep working: the "+" on the Documents tabs, "Nuevo trabajo para Maria" on client cards (needs a choice too).
+- **Done when:** you can't start a job without choosing; each starting point makes the right document, in
+  Spanish and English.
+
+### 12. Company clients + several sites on one invoice
+- **Problem (found with a real note):** some clients are companies, e.g. ATL Homemaker, a renovation company
+  that subcontracts Carlos for jobs at its customers' houses. One invoice can cover two houses:
+  ```
+  700 wilson
+  Gabinetes y Storich 3500$
+  2791 midway
+  Pintura de Baños
+  5000$
+  Atlanta Homeiker
+  ```
+  Mano expects one address per job and a person's name (usually first), so it missed the client and the
+  second address had nowhere to go.
+- **Build:**
+  - Each line item gets an optional `site` (address). The job's address stays as the client's billing address.
+  - Note reader (`src/app/api/extract/route.ts`, `src/app/api/read-note/route.ts`): a business name anywhere in
+    the note (often the last line) can be the client; an address line starts a new site for the lines under
+    it. "Storich" = storage. Name fixes still apply ("Atlanta Homeiker" → "ATL Homemaker").
+  - Estimate, invoice, PDF and job page: when lines have sites, group them under each address
+    ("700 Wilson St · Cabinets and storage · $3,500"). One site or none: looks exactly like today.
+  - Job page: the site can be edited on each line.
+  - Saved clients: a company client keeps its office address and email for next time.
+- **Josh later:** `site` (text, nullable) on line items; the customer can be a company (name only, no person).
+- **Done when:** the note above becomes one invoice to ATL Homemaker with two sites and a total of $8,500,
+  and a normal one-house job looks the same as before.
 
 ## Extra changes (done, after the list)
 
