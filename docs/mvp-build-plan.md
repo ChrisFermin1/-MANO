@@ -48,6 +48,7 @@ Welcome screen loads sample jobs. The backend (port 8000) doesn't need to run; t
 | 10 | Voice hears only Carlos (no TV, right language) | ✅ Done (test with a real TV on a phone) | `3dc2a52` |
 | 11 | Separate "+ Estimado" and "+ Factura" | ✅ Done | `7459e94` |
 | 12 | Company clients + several sites on one invoice | ✅ Done (needs Josh later) | `b484aae` |
+| 13 | Recognize saved clients in a note + client email | ✅ Done (needs Josh later) | `0475105` |
 
 Update this table (status + commit) after each task.
 
@@ -169,10 +170,18 @@ Update this table (status + commit) after each task.
 - **Done when:** the note above becomes one invoice to ATL Homemaker with two sites and a total of $8,500,
   and a normal one-house job looks the same as before.
 - **Built:** `LineItem.site`, `jobSites()`, `linesBySite()` (`src/lib/api.ts`); extraction assigns sites only
-  when a note has 2+ addresses (one site = the job's address). Not built yet: saved company clients with an
-  office address and email (the existing saved clients can hold a company's name, phone and address).
+  when a note has 2+ addresses (one site = the job's address). Saved clients are matched in task 13.
 - **Josh proposal:** `line_items.site` (text, nullable). `jobs.job_address` can be empty when lines have sites
   (it's the billing address). The backend sync doesn't send `site` yet.
+
+### 13. Recognize saved clients in a note + client email
+- **Problem:** started from "+ Factura" (not the client card), a note saying "Atlanta Homeiker" didn't connect to
+  the saved "ATL Homemaker": no office address/phone/email, and a second spelling on Clientes. The job had no email.
+- **Built:** `src/lib/match.ts` (`sameClient`, `matchClient`): words compared without accents/punctuation,
+  short forms ("atl" ~ "atlanta") and small misspellings count; one-word names must match exactly. `createJob`
+  gets Carlos's saved + past clients; a match uses the saved spelling and fills only missing address, phone,
+  email (`client_match` remembers what it filled; the chip's ✕ puts it back). `customer_email` on the job.
+- **Josh later:** `customer_email` on the customer/job.
 
 ## Extra changes (done, after the list)
 
