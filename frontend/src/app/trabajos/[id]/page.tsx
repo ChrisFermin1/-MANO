@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Archive, CalendarDays, Check, Database, Ellipsis, Eye, PartyPopper, Pencil, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X, MapPin, UserRound } from "lucide-react";
-import { AutoTextarea, DocStateBadge, PageHeader, Screen, Sheet, StatusBadge, Title, btnDanger, btnGhost, btnPrimary, btnSage, btnSecondary } from "@/components/ui";
+import { AutoTextarea, DocStateBadge, PageHeader, Screen, Sheet, StatusBadge, Title, btnDanger, btnGhost, btnPrimary, btnSecondary } from "@/components/ui";
 import {
   CANCEL_REASONS,
   STATUS_FLOW,
@@ -783,7 +783,13 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
       <div className="[grid-area:head]">
         <PageHeader backHref="/trabajos" right={<JobActions job={job} setJob={setJob} />} />
         <Title>{job.customer_name}</Title>
-        <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang, job.service_es)}</p>
+        <p className="mt-1 text-sm text-muted">
+          {serviceLabel(job.service, lang, job.service_es)}
+          {/* what he's still owed, right under the name — red once it's late */}
+          {(invoiceState(job) === "unpaid" || invoiceState(job) === "overdue") && (
+            <span className={`font-semibold ${invoiceState(job) === "overdue" ? "text-overdue-ink" : "text-charcoal"}`}> · {t.owesYou(money(balanceDue(job)))}</span>
+          )}
+        </p>
         <SyncNote job={job} />
       </div>
       <div className="flex min-w-0 flex-col [grid-area:body]">
@@ -821,10 +827,18 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           </span>
         </div>
       ) : (
-        <div className="mt-5 flex gap-1" aria-hidden>
-          {STATUS_FLOW.slice(1).map((s, i) => (
-            <span key={s} className={`h-[4px] flex-1 rounded-full ${i < step ? "bg-forest" : "bg-track"}`} />
-          ))}
+        // where the job is, in words: the step's name, "Paso 4 de 8", and what comes next
+        <div className="mt-5">
+          <div className="flex items-baseline justify-between gap-3 text-sm">
+            <span className="font-semibold">{t.status[job.status]}</span>
+            <span className="text-muted">{t.stepOf(step, STATUS_FLOW.length - 1)}</span>
+          </div>
+          <div className="mt-2 flex gap-1" aria-hidden>
+            {STATUS_FLOW.slice(1).map((s, i) => (
+              <span key={s} className={`h-[4px] flex-1 rounded-full ${i < step ? "bg-forest" : "bg-track"}`} />
+            ))}
+          </div>
+          {t.stepHint[job.status] && <p className="mt-2 text-sm text-charcoal/70">{t.stepHint[job.status]}</p>}
         </div>
       )}
 
@@ -957,7 +971,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         ) : (
           <>
             {canMessage && (
-              <Link href={`/trabajos/${job.id}/seguimiento`} className={btnSage}>
+              <Link href={`/trabajos/${job.id}/seguimiento`} className={btnSecondary}>
                 <MessageCircle className="size-5" strokeWidth={2.25} />
                 {job.status === "PAYMENT_PENDING" ? t.sendReminder : t.followUp}
               </Link>
@@ -1234,7 +1248,13 @@ function JobActions({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
   return (
     <div className="relative flex items-center gap-2">
-      <StatusBadge status={job.status} invoice={isInvoiceJob(job)} />
+      {invoiceState(job) === "overdue" ? (
+        <span className="inline-flex items-center whitespace-nowrap rounded-[6px] bg-overdue px-2 py-1 font-mono text-[11px] uppercase leading-none tracking-[0.5px] text-overdue-ink">
+          {t.overdueTag(daysSince(job.invoice_due_at!))}
+        </span>
+      ) : (
+        <StatusBadge status={job.status} invoice={isInvoiceJob(job)} />
+      )}
       {(deletable || cancellable) && (
         <button
           type="button"

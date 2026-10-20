@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { Check, Copy, MessageCircle, QrCode, Share2, Smartphone } from "lucide-react";
+import { Check, Copy, MessageCircle, QrCode, Send, Share2, Smartphone } from "lucide-react";
 import { estimateLink, firstName, isUnsent, markSent, shareCopy, smsLink, whatsappLink, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
@@ -28,6 +28,9 @@ export function ShareEstimate({
   const [showQr, setShowQr] = useState(false);
   const [canShare, setCanShare] = useState(false);
   const [biz, setBiz] = useState<Business>(DEMO_BUSINESS);
+  // already sent: one quiet line ("Mandado el 13 oct · Volver a mandar") until he wants to send again
+  const [open, setOpen] = useState(() => isUnsent(job));
+  const [english, setEnglish] = useState(false); // Spanish-speaking owner: the English text on request
   // once there's an invoice, the same link shows the invoice
   const invoice = !!job.invoice_number;
   const kind = invoice ? "invoice" : "estimate";
@@ -49,6 +52,18 @@ export function ShareEstimate({
   }, [showQr, link, qr]);
 
   if (!link) return null;
+
+  const sentAt = invoice ? job.invoice_sent_at : job.estimate_sent_at;
+  if (!open && sentAt)
+    return (
+      <div className={`flex items-center gap-2 rounded-[16px] px-4 py-3 text-sm ${dark ? "glass-dark text-white" : "border border-black/[0.06] bg-white"}`}>
+        <Check className="size-4 shrink-0 text-forest" strokeWidth={2.75} />
+        <span className="min-w-0 flex-1 truncate">{t.sentOn(new Date(sentAt).toLocaleDateString(lang === "es" ? "es-US" : "en-US", { month: "short", day: "numeric" }))}</span>
+        <button type="button" onClick={() => setOpen(true)} className="flex shrink-0 items-center gap-1.5 font-bold text-forest">
+          <Send className="size-4" strokeWidth={2.25} /> {t.sendAgain}
+        </button>
+      </div>
+    );
 
   // Prepared but not sent yet: sharing it (any way) is what makes it "sent"
   const sharing = () => {
@@ -84,17 +99,21 @@ export function ShareEstimate({
   return (
     <div className={`rounded-[20px] p-4 ${dark ? "glass-dark" : "glass"}`}>
       <p className={`text-sm font-semibold ${dark ? "text-white" : ""}`}>{(invoice ? t.shareInvoiceWith : t.shareWith)(firstName(job.customer_name))}</p>
-      <p className={`mt-1 truncate font-mono text-xs ${dark ? "text-white/60" : "text-muted"}`}>{link}</p>
-
-      {/* The text that goes with the link — English for the customer; Spanish meaning for Carlos */}
+      {/* The text that goes with the link, in HIS language; the client gets English (one tap to read it) */}
       <div className={`mt-3 rounded-[12px] px-3 py-2 text-xs leading-4 ${dark ? "bg-white/10" : "bg-ivory"}`}>
-        <p lang="en" className={dark ? "text-white/90" : "text-charcoal/75"}>
-          “{msg.en}”
-        </p>
-        {lang === "es" && (
-          <p lang="es" className={`mt-1 ${dark ? "text-white/50" : "text-charcoal/45"}`}>
-            {t.meaning}: “{msg.es}”
+        {lang === "es" && !english ? (
+          <p lang="es" className={dark ? "text-white/90" : "text-charcoal/75"}>
+            “{msg.es}”
           </p>
+        ) : (
+          <p lang="en" className={dark ? "text-white/90" : "text-charcoal/75"}>
+            “{msg.en}”
+          </p>
+        )}
+        {lang === "es" && (
+          <button type="button" onClick={() => setEnglish((v) => !v)} className={`mt-1 font-semibold ${dark ? "text-white/70" : "text-forest"}`}>
+            {english ? t.hideEnglish : t.showEnglish}
+          </button>
         )}
       </div>
 
