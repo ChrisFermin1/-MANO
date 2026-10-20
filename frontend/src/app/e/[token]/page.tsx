@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { CheckCircle2, Loader2, MessageCircle, Phone } from "lucide-react";
 import { DocumentCard } from "@/components/document";
+import { PdfButton } from "@/components/pdf-button";
 import { approveEstimate, balanceDue, fmtDate, paidSoFar, getJobByToken, money, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { approveRemote, fetchEstimate, type RelayEntry } from "@/lib/relay";
@@ -34,6 +35,9 @@ const copy = {
     notFound: "We couldn't find this estimate. Check the link with your contractor.",
     terms: "By approving, you accept this estimate. Final price may change if the scope of work changes.",
     poweredBy: "Sent with Mano",
+    downloadPdf: "Download PDF",
+    makingPdf: "Making PDF…",
+    pdfFailed: "Couldn't make the PDF. Try again.",
     invoiceIntro: (amount: string, due: string) => `Here's your invoice for ${amount}. Please pay by ${due}.`,
     partialIntro: (paid: string, left: string, due: string) => `Thank you for your payment of ${paid}. The balance is ${left}, due ${due}.`,
     overdueIntro: (left: string, due: string) => `This invoice was due ${due}. The balance is ${left}.`,
@@ -58,6 +62,9 @@ const copy = {
     notFound: "No encontramos este estimado. Revisa el enlace con tu contratista.",
     terms: "Al aprobar, aceptas este estimado. El precio final puede cambiar si cambia el trabajo.",
     poweredBy: "Enviado con Mano",
+    downloadPdf: "Descargar PDF",
+    makingPdf: "Creando PDF…",
+    pdfFailed: "No se pudo crear el PDF. Intenta otra vez.",
     invoiceIntro: (amount: string, due: string) => `Aquí está tu factura por ${amount}. Por favor paga antes del ${due}.`,
     partialIntro: (paid: string, left: string, due: string) => `Gracias por tu pago de ${paid}. Quedan ${left}, a pagar antes del ${due}.`,
     overdueIntro: (left: string, due: string) => `Esta factura venció el ${due}. Quedan ${left} por pagar.`,
@@ -190,6 +197,17 @@ export default function CustomerEstimate() {
 
             <div className="mt-6">
               <DocumentCard kind={invoice ? "invoice" : "estimate"} job={job} biz={biz} />
+              {/* a copy for their records, in the language they're reading */}
+              <PdfButton
+                kind={invoice ? "invoice" : "estimate"}
+                job={job}
+                biz={biz}
+                view={lang}
+                label={c.downloadPdf}
+                busyLabel={c.makingPdf}
+                errorLabel={c.pdfFailed}
+                className="mt-2 flex h-[48px] w-full items-center justify-center gap-2 rounded-[20px] text-sm font-semibold text-forest"
+              />
             </div>
 
             {!invoice && !approved && !unavailable && (

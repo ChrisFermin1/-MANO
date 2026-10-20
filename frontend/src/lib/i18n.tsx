@@ -234,6 +234,9 @@ const strings = {
     sentQuoteBody: (n: string) => `Ojo va a estar pendiente de la respuesta de ${n}.`,
     backHome: "Volver al inicio",
     backToJob: "Volver al trabajo",
+    downloadPdf: "Descargar PDF",
+    makingPdf: "Creando PDF…",
+    pdfFailed: "No se pudo crear el PDF. Intenta otra vez.",
 
     // Seguimiento
     followTitle: (n: string) => `Mensaje para ${n}`,
@@ -575,6 +578,9 @@ const strings = {
     sentQuoteBody: (n: string) => `Ojo will keep an eye out for ${n}'s reply.`,
     backHome: "Back to home",
     backToJob: "Back to the job",
+    downloadPdf: "Download PDF",
+    makingPdf: "Making PDF…",
+    pdfFailed: "Couldn't make the PDF. Try again.",
 
     followTitle: (n: string) => `Message for ${n}`,
     followBody: "Mano wrote it. Change it if you want before sending.",

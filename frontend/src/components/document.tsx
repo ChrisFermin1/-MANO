@@ -3,17 +3,8 @@ import type { Business } from "@/lib/business";
 
 // Estimate / invoice document. The CUSTOMER always gets `view="en"`.
 // Carlos's own preview can switch to `view="es"` to read the same document in Spanish — one language at a time.
-export function DocumentCard({
-  kind,
-  job,
-  biz,
-  view = "en",
-}: {
-  kind: "estimate" | "invoice";
-  job: Job;
-  biz: Business;
-  view?: "en" | "es";
-}) {
+/** Everything the document says, in one place: the screen card and the PDF both read it. */
+export function docData(kind: "estimate" | "invoice", job: Job, view: "en" | "es" = "en") {
   const isInvoice = kind === "invoice";
   const es = view === "es";
   const L = (en: string, sp: string) => (es ? sp : en);
@@ -39,6 +30,57 @@ export function DocumentCard({
         "Estimado válido por 30 días. Incluye mano de obra y materiales salvo que se indique. ¡Gracias por su preferencia!",
       );
 
+  const partial = isInvoice && !job.paid_at && paidSoFar(job) > 0;
+  return {
+    isInvoice,
+    es,
+    L,
+    num,
+    label,
+    title: isInvoice ? L("Invoice", "Factura") : L("Estimate", "Estimado"),
+    paidStamp: isInvoice && job.paid_at ? `${L("Paid", "Pagado")} ${fmtDate(job.paid_at, view)}` : null,
+    toLabel: isInvoice ? L("Bill to", "Cobrar a") : L("Prepared for", "Para"),
+    dateLabel: isInvoice ? L("Invoice date", "Fecha") : L("Date", "Fecha"),
+    date: fmtDate(issued, view),
+    untilLabel: isInvoice ? L("Due date", "Vence") : L("Valid until", "Válido hasta"),
+    until: fmtDate(isInvoice ? due : validUntil, view),
+    lines: job.line_items.map((i) => ({
+      id: i.id,
+      text: es ? i.description_es || i.description : i.description,
+      // one price for the whole job → the items are the scope; the price is the total below
+      price: isLumpSum(job) ? null : i.amount === 0 ? L("Included", "Incluido") : money(i.amount ?? 0),
+    })),
+    priceNote: isLumpSum(job) ? (es ? job.price_note_es || job.price_note : job.price_note) || null : null,
+    // partial payment: total, what came in, what's left
+    partial: partial ? { total: money(jobTotal(job)), paidLabel: L("Paid", "Pagado"), paid: money(paidSoFar(job)), dueLabel: L("Balance due", "Saldo pendiente"), due: money(balanceDue(job)) } : null,
+    totalLabel: isInvoice ? (job.paid_at ? L("Total paid", "Total pagado") : L("Amount due", "Total a pagar")) : "Total",
+    total: money(jobTotal(job)),
+    howToPayLabel: L("How to pay", "Cómo pagar"),
+    terms,
+  };
+}
+
+/** "INV-0003 Ana Garcia.pdf" */
+export function pdfName(kind: "estimate" | "invoice", job: Job) {
+  const d = docData(kind, job);
+  const who = (job.customer_name ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/[^\w ]+/g, "").trim();
+  return `${d.num ? d.label : d.title}${who ? ` ${who}` : ""}.pdf`;
+}
+
+export function DocumentCard({
+  kind,
+  job,
+  biz,
+  view = "en",
+}: {
+  kind: "estimate" | "invoice";
+  job: Job;
+  biz: Business;
+  view?: "en" | "es";
+}) {
+  const d = docData(kind, job, view);
+  const { isInvoice } = d;
+
   return (
     <article lang={view} className="glass-paper rounded-[20px] px-5 pb-5 pt-6">
       <div className="flex items-start justify-between gap-3">
@@ -47,83 +89,77 @@ export function DocumentCard({
           {biz.phone && <p className="mt-1 text-xs text-muted">{biz.phone}</p>}
         </div>
         <div className="text-right">
-          <p className="font-mono text-xs font-bold uppercase tracking-[1.44px]">{isInvoice ? L("Invoice", "Factura") : L("Estimate", "Estimado")}</p>
-          {num ? (
-            <p className="mt-1 font-mono text-xs text-charcoal">#{label}</p>
+          <p className="whitespace-nowrap font-mono text-xs font-bold uppercase tracking-[1.44px]">{d.title}</p>
+          {d.num ? (
+            <p className="mt-1 whitespace-nowrap font-mono text-xs text-charcoal">#{d.label}</p>
           ) : (
             // badge hugs its text (inline-block), so the highlight is centered on the word
             <p className="mt-1">
               <span className="inline-block rounded-[5px] bg-peach px-2 py-0.5 text-center font-mono text-[11px] font-bold uppercase leading-4 tracking-[1px] text-ojo-ink">
-                {label}
+                {d.label}
               </span>
             </p>
           )}
-          {isInvoice && job.paid_at && (
-            <p className="mt-1.5 inline-block rounded bg-sage px-2 py-0.5 font-mono text-xs font-bold uppercase tracking-[1.5px] text-forest">
-              {L("Paid", "Pagado")} {fmtDate(job.paid_at, view)}
-            </p>
+          {d.paidStamp && (
+            <p className="mt-1.5 inline-block rounded bg-sage px-2 py-0.5 font-mono text-xs font-bold uppercase tracking-[1.5px] text-forest">{d.paidStamp}</p>
           )}
         </div>
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 text-xs">
         <div>
-          <p className="font-mono uppercase tracking-[1px] text-muted">{isInvoice ? L("Bill to", "Cobrar a") : L("Prepared for", "Para")}</p>
+          <p className="font-mono uppercase tracking-[1px] text-muted">{d.toLabel}</p>
           <p className="mt-1 text-sm font-semibold">{job.customer_name}</p>
           <p className="text-muted">{job.address}</p>
         </div>
         <div className="text-right">
-          <p className="font-mono uppercase tracking-[1px] text-muted">{isInvoice ? L("Invoice date", "Fecha") : L("Date", "Fecha")}</p>
-          <p className="mt-1 text-sm">{fmtDate(issued, view)}</p>
-          <p className="mt-2 font-mono uppercase tracking-[1px] text-muted">{isInvoice ? L("Due date", "Vence") : L("Valid until", "Válido hasta")}</p>
-          <p className="mt-1 text-sm">{fmtDate(isInvoice ? due : validUntil, view)}</p>
+          <p className="font-mono uppercase tracking-[1px] text-muted">{d.dateLabel}</p>
+          <p className="mt-1 text-sm">{d.date}</p>
+          <p className="mt-2 font-mono uppercase tracking-[1px] text-muted">{d.untilLabel}</p>
+          <p className="mt-1 text-sm">{d.until}</p>
         </div>
       </div>
 
       <hr className="mt-5 border-black/10" />
       <ul className="mt-3 space-y-2 text-[15px] leading-5">
-        {job.line_items.map((i) => (
+        {d.lines.map((i) => (
           <li key={i.id} className="flex justify-between gap-4">
-            <span>{es ? i.description_es || i.description : i.description}</span>
-            {/* one price for the whole job → the items are the scope; the price is the total below */}
-            {!isLumpSum(job) && <span className="font-bold">{i.amount === 0 ? L("Included", "Incluido") : money(i.amount ?? 0)}</span>}
+            <span>{i.text}</span>
+            {i.price && <span className="font-bold">{i.price}</span>}
           </li>
         ))}
       </ul>
       <hr className="mt-5 border-black/10" />
-      {isLumpSum(job) && (es ? job.price_note_es || job.price_note : job.price_note) && (
-        <p className="mt-3 text-sm text-muted">{es ? job.price_note_es || job.price_note : job.price_note}</p>
-      )}
-      {isInvoice && !job.paid_at && paidSoFar(job) > 0 ? (
-        // partial payment: total, what came in, what's left
+      {d.priceNote && <p className="mt-3 text-sm text-muted">{d.priceNote}</p>}
+      {d.partial ? (
         <div className="mt-3 space-y-1">
           <div className="flex justify-between text-sm">
             <span>Total</span>
-            <span>{money(jobTotal(job))}</span>
+            <span>{d.partial.total}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span>{L("Paid", "Pagado")}</span>
-            <span>−{money(paidSoFar(job))}</span>
+            <span>{d.partial.paidLabel}</span>
+            <span>−{d.partial.paid}</span>
           </div>
           <div className="flex items-center justify-between pt-1">
-            <span className="text-sm">{L("Balance due", "Saldo pendiente")}</span>
-            <span className="text-2xl font-bold">{money(balanceDue(job))}</span>
+            <span className="text-sm">{d.partial.dueLabel}</span>
+            <span className="text-2xl font-bold">{d.partial.due}</span>
           </div>
         </div>
       ) : (
         <div className="mt-3 flex items-center justify-between">
-          <span className="text-sm">{isInvoice ? (job.paid_at ? L("Total paid", "Total pagado") : L("Amount due", "Total a pagar")) : "Total"}</span>
-          <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
+          <span className="text-sm">{d.totalLabel}</span>
+          <span className="text-2xl font-bold">{d.total}</span>
         </div>
       )}
 
       {isInvoice && !job.paid_at && biz.payInfo?.trim() && (
         <div className="mt-5 rounded-[12px] bg-ivory px-3 py-2.5">
-          <p className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">{L("How to pay", "Cómo pagar")}</p>
+          <p className="font-mono text-[10px] uppercase tracking-[1.2px] text-muted">{d.howToPayLabel}</p>
           <p className="mt-1 whitespace-pre-line text-sm leading-5">{biz.payInfo.trim()}</p>
         </div>
       )}
-      <p className="mt-5 text-xs leading-4 text-muted">{terms}</p>
+      <p className="mt-5 text-xs leading-4 text-muted">{d.terms}</p>
     </article>
   );
 }

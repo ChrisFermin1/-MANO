@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Loader2, Send } from "lucide-react";
 import { DocLangSwitch, DocumentCard } from "@/components/document";
-import { PageHeader, Screen, SuccessScreen, Title, btnPrimary, btnSecondary } from "@/components/ui";
+import { PageHeader, Screen, SuccessScreen, Title, btnGhost, btnPrimary, btnSecondary } from "@/components/ui";
 import { ShareEstimate } from "@/components/share-estimate";
+import { PdfButton } from "@/components/pdf-button";
 import { canSendInvoice, defaultDue, dueDay, endOfDay, firstName, getJob, invoiceNo, isUnsent, prepareInvoice, setInvoiceDue, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
@@ -97,8 +98,18 @@ export default function Factura() {
       )}
       {/* Already sent: sending again, mark as paid and follow-up live on the job page — say so */}
       {!canSend && (
-        <div className="mt-auto pt-8">
-          <Link href={`/trabajos/${job.id}`} className={btnSecondary}>
+        <div className="mt-auto space-y-1 pt-8">
+          {/* the customer's version (English): to print, save or send */}
+          <PdfButton
+            kind="invoice"
+            job={job}
+            biz={biz}
+            label={t.downloadPdf}
+            busyLabel={t.makingPdf}
+            errorLabel={t.pdfFailed}
+            className={btnSecondary}
+          />
+          <Link href={`/trabajos/${job.id}`} className={btnGhost}>
             <ArrowLeft className="size-5" strokeWidth={2.25} />
             {t.backToJob}
           </Link>
