@@ -21,6 +21,9 @@ import {
   invoiceNo,
   invoiceState,
   jobTotal,
+  lineAmount,
+  priceLine,
+  quantityLabel,
   isLumpSum,
   isUnsent,
   addPayment,
@@ -62,6 +65,14 @@ import { ojoQuestions } from "@/lib/mano";
 import { formatPhone, nextPhone } from "@/lib/phone";
 
 const EDITABLE = ["NEW", "NEEDS_INFORMATION", "READY_FOR_QUOTE"];
+
+/** A typed price or quantity. Empty stays empty; "12." is 12, same as the amount box. */
+function numFrom(raw: string): number | null {
+  const v = raw.replace(/[^\d.]/g, "");
+  if (v === "" || v === ".") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
 
 export default function Trabajo() {
   const { t } = useLang();
@@ -114,6 +125,8 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   const skipped = !!job.ojo_skipped; // ✕ on the card: skip all of Ojo's questions for this job
   const spanish = lang === "es"; // Carlos edits in Spanish; the estimate is always English
   const edited = useRef(new Set<string>()); // lines whose Spanish changed since the last translation
+  // lines he opened "precio por cantidad" on, before any number is saved
+  const [qtyOn, setQtyOn] = useState<Record<string, true>>({});
 
   const patch = (p: Partial<Job>) => {
     const next = { ...job, ...p };
@@ -121,7 +134,16 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
     updateJob(job.id, p).then(setJob);
   };
   const setItem = (itemId: string, p: Partial<LineItem>) =>
-    patch({ line_items: job.line_items.map((i) => (i.id === itemId ? { ...i, ...p } : i)) });
+    patch({ line_items: job.line_items.map((i) => (i.id === itemId ? priceLine(i, p) : i)) });
+  const measured = (item: LineItem) => !!qtyOn[item.id] || item.quantity != null || item.unit_price != null || !!item.unit?.trim();
+  const oneAmount = (item: LineItem) => {
+    setQtyOn((m) => {
+      const next = { ...m };
+      delete next[item.id];
+      return next;
+    });
+    setItem(item.id, { quantity: null, unit: null, unit_price: null });
+  };
   const addItem = () => patch({ line_items: [...job.line_items, { id: uid(), description: "", description_es: "", amount: null }] });
   // "Sí, agregar" opens a price step in the same card: an amount, or "ya está incluido"
   const [pricing, setPricing] = useState<{ key: string; item: string; item_es: string } | null>(null);
@@ -159,7 +181,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
       missingIt ? "ring-2 ring-flag" : "focus:ring-2 focus:ring-forest/60"
     }`;
   const flag = (on: boolean) => (on ? "ring-2 ring-flag" : "");
-  const firstMissingPrice = job.line_items.find((i) => i.amount == null)?.id;
+  const firstMissingPrice = job.line_items.find((i) => lineAmount(i) == null)?.id;
   const lump = isLumpSum(job); // one price for the whole job: items list the work, the total is typed once
   // The note's own "Total" lines vs. the item prices: fine if they match the grand total or one of the totals
   const noteTotals = lump ? [] : (job.note_totals ?? []);
@@ -323,7 +345,8 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         <FieldLabel text={t.work} missingTag={missing.includes("price") || missing.includes("items") ? t.missingTag : null} />
         <div className="rounded-[20px] glass p-2">
           {job.line_items.map((item) => (
-            <div key={item.id} className="flex items-start gap-2 border-b border-black/5 py-1 last:border-0">
+            <div key={item.id} className="border-b border-black/5 py-1 last:border-0">
+            <div className="flex items-start gap-2">
               {/* Left column: Carlos's text + what the customer will read. Never runs under the price box. */}
               <div className="min-w-0 flex-1">
                 <AutoTextarea
@@ -368,27 +391,79 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                     onDone={(description) => setItem(item.id, { description, translation_pending: !description.trim() })}
                   />
                 )}
+                {!lump && !measured(item) && (
+                  <button
+                    type="button"
+                    onClick={() => setQtyOn((m) => ({ ...m, [item.id]: true }))}
+                    className="mt-0.5 flex min-h-10 items-center px-2.5 text-left text-sm font-semibold text-forest"
+                  >
+                    {t.byQuantity}
+                  </button>
+                )}
               </div>
-              {!lump && (
-              <label className={`flex h-10 w-[96px] shrink-0 items-center rounded-[10px] bg-ivory px-2 ${flag(item.amount == null)}`}>
-                <span className="text-sm font-bold text-muted">$</span>
-                <input
-                  id={`f-price-${item.id}`}
-                  className="w-full bg-transparent text-right text-[15px] font-bold outline-none"
-                  inputMode="decimal"
-                  aria-label={`${item.description} — ${t.missing.price}`}
-                  value={item.amount ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/[^\d.]/g, "");
-                    setItem(item.id, { amount: v === "" ? null : Number(v), price_source: "manual" });
-                  }}
-                  placeholder="0"
-                />
-              </label>
-              )}
+              {!lump &&
+                (measured(item) ? (
+                  // the line total is quantity × unit price; he edits those below, not this number
+                  <div className={`flex h-10 w-[96px] shrink-0 items-center rounded-[10px] bg-ivory px-2 ${flag(lineAmount(item) == null)}`}>
+                    <span className="text-sm font-bold text-muted">$</span>
+                    <span className="w-full truncate text-right text-[15px] font-bold tabular-nums">{lineAmount(item) ?? ""}</span>
+                  </div>
+                ) : (
+                  <label className={`flex h-10 w-[96px] shrink-0 items-center rounded-[10px] bg-ivory px-2 ${flag(lineAmount(item) == null)}`}>
+                    <span className="text-sm font-bold text-muted">$</span>
+                    <input
+                      id={`f-price-${item.id}`}
+                      className="w-full bg-transparent text-right text-[15px] font-bold tabular-nums outline-none"
+                      inputMode="decimal"
+                      aria-label={`${item.description} — ${t.missing.price}`}
+                      value={item.amount ?? ""}
+                      onChange={(e) => setItem(item.id, { amount: numFrom(e.target.value), price_source: "manual" })}
+                      placeholder="0"
+                    />
+                  </label>
+                ))}
               <button type="button" onClick={() => removeItem(item.id)} aria-label={t.removeLine} className="mt-2.5 p-1 text-muted">
                 <X className="size-4" />
               </button>
+            </div>
+            {!lump && measured(item) && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <input
+                  id={item.quantity == null ? `f-price-${item.id}` : undefined}
+                  className={`h-10 w-[4.75rem] rounded-[10px] bg-ivory px-2 text-right text-[15px] font-bold tabular-nums outline-none focus:ring-2 focus:ring-forest/60 ${flag(lineAmount(item) == null && item.quantity == null)}`}
+                  inputMode="decimal"
+                  aria-label={t.quantity}
+                  value={item.quantity ?? ""}
+                  onChange={(e) => setItem(item.id, { quantity: numFrom(e.target.value) })}
+                  placeholder="0"
+                />
+                <input
+                  className="h-10 w-[4.25rem] min-w-0 rounded-[10px] bg-ivory px-2 text-[15px] outline-none focus:ring-2 focus:ring-forest/60"
+                  aria-label={t.unit}
+                  value={item.unit ?? ""}
+                  onChange={(e) => setItem(item.id, { unit: e.target.value.slice(0, 16) || null })}
+                  placeholder={t.unitPlaceholder}
+                />
+                <span className="text-sm font-bold text-muted" aria-hidden>
+                  ×
+                </span>
+                <label className={`flex h-10 w-[5.5rem] items-center rounded-[10px] bg-ivory px-2 focus-within:ring-2 focus-within:ring-forest/60 ${flag(lineAmount(item) == null && item.unit_price == null)}`}>
+                  <span className="text-sm font-bold text-muted">$</span>
+                  <input
+                    id={item.quantity != null && item.unit_price == null ? `f-price-${item.id}` : undefined}
+                    className="w-full bg-transparent text-right text-[15px] font-bold tabular-nums outline-none"
+                    inputMode="decimal"
+                    aria-label={t.unitPrice}
+                    value={item.unit_price ?? ""}
+                    onChange={(e) => setItem(item.id, { unit_price: numFrom(e.target.value) })}
+                    placeholder="0"
+                  />
+                </label>
+                <button type="button" onClick={() => oneAmount(item)} className="min-h-10 px-1 text-sm font-semibold text-forest underline underline-offset-4">
+                  {t.oneAmount}
+                </button>
+              </div>
+            )}
             </div>
           ))}
           <button id="f-add-line" type="button" onClick={() => addItem()} className="flex w-full items-center gap-1 px-2 py-3 text-sm font-semibold text-forest">
@@ -784,12 +859,19 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
               </p>
             )}
             <ul className="space-y-1.5 text-[15px]">
-              {g.lines.map((i) => (
-                <li key={i.id} className="flex justify-between gap-4">
-                  <span>{lang === "es" ? (i.description_es ?? i.description) : i.description}</span>
-                  {!isLumpSum(job) && <span className="font-bold">{i.amount === 0 ? t.included : money(i.amount ?? 0)}</span>}
-                </li>
-              ))}
+              {g.lines.map((i) => {
+                const amount = lineAmount(i);
+                const qty = isLumpSum(job) ? null : quantityLabel(i);
+                return (
+                  <li key={i.id} className="flex items-start justify-between gap-4">
+                    <span className="min-w-0">
+                      {lang === "es" ? (i.description_es ?? i.description) : i.description}
+                      {qty && <span className="mt-0.5 block text-xs font-normal text-muted">{qty}</span>}
+                    </span>
+                    {!isLumpSum(job) && <span className="shrink-0 font-bold tabular-nums">{amount === 0 ? t.included : money(amount ?? 0)}</span>}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}

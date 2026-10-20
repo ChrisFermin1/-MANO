@@ -1,4 +1,4 @@
-import { balanceDue, defaultDue, dueDay, estimateNo, fmtDate, linesBySite, invoiceNo, isLumpSum, jobTotal, money, paidSoFar, type Job } from "@/lib/api";
+import { balanceDue, defaultDue, dueDay, estimateNo, fmtDate, lineAmount, linesBySite, invoiceNo, isLumpSum, jobTotal, money, paidSoFar, quantityLabel, type Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
 import { formatPhone } from "@/lib/phone";
 
@@ -49,13 +49,18 @@ export function docData(kind: "estimate" | "invoice", job: Job, view: "en" | "es
     // one group per house (several sites on one invoice); a normal job is one group with site null
     groups: linesBySite(job.line_items).map((g) => ({
       site: g.site,
-      subtotal: isLumpSum(job) ? null : money(g.lines.reduce((s, i) => s + (i.amount ?? 0), 0)),
-      lines: g.lines.map((i) => ({
-        id: i.id,
-        text: es ? i.description_es || i.description : i.description,
-        // one price for the whole job → the items are the scope; the price is the total below
-        price: isLumpSum(job) ? null : i.amount === 0 ? L("Included", "Incluido") : money(i.amount ?? 0),
-      })),
+      subtotal: isLumpSum(job) ? null : money(g.lines.reduce((s, i) => s + (lineAmount(i) ?? 0), 0)),
+      lines: g.lines.map((i) => {
+        const amount = lineAmount(i);
+        return {
+          id: i.id,
+          text: es ? i.description_es || i.description : i.description,
+          // "450 ft² × $12" under the description; absent when the line is one amount
+          detail: isLumpSum(job) ? null : quantityLabel(i),
+          // one price for the whole job → the items are the scope; the price is the total below
+          price: isLumpSum(job) ? null : amount === 0 ? L("Included", "Incluido") : money(amount ?? 0),
+        };
+      }),
     })),
     priceNote: isLumpSum(job) ? (es ? job.price_note_es || job.price_note : job.price_note) || null : null,
     // partial payment: total, what came in, what's left
@@ -142,9 +147,12 @@ export function DocumentCard({
           )}
           <ul className="space-y-2 text-[15px] leading-5">
             {g.lines.map((i) => (
-              <li key={i.id} className="flex justify-between gap-4">
-                <span>{i.text}</span>
-                {i.price && <span className="font-bold">{i.price}</span>}
+              <li key={i.id} className="flex items-start justify-between gap-4">
+                <span className="min-w-0">
+                  {i.text}
+                  {i.detail && <span className="mt-0.5 block text-xs font-normal text-muted">{i.detail}</span>}
+                </span>
+                {i.price && <span className="shrink-0 font-bold tabular-nums">{i.price}</span>}
               </li>
             ))}
           </ul>

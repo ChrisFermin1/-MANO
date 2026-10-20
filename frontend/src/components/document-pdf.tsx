@@ -38,7 +38,8 @@ const s = StyleSheet.create({
   value: { fontSize: 11, marginTop: 3 },
   hr: { borderBottomWidth: 1, borderBottomColor: C.line, marginVertical: 14 },
   line: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 },
-  lineText: { fontSize: 11, flex: 1, paddingRight: 16 },
+  lineText: { fontSize: 11 },
+  lineQty: { fontSize: 9, color: C.muted, marginTop: 2 },
   linePrice: { fontSize: 11, fontWeight: 700 },
   totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 },
   total: { fontWeight: 700, fontSize: 20 },
@@ -112,7 +113,10 @@ export function DocumentPdf({
             ) : null}
             {g.lines.map((i) => (
               <View key={i.id} style={s.line} wrap={false}>
-                <Text style={s.lineText}>{i.text}</Text>
+                <View style={{ flex: 1, paddingRight: 16 }}>
+                  <Text style={s.lineText}>{i.text}</Text>
+                  {i.detail ? <Text style={s.lineQty}>{i.detail}</Text> : null}
+                </View>
                 {i.price ? <Text style={s.linePrice}>{i.price}</Text> : null}
               </View>
             ))}

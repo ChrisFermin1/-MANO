@@ -1,7 +1,7 @@
 // OJO (mock) — checks for missing info, watches the workflow, picks the next action.
 // Person 4's backend logic replaces this; keep the same return shapes.
 
-import { daysSince, isLumpSum, type Job } from "@/lib/api";
+import { daysSince, isLumpSum, lineAmount, type Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
 import { CHECKLISTS, checklistFor, type ChecklistItem } from "@/lib/checklists";
 import type { TradeId } from "@/lib/i18n";
@@ -15,8 +15,8 @@ export function validate(job: Job): MissingKey[] {
   if (!job.address?.trim() && !job.line_items.some((i) => i.site?.trim())) missing.push("address");
   const blank = (i: Job["line_items"][number]) => !i.description.trim() && !i.description_es?.trim();
   if (!job.line_items.length || job.line_items.some(blank)) missing.push("items");
-  // priced either per item, or with one total for the whole job
-  if (isLumpSum(job) ? !(job.job_total! > 0) : job.line_items.some((i) => !blank(i) && i.amount == null)) missing.push("price");
+  // priced either per item (one amount, or quantity × unit price), or with one total for the whole job
+  if (isLumpSum(job) ? !(job.job_total! > 0) : job.line_items.some((i) => !blank(i) && lineAmount(i) == null)) missing.push("price");
   // never send a customer an estimate with a line Mano couldn't put into English
   if (job.line_items.some((i) => !blank(i) && (i.translation_pending || !i.description.trim()))) missing.push("translation");
   return missing;

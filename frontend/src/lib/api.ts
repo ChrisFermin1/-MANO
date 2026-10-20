@@ -46,6 +46,11 @@ export type LineItem = {
   amount: number | null;
   price_source?: PriceSource | null;
   site?: string | null; // one invoice for several houses (a company client): the address this line is for (app only)
+  // Optional measured price (app only, until the backend has the columns): "450 ft² × $12".
+  // Both numbers set → `amount` is their product. Neither set → the line is one amount, as before.
+  quantity?: number | null;
+  unit?: string | null; // what he typed: "ft²", "hr", "gal"
+  unit_price?: number | null;
 };
 
 // An Ojo question from Gemini, for trades without a built-in checklist (same shape as Ojo's Suggestion)
@@ -136,8 +141,38 @@ const DAY = 86_400_000;
 const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
 export const uid = () => Math.random().toString(36).slice(2, 9);
 export const isLumpSum = (job: Pick<Job, "job_total">) => job.job_total != null;
-export const jobTotal = (job: Job) => (isLumpSum(job) ? job.job_total! : job.line_items.reduce((s, i) => s + (i.amount ?? 0), 0));
-export const money = (n: number) => `$${n.toLocaleString("en-US")}`;
+/** Cents, so 450 × $12.33 doesn't drift. */
+export const roundMoney = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+/** Line total: quantity × unit price when both are set; otherwise the single amount. */
+export function lineAmount(item: Pick<LineItem, "amount" | "quantity" | "unit_price">): number | null {
+  if (item.quantity != null && item.unit_price != null) return roundMoney(item.quantity * item.unit_price);
+  if (item.quantity != null || item.unit_price != null) return null; // started a measured price, not finished
+  return item.amount ?? null;
+}
+/** Keep `amount` in step with quantity × unit price. A description-only edit doesn't change the price. */
+export function priceLine(item: LineItem, patch: Partial<LineItem>): LineItem {
+  const next: LineItem = { ...item, ...patch };
+  if (next.quantity != null && next.unit_price != null) {
+    next.amount = roundMoney(next.quantity * next.unit_price);
+    if (patch.quantity !== undefined || patch.unit_price !== undefined) next.price_source = "manual";
+  } else if (next.quantity != null || next.unit_price != null) {
+    next.amount = null;
+  }
+  return next;
+}
+/** "450 ft² × $12", or null when the line is one amount. */
+export function quantityLabel(item: Pick<LineItem, "quantity" | "unit" | "unit_price">): string | null {
+  if (item.quantity == null || item.unit_price == null) return null;
+  const qty = item.quantity.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  const unit = item.unit?.trim();
+  return `${qty}${unit ? ` ${unit}` : ""} × ${money(item.unit_price)}`;
+}
+export const jobTotal = (job: Job) => (isLumpSum(job) ? job.job_total! : job.line_items.reduce((s, i) => s + (lineAmount(i) ?? 0), 0));
+export const money = (n: number) => {
+  const rounded = roundMoney(n);
+  const cents = Math.round(Math.abs(rounded) * 100) % 100 !== 0;
+  return `$${rounded.toLocaleString("en-US", { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: 2 })}`;
+};
 export const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / DAY);
 // "Maria Lopez" → "Maria". A company keeps its full name ("ATL Homeiker", not "ATL"):
 // an all-caps first word, an "&", or a business word in the name.
