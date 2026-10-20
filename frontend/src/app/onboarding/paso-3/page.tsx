@@ -4,6 +4,7 @@ import { btnPrimary } from "@/components/ui";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingHeader } from "@/components/onboarding-header";
+import { OnboardingAside } from "@/components/onboarding-aside";
 import { resetJobs } from "@/lib/api";
 import { DUE_OPTIONS, loadBusiness, saveBusiness } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
@@ -27,8 +28,9 @@ export default function ComoTePagan() {
   };
 
   return (
-    <main className="bg-mano-light text-charcoal">
-      <div className="mx-auto max-w-[430px] px-[25px] pb-[calc(116px+max(20px,env(safe-area-inset-bottom)))] pt-[calc(16px+env(safe-area-inset-top))]">
+    <main className="bg-mano-light text-charcoal lg:pl-[40%]">
+      <OnboardingAside step={3} />
+      <div className="mx-auto max-w-[430px] px-[25px] pb-[calc(116px+max(20px,env(safe-area-inset-bottom)))] pt-[calc(16px+env(safe-area-inset-top))] lg:max-w-[600px] lg:px-12 lg:pt-14 lg:pb-0">
         <OnboardingHeader step={3} total={3} backHref="/onboarding/paso-2" />
 
         <h1 className="mt-6 font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.payInfo}</h1>
@@ -68,8 +70,9 @@ export default function ComoTePagan() {
       </div>
 
       {/* pinned to the bottom of the screen (fixed, not height-based), same spot as the other steps */}
-      <div className="fixed inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ivory from-75% to-ivory/0 pt-8">
-        <div className="mx-auto max-w-[430px] px-[25px] pb-[max(20px,env(safe-area-inset-bottom))]">
+      {/* desktop: right after the form, not pinned to the bottom of the screen */}
+      <div className="fixed inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ivory from-75% to-ivory/0 pt-8 lg:static lg:bg-none lg:pt-8">
+        <div className="mx-auto max-w-[430px] px-[25px] pb-[max(20px,env(safe-area-inset-bottom))] lg:max-w-[600px] lg:px-12 lg:pb-10">
           <button type="button" onClick={finish} className={btnPrimary}>
             {t.finish} →
           </button>

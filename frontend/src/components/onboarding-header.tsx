@@ -12,7 +12,7 @@ export function OnboardingHeader({ step, total, backHref }: { step: number; tota
       <Link href={backHref} aria-label={t.back} className="-ml-1 w-fit p-1">
         <ArrowLeft className="size-7" strokeWidth={1.75} />
       </Link>
-      <div className="flex gap-2" aria-hidden>
+      <div className="flex gap-2 lg:invisible" aria-hidden>
         {Array.from({ length: total }, (_, i) => (
           <span key={i} className={`h-[3px] w-[59px] ${i < step ? "bg-forest" : "bg-track"}`} />
         ))}

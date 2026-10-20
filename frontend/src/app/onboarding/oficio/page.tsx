@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Eye } from "lucide-react";
 import { OnboardingHeader } from "@/components/onboarding-header";
+import { OnboardingAside } from "@/components/onboarding-aside";
 import { loadBusiness, saveBusiness } from "@/lib/business";
 import { useLang, type TradeId } from "@/lib/i18n";
 import { TRADES } from "@/lib/trades";
@@ -33,14 +34,15 @@ export default function TuOficio() {
   };
 
   return (
-    <main className="bg-mano-light text-charcoal">
-      <div className="mx-auto max-w-[430px] px-[25px] pb-[calc(116px+max(20px,env(safe-area-inset-bottom)))] pt-[calc(16px+env(safe-area-inset-top))]">
+    <main className="bg-mano-light text-charcoal lg:pl-[40%]">
+      <OnboardingAside step={1} />
+      <div className="mx-auto max-w-[430px] px-[25px] pb-[calc(116px+max(20px,env(safe-area-inset-bottom)))] pt-[calc(16px+env(safe-area-inset-top))] lg:max-w-[600px] lg:px-12 lg:pt-14 lg:pb-0">
         <OnboardingHeader step={1} total={3} backHref="/" />
 
         <h1 className="mt-6 font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.tradeTitle}</h1>
         <p className="mt-2 text-base leading-5">{t.tradeBody}</p>
 
-        <div className="mt-5 grid grid-cols-2 gap-x-[9px] gap-y-[13px]">
+        <div className="mt-5 grid grid-cols-2 gap-x-[9px] gap-y-[13px] lg:grid-cols-3 lg:gap-3">
           {TRADES.map(({ id, icon: Icon }) => {
             const on = selected.includes(id);
             return (
@@ -88,8 +90,9 @@ export default function TuOficio() {
 
         {/* pinned to the bottom of the screen (fixed, not height-based): "Siguiente" is always on screen, the trades scroll behind it */}
         </div>
-      <div className="fixed inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ivory from-75% to-ivory/0 pt-8">
-        <div className="mx-auto max-w-[430px] px-[25px] pb-[max(20px,env(safe-area-inset-bottom))]">
+      {/* desktop: right after the form, not pinned to the bottom of the screen */}
+      <div className="fixed inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ivory from-75% to-ivory/0 pt-8 lg:static lg:bg-none lg:pt-8">
+        <div className="mx-auto max-w-[430px] px-[25px] pb-[max(20px,env(safe-area-inset-bottom))] lg:max-w-[600px] lg:px-12 lg:pb-10">
           <button
             type="button"
             onClick={next}

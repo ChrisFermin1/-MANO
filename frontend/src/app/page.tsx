@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { btnPrimary } from "@/components/ui";
-import { Eye, Mic } from "lucide-react";
+import { Camera, Eye, FileText, Mic, Wallet } from "lucide-react";
 import { LangToggle } from "@/components/lang-toggle";
 import { resetJobs } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
@@ -15,9 +15,9 @@ const ESTIMATE = [
   { label: "Wall crack repair", amount: "$180" },
 ];
 
-function Wave({ bars, delay = 0, side }: { bars: number[]; delay?: number; side: "left" | "right" }) {
+function Wave({ bars, delay = 0, side, size = "h-[28px] tiny:h-6" }: { bars: number[]; delay?: number; side: "left" | "right"; size?: string }) {
   return (
-    <div className={`flex flex-1 items-center gap-[5px] h-[28px] tiny:h-6 ${side === "left" ? "justify-end" : "justify-start"}`}>
+    <div className={`flex flex-1 items-center gap-[5px] ${size} ${side === "left" ? "justify-end" : "justify-start"}`}>
       {bars.map((h, i) => (
         <span
           key={i}
@@ -30,6 +30,129 @@ function Wave({ bars, delay = 0, side }: { bars: number[]; delay?: number; side:
 }
 
 export default function Welcome() {
+  return (
+    <>
+      <div className="lg:hidden">
+        <WelcomePhone />
+      </div>
+      <div className="hidden lg:block">
+        <WelcomeDesktop />
+      </div>
+    </>
+  );
+}
+
+/* ───────── Desktop: a real landing page (top bar, hero split in two, three benefits) ───────── */
+
+function WelcomeDesktop() {
+  const { t } = useLang();
+  const benefits = [
+    { icon: Camera, title: t.benefit1Title, body: t.benefit1Body },
+    { icon: FileText, title: t.benefit2Title, body: t.benefit2Body },
+    { icon: Wallet, title: t.benefit3Title, body: t.benefit3Body },
+  ];
+  return (
+    <div className="flex min-h-screen flex-col bg-mano-light text-charcoal">
+      <header className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-12 py-7">
+        <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest">mano</span>
+        <nav className="flex items-center gap-6">
+          <LangToggle light />
+          <Link href="/inicio" onClick={() => resetJobs({ demo: true })} className="text-[15px] font-semibold text-forest hover:underline">
+            {t.haveAccount}
+          </Link>
+          <Link
+            href="/onboarding/oficio"
+            className="flex h-11 items-center rounded-[12px] bg-forest px-5 text-[15px] font-bold text-white transition hover:bg-forest/90"
+          >
+            {t.start} →
+          </Link>
+        </nav>
+      </header>
+
+      <main className="mx-auto grid w-full max-w-[1200px] flex-1 grid-cols-[1.05fr_1fr] items-center gap-16 px-12 pb-20 pt-6">
+        <section>
+          <p className="font-mono text-xs uppercase tracking-[2px] text-forest/70">{t.heroEyebrow}</p>
+          <h1 className="mt-5 font-serif text-[72px] leading-[70px] tracking-[-1.8px]">
+            {t.headline1}
+            <br />
+            <span className="text-forest">{t.headline2}</span>
+          </h1>
+          <p className="mt-6 max-w-[500px] text-lg leading-7 text-charcoal/70">{t.welcomeBody}</p>
+          <div className="mt-9 flex items-center gap-4">
+            <Link
+              href="/onboarding/oficio"
+              className="flex h-14 items-center rounded-[16px] bg-forest px-8 text-base font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition hover:bg-forest/90"
+            >
+              {t.start} →
+            </Link>
+            <Link
+              href="/inicio"
+              onClick={() => resetJobs({ demo: true })}
+              className="flex h-14 items-center rounded-[16px] border border-forest/25 bg-white/60 px-6 text-base font-semibold text-forest transition hover:bg-white"
+            >
+              {t.seeDemo}
+            </Link>
+          </div>
+          <ul className="mt-14 grid grid-cols-3 gap-6 border-t border-black/10 pt-8">
+            {benefits.map((b) => (
+              <li key={b.title}>
+                <b.icon className="size-6 text-forest" strokeWidth={1.75} />
+                <p className="mt-3 text-[15px] font-bold">{b.title}</p>
+                <p className="mt-1 text-sm leading-5 text-charcoal/65">{b.body}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* the demo, big: what he says → the English estimate → Ojo */}
+        <section className="relative rounded-[32px] bg-white/55 p-10 ring-1 ring-black/5" aria-hidden>
+          <div className="flex items-center justify-center gap-5">
+            <Wave bars={[...WAVE].reverse()} side="left" size="h-[40px]" />
+            <div className="glass flex size-[88px] shrink-0 items-center justify-center rounded-full">
+              <div className="glow-sage flex size-[56px] items-center justify-center rounded-full bg-forest">
+                <Mic className="size-7 text-white" strokeWidth={2} />
+              </div>
+            </div>
+            <Wave bars={WAVE} delay={0.4} side="right" size="h-[40px]" />
+          </div>
+          <p className="mt-5 text-center text-lg font-medium text-charcoal/70">{t.welcomeQuote}</p>
+          <div className="glass-paper mx-auto mt-7 max-w-[420px] rounded-[22px] px-6 pb-5 pt-6">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-xs font-medium uppercase tracking-[1.44px]">Estimate Maria Lopez</span>
+              <span className="rounded-[5px] bg-sage px-3 py-1 font-mono text-xs uppercase text-forest">English</span>
+            </div>
+            <hr className="mt-4 border-black/10" />
+            <ul className="mt-4 space-y-2 text-[15px]">
+              {ESTIMATE.map((row) => (
+                <li key={row.label} className="flex justify-between">
+                  <span>{row.label}</span>
+                  <span className="font-bold">{row.amount}</span>
+                </li>
+              ))}
+            </ul>
+            <hr className="mt-5 border-black/10" />
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-sm">Total</span>
+              <span className="text-2xl font-bold">$1,420</span>
+            </div>
+          </div>
+          <div className="mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border border-white/60 bg-peach/90 px-4 py-2 text-sm">
+            <Eye className="size-5 shrink-0 text-ojo" strokeWidth={1.75} />
+            <span>
+              <span className="font-bold">Ojo:</span> {t.ojoHint}
+            </span>
+          </div>
+        </section>
+      </main>
+
+      <footer className="mx-auto w-full max-w-[1200px] px-12 pb-8 text-sm text-muted">{t.footerLine}</footer>
+    </div>
+  );
+}
+
+/* ───────── Phone: one screen, buttons pinned to the bottom ───────── */
+
+function WelcomePhone() {
   const { t } = useLang();
 
   return (
