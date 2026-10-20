@@ -51,7 +51,7 @@ export default function ComoTePagan() {
           </label>
           <div>
             <span className="mb-2 block text-sm font-semibold">{t.dueTerms}</span>
-            <div role="radiogroup" aria-label={t.dueTerms} className="grid grid-cols-4 gap-1.5">
+            <div role="radiogroup" aria-label={t.dueTerms} className="grid grid-cols-3 gap-1.5">
               {DUE_OPTIONS.map((d) => (
                 <button
                   key={d}

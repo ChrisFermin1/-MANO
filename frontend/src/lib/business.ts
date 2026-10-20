@@ -45,7 +45,8 @@ export const DEMO_BUSINESS: Business = {
 /** "Carlos Méndez" → "Carlos", for friendly messages ("this is Carlos from…"). */
 export const firstNameOf = (full: string | null | undefined) => (full ?? "").trim().split(/\s+/)[0] ?? "";
 
-export const DUE_OPTIONS = [0, 7, 15, 30] as const;
+// Same choices as Wave (what contractors switching from it already use); any other date is set per invoice
+export const DUE_OPTIONS = [0, 15, 30, 45, 60, 90] as const;
 
 export function loadBusiness(): Business | null {
   try {

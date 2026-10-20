@@ -180,7 +180,7 @@ export default function Negocio() {
         </label>
         <div>
           <span className="mb-1.5 block text-sm text-charcoal/70">{t.dueTerms}</span>
-          <div role="radiogroup" aria-label={t.dueTerms} className="grid grid-cols-4 gap-1.5">
+          <div role="radiogroup" aria-label={t.dueTerms} className="grid grid-cols-3 gap-1.5">
             {DUE_OPTIONS.map((d) => {
               const on = (biz.invoiceDueDays ?? 15) === d;
               return (
