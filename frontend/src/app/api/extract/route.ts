@@ -25,8 +25,9 @@ const responseSchema: Schema = {
           description: { type: SchemaType.STRING },
           description_es: { type: SchemaType.STRING, nullable: true },
           amount: { type: SchemaType.NUMBER, nullable: true },
+          site: { type: SchemaType.STRING, nullable: true },
         },
-        required: ["description", "description_es", "amount"] as string[],
+        required: ["description", "description_es", "amount", "site"] as string[],
       },
     },
   },
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
       },
     }); // speed: see generateWithRetry (2nd request after 4s, stops at 20s); then the built-in extractor takes over
 
-    const result = await generateWithRetry(model, `You are Mano, an assistant that extracts residential service job details. The input can be English, Spanish, or a mixture. Return exactly the requested JSON schema. Never make up a customer name, street address, price, or work detail. customer_name is the client: a person OR a company (a property manager, builder, realtor, e.g. "ATL Homes"). It can appear anywhere in the text, including alone on the first or last line with no word like "para" or "for". Copy names exactly as written, without correcting their spelling. If a word in a company name is clearly a misspelled common English word (e.g. "ATL Homeiker" -> "ATL Homemaker", "Roofin Pros" -> "Roofing Pros"), put the corrected full name in customer_name_suggested; otherwise null. Never "correct" people's first or last names. Never use a title like "Estimado de trabajo" or a greeting as a name. address: copy any street address as written, even if short or misspelled (e.g. "636 Wite"). Use null for customer_name and address if they are not in the text. Keep each distinct task, extra, or material cost as its own line item, with its price only when explicitly stated; never suggest prices. Materials with a price (e.g. "Material de piso 1550$") are line items too. A line labeled Total or Subtotal is never a line item. Use job_total ONLY when the speaker gives one price for the whole job and NO item has its own price (e.g. a list of tasks, then "Total 1400$"): then put it in job_total and leave every item amount null. If any item has its own price, job_total is null and every item keeps its own price, even when the text also has one or more Total lines. note_totals: every amount written as a Total or Subtotal in the text, in order (e.g. [5400, 2308]); [] if there are none. price_note is a short English note about what the price covers ONLY if the speaker said so (e.g. "Labor only", "Materials included"); price_note_es is the same in Spanish; both null if not said. The speaker may misspell trade words or mix English into Spanish (coquin = caulk, stein = stain, leibor = labor); interpret them. Set description to a concise, accurate English translation suitable for a customer estimate, and description_es to a concise Spanish version of the same work (use null only if the work itself cannot be understood). service is a short trade/project label such as Interior Painting or Drywall Repair; if no work is described use an empty string. service_es is the same label in natural Spanish, as a Latino contractor in the US would say it (e.g. Pintura interior, Instalación de ventilador de techo); null if service is empty. Do not include a person’s name or address as work. ${otherTrade ? `The business's other trade is ${otherTrade}.` : ""}\n\nJob description:\n${description}`);
+    const result = await generateWithRetry(model, `You are Mano, an assistant that extracts residential service job details. The input can be English, Spanish, or a mixture. Return exactly the requested JSON schema. Never make up a customer name, street address, price, or work detail. customer_name is the client: a person OR a company (a property manager, builder, realtor, e.g. "ATL Homes"). It can appear anywhere in the text, including alone on the first or last line with no word like "para" or "for". Copy names exactly as written, without correcting their spelling. If a word in a company name is clearly a misspelled common English word (e.g. "ATL Homeiker" -> "ATL Homemaker", "Roofin Pros" -> "Roofing Pros"), put the corrected full name in customer_name_suggested; otherwise null. Never "correct" people's first or last names. Never use a title like "Estimado de trabajo" or a greeting as a name. address: copy any street address as written, even if short or misspelled (e.g. "636 Wite"). Use null for customer_name and address if they are not in the text. Several sites: when the text has MORE THAN ONE street address (a company client with work at several houses, e.g. "700 wilson" then its work, then "2791 midway" then its work), each address starts a site: set site on every line item listed under it to that address exactly as written, and set address to null. With one street address or none, site is null on every line item and the address goes in address. Keep each distinct task, extra, or material cost as its own line item, with its price only when explicitly stated; never suggest prices. Materials with a price (e.g. "Material de piso 1550$") are line items too. A line labeled Total or Subtotal is never a line item. Use job_total ONLY when the speaker gives one price for the whole job and NO item has its own price (e.g. a list of tasks, then "Total 1400$"): then put it in job_total and leave every item amount null. If any item has its own price, job_total is null and every item keeps its own price, even when the text also has one or more Total lines. note_totals: every amount written as a Total or Subtotal in the text, in order (e.g. [5400, 2308]); [] if there are none. price_note is a short English note about what the price covers ONLY if the speaker said so (e.g. "Labor only", "Materials included"); price_note_es is the same in Spanish; both null if not said. The speaker may misspell trade words or mix English into Spanish (coquin = caulk, stein = stain, leibor = labor, storich = storage); interpret them. Set description to a concise, accurate English translation suitable for a customer estimate, and description_es to a concise Spanish version of the same work (use null only if the work itself cannot be understood). service is a short trade/project label such as Interior Painting or Drywall Repair; if no work is described use an empty string. service_es is the same label in natural Spanish, as a Latino contractor in the US would say it (e.g. Pintura interior, Instalación de ventilador de techo); null if service is empty. Do not include a person’s name or address as work. ${otherTrade ? `The business's other trade is ${otherTrade}.` : ""}\n\nJob description:\n${description}`);
 
     const data = JSON.parse(result.response.text()) as {
       customer_name: string | null;
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       note_totals: number[] | null;
       price_note: string | null;
       price_note_es: string | null;
-      line_items: { description: string; description_es: string | null; amount: number | null }[];
+      line_items: { description: string; description_es: string | null; amount: number | null; site?: string | null }[];
     };
 
     if (!Array.isArray(data.line_items) || typeof data.service !== "string") {
@@ -107,8 +108,15 @@ export async function POST(request: NextRequest) {
           description: item.description.trim(),
           description_es: typeof item.description_es === "string" && item.description_es.trim() ? item.description_es.trim() : null,
           amount: typeof item.amount === "number" && Number.isFinite(item.amount) && item.amount >= 0 ? item.amount : null,
+          site: typeof item.site === "string" && item.site.trim() ? item.site.trim() : null,
         })),
     };
+    // only ONE site means a normal job: that's just the address
+    const sites = [...new Set(normalized.line_items.map((i) => i.site).filter(Boolean))];
+    if (sites.length < 2) {
+      normalized.address ??= sites[0] ?? null;
+      normalized.line_items = normalized.line_items.map((i) => ({ ...i, site: null }));
+    }
 
     return NextResponse.json(normalized);
   } catch (error) {

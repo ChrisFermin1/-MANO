@@ -25,7 +25,7 @@ function jobText(job: Job): string {
       job.service,
       job.service_es,
       job.description,
-      ...job.line_items.flatMap((i) => [i.description, i.description_es]),
+      ...job.line_items.flatMap((i) => [i.description, i.description_es, i.site]),
       ...docs,
     ]
       .filter(Boolean)

@@ -11,7 +11,8 @@ export type MissingKey = "customer" | "address" | "price" | "items" | "translati
 export function validate(job: Job): MissingKey[] {
   const missing: MissingKey[] = [];
   if (!job.customer_name?.trim()) missing.push("customer");
-  if (!job.address?.trim()) missing.push("address");
+  // several houses: each line has its own address, so the job doesn't need one
+  if (!job.address?.trim() && !job.line_items.some((i) => i.site?.trim())) missing.push("address");
   const blank = (i: Job["line_items"][number]) => !i.description.trim() && !i.description_es?.trim();
   if (!job.line_items.length || job.line_items.some(blank)) missing.push("items");
   // priced either per item, or with one total for the whole job

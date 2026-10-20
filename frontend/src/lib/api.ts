@@ -44,6 +44,7 @@ export type LineItem = {
   translation_pending?: boolean;
   amount: number | null;
   price_source?: PriceSource | null;
+  site?: string | null; // one invoice for several houses (a company client): the address this line is for (app only)
 };
 
 // An Ojo question from Gemini, for trades without a built-in checklist (same shape as Ojo's Suggestion)
@@ -496,6 +497,20 @@ export async function markSent(id: number): Promise<Job> {
 // POST /jobs/:id/invoice/send
 // Invoice without an estimate: a complete draft (e.g. small/already-done jobs) can be invoiced directly.
 // Skips QUOTE_SENT…COMPLETED — the backend must allow READY_FOR_QUOTE → PAYMENT_PENDING (see handoff §3).
+/** The houses on a job with several sites, in order ("700 Wilson", "2791 Midway"); [] for a normal job. */
+export const jobSites = (j: Job) => [...new Set(j.line_items.map((i) => i.site?.trim()).filter((s): s is string => !!s))];
+/** Lines grouped by site, in order. A normal job: one group with site null. */
+export function linesBySite<T extends { site?: string | null }>(lines: T[]): { site: string | null; lines: T[] }[] {
+  const groups: { site: string | null; lines: T[] }[] = [];
+  for (const l of lines) {
+    const site = l.site?.trim() || null;
+    const g = groups.find((x) => x.site === site);
+    if (g) g.lines.push(l);
+    else groups.push({ site, lines: [l] });
+  }
+  return groups;
+}
+
 /** An invoice job: Carlos picked "Factura" on New job, or he invoiced it directly ("Facturar sin estimado"). */
 export const isInvoiceJob = (j: Job) => j.doc_intent === "invoice" || !!j.invoice_number;
 export const canInvoiceDirectly = (j: Job) => canDelete(j) && validate(j).length === 0;

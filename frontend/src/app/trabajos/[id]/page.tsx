@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Archive, CalendarDays, Check, Database, Ellipsis, Eye, PartyPopper, Pencil, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X } from "lucide-react";
+import { Archive, CalendarDays, Check, Database, Ellipsis, Eye, PartyPopper, Pencil, Phone, FileText, MessageCircle, Plus, Quote, Receipt, RotateCcw, Trash2, X, MapPin } from "lucide-react";
 import { AutoTextarea, DocStateBadge, PageHeader, Screen, Sheet, StatusBadge, Title, btnDanger, btnGhost, btnPrimary, btnSage, btnSecondary } from "@/components/ui";
 import {
   CANCEL_REASONS,
@@ -41,6 +41,8 @@ import {
   type LineItem,
   daysSince,
   isInvoiceJob,
+  jobSites,
+  linesBySite,
 } from "@/lib/api";
 import { ShareEstimate } from "@/components/share-estimate";
 import { loadBusiness, rememberNameFix, saveBusiness, type Business } from "@/lib/business";
@@ -81,6 +83,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   const { t, lang } = useLang();
   const router = useRouter();
   const missing = validate(job);
+  const sites = jobSites(job); // several houses on one job (company client)
   const [biz, setBiz] = useState<Business | null>(null);
   useEffect(() => setBiz(loadBusiness()), []);
   // Trades without a built-in checklist: ask Gemini once for this job, then keep the answer on the job
@@ -223,7 +226,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           </div>
         )}
         <label className="block">
-          <FieldLabel text={t.address} missingTag={missing.includes("address") ? t.missingTag : null} />
+          <FieldLabel text={sites.length ? t.billingAddress : t.address} missingTag={missing.includes("address") ? t.missingTag : null} />
           <input
             id="f-address"
             className={field(missing.includes("address"))}
@@ -252,6 +255,12 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
       {/* Line items */}
       <section className="mt-6">
+        {/* pick one of the job's houses when typing a line's site */}
+        <datalist id="job-sites">
+          {sites.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
         <FieldLabel text={t.work} missingTag={missing.includes("price") || missing.includes("items") ? t.missingTag : null} />
         <div className="rounded-[20px] glass p-2">
           {job.line_items.map((item) => (
@@ -279,6 +288,20 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                   placeholder={t.itemPlaceholder}
                   aria-label={t.itemPlaceholder}
                 />
+                {sites.length > 0 && (
+                  // several houses: which one this line is for (empty = no site)
+                  <label className="mt-1 flex items-center gap-1.5 rounded-[8px] px-2 py-1 text-xs text-muted focus-within:bg-ivory">
+                    <MapPin className="size-3 shrink-0" />
+                    <input
+                      className="min-w-0 flex-1 bg-transparent outline-none"
+                      value={item.site ?? ""}
+                      onChange={(e) => setItem(item.id, { site: e.target.value || null })}
+                      placeholder={t.sitePlaceholder}
+                      aria-label={t.sitePlaceholder}
+                      list="job-sites"
+                    />
+                  </label>
+                )}
                 {spanish && (item.description_es ?? "").trim() !== "" && (
                   <EnglishPreview
                     item={item}
@@ -666,14 +689,23 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
             <CalendarDays className="size-4" strokeWidth={2} /> {t.scheduledFor(fmtDay(job.scheduled_for, lang))}
           </p>
         )}
-        <ul className="mt-3 space-y-1.5 text-[15px]">
-          {job.line_items.map((i) => (
-            <li key={i.id} className="flex justify-between gap-4">
-              <span>{lang === "es" ? (i.description_es ?? i.description) : i.description}</span>
-              {!isLumpSum(job) && <span className="font-bold">{i.amount === 0 ? t.included : money(i.amount ?? 0)}</span>}
-            </li>
-          ))}
-        </ul>
+        {linesBySite(job.line_items).map((g) => (
+          <div key={g.site ?? "-"} className="mt-3">
+            {g.site && (
+              <p className="mb-1 flex items-center gap-1 font-mono text-[11px] uppercase tracking-[1px] text-muted">
+                <MapPin className="size-3" /> {g.site}
+              </p>
+            )}
+            <ul className="space-y-1.5 text-[15px]">
+              {g.lines.map((i) => (
+                <li key={i.id} className="flex justify-between gap-4">
+                  <span>{lang === "es" ? (i.description_es ?? i.description) : i.description}</span>
+                  {!isLumpSum(job) && <span className="font-bold">{i.amount === 0 ? t.included : money(i.amount ?? 0)}</span>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
         {isLumpSum(job) && (lang === "es" ? job.price_note_es || job.price_note : job.price_note) && (
           <p className="mt-3 text-sm text-muted">{lang === "es" ? job.price_note_es || job.price_note : job.price_note}</p>
         )}

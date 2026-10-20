@@ -81,10 +81,20 @@ export function DocumentPdf({ kind, job, biz, view = "en" }: { kind: "estimate" 
         </View>
 
         <View style={s.hr} />
-        {d.lines.map((i) => (
-          <View key={i.id} style={s.line} wrap={false}>
-            <Text style={s.lineText}>{i.text}</Text>
-            {i.price ? <Text style={s.linePrice}>{i.price}</Text> : null}
+        {d.groups.map((g) => (
+          <View key={g.site ?? "-"} style={g.site ? { marginTop: 8 } : undefined}>
+            {g.site ? (
+              <View style={[s.row, { marginBottom: 4 }]} wrap={false}>
+                <Text style={s.label}>{g.site}</Text>
+                {g.subtotal ? <Text style={s.label}>{g.subtotal}</Text> : null}
+              </View>
+            ) : null}
+            {g.lines.map((i) => (
+              <View key={i.id} style={s.line} wrap={false}>
+                <Text style={s.lineText}>{i.text}</Text>
+                {i.price ? <Text style={s.linePrice}>{i.price}</Text> : null}
+              </View>
+            ))}
           </View>
         ))}
         <View style={s.hr} />

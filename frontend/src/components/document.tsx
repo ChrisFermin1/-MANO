@@ -1,4 +1,4 @@
-import { balanceDue, defaultDue, dueDay, estimateNo, fmtDate, invoiceNo, isLumpSum, jobTotal, money, paidSoFar, type Job } from "@/lib/api";
+import { balanceDue, defaultDue, dueDay, estimateNo, fmtDate, linesBySite, invoiceNo, isLumpSum, jobTotal, money, paidSoFar, type Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
 
 // Estimate / invoice document. The CUSTOMER always gets `view="en"`.
@@ -44,11 +44,16 @@ export function docData(kind: "estimate" | "invoice", job: Job, view: "en" | "es
     date: fmtDate(issued, view),
     untilLabel: isInvoice ? L("Due date", "Vence") : L("Valid until", "Válido hasta"),
     until: fmtDate(isInvoice ? due : validUntil, view),
-    lines: job.line_items.map((i) => ({
-      id: i.id,
-      text: es ? i.description_es || i.description : i.description,
-      // one price for the whole job → the items are the scope; the price is the total below
-      price: isLumpSum(job) ? null : i.amount === 0 ? L("Included", "Incluido") : money(i.amount ?? 0),
+    // one group per house (several sites on one invoice); a normal job is one group with site null
+    groups: linesBySite(job.line_items).map((g) => ({
+      site: g.site,
+      subtotal: isLumpSum(job) ? null : money(g.lines.reduce((s, i) => s + (i.amount ?? 0), 0)),
+      lines: g.lines.map((i) => ({
+        id: i.id,
+        text: es ? i.description_es || i.description : i.description,
+        // one price for the whole job → the items are the scope; the price is the total below
+        price: isLumpSum(job) ? null : i.amount === 0 ? L("Included", "Incluido") : money(i.amount ?? 0),
+      })),
     })),
     priceNote: isLumpSum(job) ? (es ? job.price_note_es || job.price_note : job.price_note) || null : null,
     // partial payment: total, what came in, what's left
@@ -121,14 +126,25 @@ export function DocumentCard({
       </div>
 
       <hr className="mt-5 border-black/10" />
-      <ul className="mt-3 space-y-2 text-[15px] leading-5">
-        {d.lines.map((i) => (
-          <li key={i.id} className="flex justify-between gap-4">
-            <span>{i.text}</span>
-            {i.price && <span className="font-bold">{i.price}</span>}
-          </li>
-        ))}
-      </ul>
+      {d.groups.map((g) => (
+        <div key={g.site ?? "-"} className={g.site ? "mt-4 first:mt-3" : "mt-3"}>
+          {g.site && (
+            // several houses: which one these lines are for, and what that house comes to
+            <p className="mb-1.5 flex justify-between gap-3 font-mono text-[11px] uppercase tracking-[1px] text-muted">
+              <span>{g.site}</span>
+              {g.subtotal && <span>{g.subtotal}</span>}
+            </p>
+          )}
+          <ul className="space-y-2 text-[15px] leading-5">
+            {g.lines.map((i) => (
+              <li key={i.id} className="flex justify-between gap-4">
+                <span>{i.text}</span>
+                {i.price && <span className="font-bold">{i.price}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
       <hr className="mt-5 border-black/10" />
       {d.priceNote && <p className="mt-3 text-sm text-muted">{d.priceNote}</p>}
       {d.partial ? (
