@@ -200,6 +200,7 @@ Update this table (status + commit) after each task.
 | PDF preview removed (the page already shows the document): "Descargar PDF" downloads; the send box's "PDF" opens the share sheet | `04daf45` | — |
 | Onboarding steps 1 and 2: Siguiente / Terminar pinned to the bottom, tighter spacing on phone screens (the button was below the screen in Safari) | `c719fc6` | — |
 | New job: "Subir foto" next to "Escanear una nota" (photo library, screenshots); no glow on the onboarding trade check | `ce62629`, `43d5b27` | — |
+| Onboarding asks what invoices need: first + last name, required phone, business email and address (address = where checks go), and a 3rd step "Cómo te pagan" (payment info + due terms). Invoices show email + address | `0dffe42` | Josh: business `email`, `address`; `owner_name` holds first + last |
 
 
 ## After this list
