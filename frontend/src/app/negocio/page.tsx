@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Eye, LogOut, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Check, Eye, LogOut, Sparkles, Trash2 } from "lucide-react";
 import { LangToggle } from "@/components/lang-toggle";
 import { PageHeader, Screen, Sheet, Title, btnDanger, btnPrimary, btnSecondary, input } from "@/components/ui";
 import { highestInvoiceNumber, invoiceNo, peekInvoiceNumber } from "@/lib/api";
 import { deleteAccount, getSession, signOut, type Session } from "@/lib/auth";
+import { getPlan, onPlanChange, type PlanInfo } from "@/lib/plan";
 import { DEMO_BUSINESS, DUE_OPTIONS, loadBusiness, saveBusiness, type Business } from "@/lib/business";
 import { checklistItemByKey } from "@/lib/checklists";
 import { useLang, type TradeId } from "@/lib/i18n";
@@ -283,8 +285,31 @@ export default function Negocio() {
         </button>
       </div>
 
+      <YourPlan />
       <Account />
     </Screen>
+  );
+}
+
+// Which plan he's on, and the way to the Planes page
+function YourPlan() {
+  const { t } = useLang();
+  const [plan, setPlan] = useState<PlanInfo | null>(null);
+  useEffect(() => {
+    setPlan(getPlan());
+    return onPlanChange(() => setPlan(getPlan()));
+  }, []);
+  if (!plan) return null;
+  return (
+    <section className="mt-10 border-t border-black/10 pt-6">
+      <h2 className="text-sm font-semibold">{t.currentPlan}</h2>
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <p className="text-base font-semibold">{t.yourPlanLine(t.planName[plan.id])}</p>
+        <Link href="/planes" className="flex items-center gap-1 text-sm font-bold text-forest hover:underline">
+          <Sparkles className="size-4" strokeWidth={2.25} /> {t.seePlans}
+        </Link>
+      </div>
+    </section>
   );
 }
 
@@ -306,7 +331,7 @@ function Account() {
           : `${session.method === "google" ? "Google" : "Apple"}${session.email ? ` · ${session.email}` : ""}`;
 
   return (
-    <section className="mt-10 border-t border-black/10 pt-6">
+    <section className="mt-8 border-t border-black/10 pt-6">
       <h2 className="text-sm font-semibold">{t.account}</h2>
       <p className="mt-1 text-sm leading-5 text-charcoal/70">
         {t.signedInWith} <span className="font-semibold text-charcoal">{via}</span>

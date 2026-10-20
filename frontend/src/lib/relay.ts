@@ -2,11 +2,13 @@
 // GET/POST /public/estimates/:token — the shapes match docs/BACKEND_HANDOFF.md §6.
 import type { Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
+import { publishFiles } from "@/lib/attachments";
 
 export type RelayEntry = { job: Job; biz: Partial<Business>; approved_at: string | null; approved_by: string | null };
 
 export async function publishEstimate(job: Job, biz: Partial<Business> | null) {
   if (!job.public_token) return;
+  void publishFiles(job.id, job.public_token); // its photos and files, separately (they're big)
   try {
     await fetch("/api/demo/estimates", {
       method: "POST",

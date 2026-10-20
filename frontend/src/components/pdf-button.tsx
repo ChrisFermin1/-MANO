@@ -5,13 +5,16 @@ import { Download, Loader2 } from "lucide-react";
 import type { Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
 import { pdfName } from "@/components/document";
+import { publicFiles, type PublicAttachment } from "@/lib/attachments";
 
 type Kind = "estimate" | "invoice";
 
 /** Makes the PDF on the phone (no server). The PDF library is big: it loads only now. */
-async function makePdf(kind: Kind, job: Job, biz: Business, view: "en" | "es") {
+async function makePdf(kind: Kind, job: Job, biz: Business, view: "en" | "es", given?: PublicAttachment[]) {
+  // the job's photos go on extra pages (the contractor's phone reads them here; the client's link passes them in)
+  const files = given ?? (await publicFiles(job.id));
   const [{ pdf }, { DocumentPdf }] = await Promise.all([import("@react-pdf/renderer"), import("@/components/document-pdf")]);
-  const blob = await pdf(<DocumentPdf kind={kind} job={job} biz={biz} view={view} />).toBlob();
+  const blob = await pdf(<DocumentPdf kind={kind} job={job} biz={biz} view={view} files={files} />).toBlob();
   return new File([blob], pdfName(kind, job), { type: "application/pdf" });
 }
 
@@ -40,6 +43,7 @@ export function PdfButton({
   errorLabel,
   className,
   compact = false,
+  photos,
   onDone,
 }: {
   kind: Kind;
@@ -52,6 +56,7 @@ export function PdfButton({
   errorLabel: string;
   className: string;
   compact?: boolean; // small text link (the send box's "Copiar · QR · PDF" row)
+  photos?: PublicAttachment[]; // already loaded (the client's link); otherwise read from this phone
   onDone?: () => void; // shared or downloaded: counts as sending it
 }) {
   const [busy, setBusy] = useState(false);
@@ -61,7 +66,7 @@ export function PdfButton({
     setBusy(true);
     setFailed(false);
     try {
-      const file = await makePdf(kind, job, biz, view);
+      const file = await makePdf(kind, job, biz, view, photos);
       const phone = window.matchMedia("(pointer: coarse)").matches;
       if (share && phone && navigator.canShare?.({ files: [file] })) {
         try {

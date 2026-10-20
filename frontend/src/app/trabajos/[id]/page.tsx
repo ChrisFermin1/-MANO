@@ -45,6 +45,7 @@ import {
   linesBySite,
 } from "@/lib/api";
 import { ShareEstimate } from "@/components/share-estimate";
+import { JobFiles } from "@/components/job-files";
 import { DocumentCard } from "@/components/document";
 import { DEMO_BUSINESS, loadBusiness, rememberNameFix, saveBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
@@ -570,6 +571,9 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </section>
       )}
 
+      {/* Photos & files: the client sees them on the estimate / invoice (unless "Solo para mí") */}
+      <JobFiles job={job} />
+
       {/* Original words */}
       {job.description && (
         <section className="mt-6 flex gap-2 text-sm italic text-charcoal/60">
@@ -826,6 +830,9 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           {t.paidDone}
         </p>
       )}
+
+      {/* before/after, receipts, signed change orders: still useful once the job is sent or done */}
+      <JobFiles job={job} />
 
       </div>
       <div className="space-y-3 pt-8 [grid-area:actions] lg:mt-4 lg:flex lg:flex-wrap lg:items-center lg:gap-2 lg:space-y-0 lg:pt-0 lg:[&>*]:mt-0">

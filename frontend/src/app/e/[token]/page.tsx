@@ -6,13 +6,14 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { CheckCircle2, Loader2, MessageCircle, Phone } from "lucide-react";
+import { CheckCircle2, FileText, Loader2, MessageCircle, Phone, X } from "lucide-react";
 import { DocumentCard } from "@/components/document";
 import { PdfButton } from "@/components/pdf-button";
 import { approveEstimate, balanceDue, firstName, fmtDate, paidSoFar, getJobByToken, money, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { approveRemote, fetchEstimate, type RelayEntry } from "@/lib/relay";
 import { formatPhone } from "@/lib/phone";
+import { fetchPublicFiles, publicFiles, type PublicAttachment } from "@/lib/attachments";
 
 // relay entry → the job as this page shows it (approval lives next to the snapshot)
 const withApproval = (r: RelayEntry): Job =>
@@ -47,6 +48,8 @@ const copy = {
     howToPay: "How to pay",
     howToPayBody: (b: string) => `Contact ${b} to pay or ask a question.`,
     questionsTo: (b: string) => `Questions? Contact ${b}.`,
+    photos: "Photos & files",
+    close: "Close",
   },
   es: {
     hi: (n: string) => `Hola ${n},`,
@@ -74,6 +77,8 @@ const copy = {
     howToPay: "Cómo pagar",
     howToPayBody: (b: string) => `Contacta a ${b} para pagar o hacer una pregunta.`,
     questionsTo: (b: string) => `¿Preguntas? Contacta a ${b}.`,
+    photos: "Fotos y archivos",
+    close: "Cerrar",
   },
 };
 
@@ -88,6 +93,8 @@ export default function CustomerEstimate() {
   const c = copy[lang];
 
   const [remote, setRemote] = useState(false); // loaded from the relay (a phone), not this browser
+  const [files, setFiles] = useState<PublicAttachment[]>([]); // the contractor's photos / PDFs (not the private ones)
+  const [viewing, setViewing] = useState<PublicAttachment | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -95,6 +102,7 @@ export default function CustomerEstimate() {
       const local = await getJobByToken(token);
       if (local) {
         setJob(local);
+        void publicFiles(local.id).then(setFiles);
         setBiz({ ...DEMO_BUSINESS, ...loadBusiness() });
         if (local.customer_name) setName(local.customer_name);
         return;
@@ -104,6 +112,7 @@ export default function CustomerEstimate() {
       if (!r) return setJob(null);
       setRemote(true);
       setJob(withApproval(r));
+      void fetchPublicFiles(token).then(setFiles);
       setBiz({ ...DEMO_BUSINESS, ...r.biz });
       if (r.job.customer_name) setName(r.job.customer_name);
     })();
@@ -204,12 +213,54 @@ export default function CustomerEstimate() {
                 job={job}
                 biz={biz}
                 view={lang}
+                photos={files}
                 label={c.downloadPdf}
                 busyLabel={c.makingPdf}
                 errorLabel={c.pdfFailed}
                 className="mt-2 flex h-[48px] w-full items-center justify-center gap-2 rounded-[20px] text-sm font-semibold text-forest"
               />
             </div>
+
+            {/* site photos, the design, materials, before/after — what the contractor attached */}
+            {files.length > 0 && (
+              <section className="mt-6">
+                <h2 className="text-base font-semibold">{c.photos}</h2>
+                <ul className="mt-3 grid grid-cols-2 gap-3">
+                  {files.map((f) => {
+                    const caption = lang === "en" ? f.captionEn || f.caption : f.caption;
+                    return (
+                      <li key={f.id}>
+                        {f.kind === "image" ? (
+                          <button type="button" onClick={() => setViewing(f)} className="block w-full text-left">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- the contractor's own photo (data URL) */}
+                            <img src={f.url} alt={caption || ""} className="aspect-[4/3] w-full rounded-[14px] bg-black/5 object-cover" />
+                            {caption && <span className="mt-1.5 block text-sm leading-5">{caption}</span>}
+                          </button>
+                        ) : (
+                          <a href={f.url} download={f.name} className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-[14px] glass p-3 text-center text-forest">
+                            <FileText className="size-8" strokeWidth={1.75} />
+                            <span className="w-full truncate text-xs font-semibold">{caption || f.name}</span>
+                          </a>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
+
+            {viewing && (
+              <div className="fixed inset-0 z-50 flex flex-col bg-black/90 p-4" onClick={() => setViewing(null)} role="dialog" aria-modal="true">
+                <button type="button" aria-label={c.close} className="ml-auto flex size-11 items-center justify-center rounded-full bg-white/10 text-white">
+                  <X className="size-6" />
+                </button>
+                {/* eslint-disable-next-line @next/next/no-img-element -- full-size view */}
+                <img src={viewing.url} alt="" className="m-auto max-h-[80vh] max-w-full object-contain" />
+                {(lang === "en" ? viewing.captionEn || viewing.caption : viewing.caption) && (
+                  <p className="pb-[env(safe-area-inset-bottom)] text-center text-base text-white">{lang === "en" ? viewing.captionEn || viewing.caption : viewing.caption}</p>
+                )}
+              </div>
+            )}
 
             {!invoice && !approved && !unavailable && (
               <section className="mt-6">

@@ -5,6 +5,8 @@
 // ONLY this file changes: keep the same function names and return types, and the screens keep working.
 // Never trust this fake session for anything real — it's not security, just the flow.
 
+import { deleteAllFiles } from "@/lib/attachments";
+
 export type AuthMethod = "phone" | "email" | "google" | "apple" | "demo";
 export type Session = {
   userId: string;
@@ -96,6 +98,7 @@ export function signOut() {
 
 /** Deletes the account and everything Mano saved on this phone. Real version: the backend deletes it too. */
 export function deleteAccount() {
+  deleteAllFiles(); // job photos live in IndexedDB, not localStorage
   Object.keys(localStorage)
     .filter((k) => k.startsWith("mano.") && k !== "mano.lang")
     .forEach((k) => localStorage.removeItem(k));

@@ -1,8 +1,9 @@
 // The estimate / invoice as a real PDF (selectable text, prints clean). Same words as the screen card:
 // both read docData(). Loaded only when someone taps "Descargar PDF" (see downloadPdf), so the app stays light.
-import { Document, Font, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
+import type { PublicAttachment } from "@/lib/attachments";
 import { docData } from "@/components/document";
 import { formatPhone } from "@/lib/phone";
 
@@ -46,8 +47,23 @@ const s = StyleSheet.create({
   footer: { position: "absolute", bottom: 32, left: 48, right: 48, fontFamily: "Righteous", fontSize: 9, color: C.muted, textAlign: "center" }, // like the customer page
 });
 
-export function DocumentPdf({ kind, job, biz, view = "en" }: { kind: "estimate" | "invoice"; job: Job; biz: Business; view?: "en" | "es" }) {
+export function DocumentPdf({
+  kind,
+  job,
+  biz,
+  view = "en",
+  files = [],
+}: {
+  kind: "estimate" | "invoice";
+  job: Job;
+  biz: Business;
+  view?: "en" | "es";
+  files?: PublicAttachment[];
+}) {
   const d = docData(kind, job, view);
+  const photos = files.filter((f) => f.kind === "image");
+  const docs = files.filter((f) => f.kind === "pdf"); // can't go inside this PDF: listed by name (they're on the link)
+  const caption = (f: PublicAttachment) => (view === "en" ? f.captionEn || f.caption : f.caption);
   return (
     <Document title={`${d.title} ${d.num ? d.label : ""}`.trim()} author={biz.businessName || "Mano"} creator="Mano" language={view}>
       <Page size="LETTER" style={s.page}>
@@ -138,6 +154,35 @@ export function DocumentPdf({ kind, job, biz, view = "en" }: { kind: "estimate" 
           {d.L("Sent with Mano", "Enviado con Mano")}
         </Text>
       </Page>
+
+      {/* the contractor's photos, two to a page, each with its caption */}
+      {photos.length > 0 || docs.length > 0 ? (
+        <Page size="LETTER" style={s.page}>
+          <Text style={[s.label, { marginBottom: 12 }]}>
+            {d.L("Photos & files", "Fotos y archivos")} · {d.title} {d.num ? `#${d.label}` : ""}
+          </Text>
+          {photos.map((f) => (
+            <View key={f.id} wrap={false} style={{ marginBottom: 18 }}>
+              {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt; the caption is printed below */}
+              <Image src={f.url} style={{ maxHeight: 290, objectFit: "contain", objectPosition: "left", borderRadius: 4 }} />
+              {caption(f) ? <Text style={{ fontSize: 10, marginTop: 6 }}>{caption(f)}</Text> : null}
+            </View>
+          ))}
+          {docs.length > 0 ? (
+            <View wrap={false} style={s.box}>
+              <Text style={s.label}>{d.L("Attached files", "Archivos adjuntos")}</Text>
+              {docs.map((f) => (
+                <Text key={f.id} style={{ fontSize: 10, marginTop: 4 }}>
+                  {caption(f) ? `${caption(f)} (${f.name})` : f.name}
+                </Text>
+              ))}
+            </View>
+          ) : null}
+          <Text style={s.footer} fixed>
+            {d.L("Sent with Mano", "Enviado con Mano")}
+          </Text>
+        </Page>
+      ) : null}
     </Document>
   );
 }
