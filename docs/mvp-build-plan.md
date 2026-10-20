@@ -203,6 +203,7 @@ Update this table (status + commit) after each task.
 | Onboarding asks what invoices need: first + last name, required phone, business email and address (address = where checks go), and a 3rd step "Cómo te pagan" (payment info + due terms). Invoices show email + address | `0dffe42` | Josh: business `email`, `address`; `owner_name` holds first + last |
 | Phone numbers formatted as you type ((404) 555-0123); business phone must include the area code; "+" numbers left as typed | `d53eff7` | Josh: store phones as typed (formatted) or digits only; the app formats either |
 | Ojo's "¿se te olvidó cobrar…?" questions off by default (switch in Tu negocio; no AI call when off). Ojo = missing info + what's next. Ask in contractor interviews if they forget to charge | `c0af5ce` | Chris: no change; backend Ojo (progress / what's stuck) is the main Ojo |
+| Desktop layout (phase 1): sidebar with separate Estimados / Facturas, wider pages, two-column job page with the live document, typing-first New job. Phone unchanged. Next: tables for lists, client page (with the CRM) | `9b3bdf6` | — |
 
 
 ## After this list
