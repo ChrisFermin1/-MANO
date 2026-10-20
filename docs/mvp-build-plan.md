@@ -47,7 +47,7 @@ Welcome screen loads sample jobs. The backend (port 8000) doesn't need to run; t
 | 9 | Edit contact details after sending | ✅ Done | `8476b3c` |
 | 10 | Voice hears only Carlos (no TV, right language) | ✅ Done (test with a real TV on a phone) | `3dc2a52` |
 | 11 | Separate "+ Estimado" and "+ Factura" | ✅ Done | `7459e94` |
-| 12 | Company clients + several sites on one invoice | ⏭ Next (needs Josh later) | |
+| 12 | Company clients + several sites on one invoice | ✅ Done (needs Josh later) | `b484aae` |
 
 Update this table (status + commit) after each task.
 
@@ -168,6 +168,11 @@ Update this table (status + commit) after each task.
 - **Josh later:** `site` (text, nullable) on line items; the customer can be a company (name only, no person).
 - **Done when:** the note above becomes one invoice to ATL Homemaker with two sites and a total of $8,500,
   and a normal one-house job looks the same as before.
+- **Built:** `LineItem.site`, `jobSites()`, `linesBySite()` (`src/lib/api.ts`); extraction assigns sites only
+  when a note has 2+ addresses (one site = the job's address). Not built yet: saved company clients with an
+  office address and email (the existing saved clients can hold a company's name, phone and address).
+- **Josh proposal:** `line_items.site` (text, nullable). `jobs.job_address` can be empty when lines have sites
+  (it's the billing address). The backend sync doesn't send `site` yet.
 
 ## Extra changes (done, after the list)
 
