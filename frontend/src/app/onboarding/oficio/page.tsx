@@ -42,13 +42,13 @@ export default function TuOficio() {
 
   return (
     <main className="min-h-dvh bg-mano-light text-charcoal">
-      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-[calc(33px+env(safe-area-inset-top))]">
+      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pt-[calc(33px+env(safe-area-inset-top))] short:pt-[calc(16px+env(safe-area-inset-top))]">
         <OnboardingHeader step={1} total={2} backHref="/" />
 
-        <h1 className="mt-[50px] font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.tradeTitle}</h1>
+        <h1 className="mt-[50px] short:mt-6 font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.tradeTitle}</h1>
         <p className="mt-2 text-base leading-5">{t.tradeBody}</p>
 
-        <div className="mt-[37px] grid grid-cols-2 gap-x-[9px] gap-y-[13px]">
+        <div className="mt-[37px] short:mt-5 grid grid-cols-2 gap-x-[9px] gap-y-[13px]">
           {TRADES.map(({ id, icon: Icon }) => {
             const on = selected.includes(id);
             return (
@@ -57,7 +57,7 @@ export default function TuOficio() {
                 type="button"
                 onClick={() => toggle(id)}
                 aria-pressed={on}
-                className={`relative flex h-[124px] flex-col justify-between rounded-[20px] p-[14px] text-left transition active:scale-[0.98] ${
+                className={`relative flex h-[124px] short:h-[96px] flex-col justify-between rounded-[20px] p-[14px] text-left transition active:scale-[0.98] ${
                   on ? "glass-forest text-white" : "glass text-charcoal"
                 }`}
               >
@@ -106,7 +106,8 @@ export default function TuOficio() {
           )}
         </div>
 
-        <div className="mt-auto pt-[52px]">
+        {/* pinned to the bottom: "Siguiente" is always on screen, the trades scroll behind it */}
+        <div className="sticky bottom-0 -mx-[25px] mt-auto bg-gradient-to-t from-ivory from-75% to-ivory/0 px-[25px] pb-[max(20px,env(safe-area-inset-bottom))] pt-8">
           <button
             type="button"
             onClick={next}
@@ -115,7 +116,7 @@ export default function TuOficio() {
           >
             {t.next} →
           </button>
-          <p className="mt-4 text-center text-sm font-medium leading-4 text-muted">{t.changeLater}</p>
+          <p className="mt-3 text-center text-sm font-medium leading-4 text-muted">{t.changeLater}</p>
         </div>
       </div>
     </main>

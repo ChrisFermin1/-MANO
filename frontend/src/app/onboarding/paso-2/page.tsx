@@ -8,7 +8,7 @@ import { saveBusiness } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 
 const inputClass =
-  "h-[56px] w-full rounded-[20px] glass-field px-5 text-base outline-none ring-forest/60 placeholder:text-muted focus:ring-2";
+  "h-[56px] short:h-[52px] w-full rounded-[20px] glass-field px-5 text-base outline-none ring-forest/60 placeholder:text-muted focus:ring-2";
 
 export default function TuNegocio() {
   const { t } = useLang();
@@ -27,13 +27,13 @@ export default function TuNegocio() {
 
   return (
     <main className="min-h-dvh bg-mano-light text-charcoal">
-      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-[calc(33px+env(safe-area-inset-top))]">
+      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pt-[calc(33px+env(safe-area-inset-top))] short:pt-[calc(16px+env(safe-area-inset-top))]">
         <OnboardingHeader step={2} total={2} backHref="/onboarding/oficio" />
 
-        <h1 className="mt-[50px] font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.bizTitle}</h1>
+        <h1 className="mt-[50px] short:mt-6 font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.bizTitle}</h1>
         <p className="mt-2 text-base leading-5">{t.bizBody}</p>
 
-        <div className="mt-8 space-y-4">
+        <div className="mt-8 space-y-4 short:mt-5 short:space-y-3">
           <Field label={t.yourName}>
             <input className={inputClass} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} placeholder="Carlos" autoComplete="given-name" />
           </Field>
@@ -46,7 +46,7 @@ export default function TuNegocio() {
           <Field label={t.payInfo} hint={t.optional}>
             <textarea
               rows={2}
-              className={`${inputClass} h-auto resize-none py-3.5 leading-6`}
+              className={`${inputClass} h-auto short:h-auto resize-none py-3.5 leading-6`}
               value={payInfo}
               onChange={(e) => setPayInfo(e.target.value)}
               placeholder={t.payInfoPlaceholder}
@@ -55,7 +55,8 @@ export default function TuNegocio() {
           </Field>
         </div>
 
-        <div className="mt-auto pt-10">
+        {/* pinned to the bottom: "Terminar" is always on screen, the form scrolls behind it */}
+        <div className="sticky bottom-0 -mx-[25px] mt-auto bg-gradient-to-t from-ivory from-75% to-ivory/0 px-[25px] pb-[max(20px,env(safe-area-inset-bottom))] pt-8">
           <button
             type="button"
             onClick={finish}
@@ -64,7 +65,7 @@ export default function TuNegocio() {
           >
             {t.finish} →
           </button>
-          <p className="mt-4 text-center text-sm font-medium leading-4 text-muted">{t.changeLater}</p>
+          <p className="mt-3 text-center text-sm font-medium leading-4 text-muted">{t.changeLater}</p>
         </div>
       </div>
     </main>
