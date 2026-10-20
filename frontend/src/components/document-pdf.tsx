@@ -4,6 +4,7 @@ import { Document, Font, Page, StyleSheet, Text, View } from "@react-pdf/rendere
 import type { Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
 import { docData } from "@/components/document";
+import { formatPhone } from "@/lib/phone";
 
 // The app's own fonts (public/fonts, same as the screen): Montserrat text, Righteous name, JetBrains Mono labels
 const font = (file: string) => `${window.location.origin}/fonts/${file}`;
@@ -53,7 +54,7 @@ export function DocumentPdf({ kind, job, biz, view = "en" }: { kind: "estimate" 
         <View style={s.row}>
           <View>
             <Text style={s.biz}>{biz.businessName || "MANO"}</Text>
-            {biz.phone ? <Text style={s.small}>{biz.phone}</Text> : null}
+            {biz.phone ? <Text style={s.small}>{formatPhone(biz.phone)}</Text> : null}
             {biz.email ? <Text style={s.small}>{biz.email}</Text> : null}
             {d.isInvoice && biz.address ? <Text style={s.small}>{biz.address}</Text> : null}
           </View>

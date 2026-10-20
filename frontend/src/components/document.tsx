@@ -1,5 +1,6 @@
 import { balanceDue, defaultDue, dueDay, estimateNo, fmtDate, linesBySite, invoiceNo, isLumpSum, jobTotal, money, paidSoFar, type Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
+import { formatPhone } from "@/lib/phone";
 
 // Estimate / invoice document. The CUSTOMER always gets `view="en"`.
 // Carlos's own preview can switch to `view="es"` to read the same document in Spanish — one language at a time.
@@ -91,7 +92,7 @@ export function DocumentCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-logo text-lg leading-none text-forest">{biz.businessName || "MANO"}</p>
-          {biz.phone && <p className="mt-1 text-xs text-muted">{biz.phone}</p>}
+          {biz.phone && <p className="mt-1 text-xs text-muted">{formatPhone(biz.phone)}</p>}
           {biz.email && <p className="text-xs text-muted">{biz.email}</p>}
           {isInvoice && biz.address && <p className="text-xs text-muted">{biz.address}</p>}
         </div>

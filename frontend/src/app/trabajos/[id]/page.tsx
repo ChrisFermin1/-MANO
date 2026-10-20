@@ -51,6 +51,7 @@ import { toEnglish } from "@/lib/translate";
 import { serviceLabel } from "@/lib/services";
 import { needsAiQuestions, ojoTradeFor, silencedFor, suggestions, validate } from "@/lib/ojo";
 import { ojoQuestions } from "@/lib/mano";
+import { formatPhone, nextPhone } from "@/lib/phone";
 
 const EDITABLE = ["NEW", "NEEDS_INFORMATION", "READY_FOR_QUOTE"];
 
@@ -272,7 +273,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           <input
             className={field(false)}
             value={job.customer_phone ?? ""}
-            onChange={(e) => patch({ customer_phone: e.target.value })}
+            onChange={(e) => patch({ customer_phone: nextPhone(job.customer_phone ?? "", e.target.value) })}
             placeholder={t.phonePlaceholder}
             type="tel"
             inputMode="tel"
@@ -704,7 +705,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
             {job.address && <p className="text-muted">{job.address}</p>}
             {job.customer_phone && phoneDigits(job.customer_phone) ? (
               <a href={`tel:+${phoneDigits(job.customer_phone)}`} className="inline-flex items-center gap-1.5 font-semibold text-forest">
-                <Phone className="size-3.5" /> {job.customer_phone}
+                <Phone className="size-3.5" /> {formatPhone(job.customer_phone)}
               </a>
             ) : (
               job.status !== "CANCELLED" && (
@@ -871,7 +872,7 @@ function ContactSheet({ open, job, onClose, onSaved }: { open: boolean; job: Job
   const { t } = useLang();
   const [form, setForm] = useState({ name: "", phone: "", email: "", address: "" });
   useEffect(() => {
-    if (open) setForm({ name: job.customer_name ?? "", phone: job.customer_phone ?? "", email: job.customer_email ?? "", address: job.address ?? "" });
+    if (open) setForm({ name: job.customer_name ?? "", phone: formatPhone(job.customer_phone), email: job.customer_email ?? "", address: job.address ?? "" });
   }, [open, job.customer_name, job.customer_phone, job.customer_email, job.address]);
 
   const save = async () => {
@@ -903,7 +904,7 @@ function ContactSheet({ open, job, onClose, onSaved }: { open: boolean; job: Job
           <input
             className={field}
             value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            onChange={(e) => setForm({ ...form, phone: nextPhone(form.phone, e.target.value) })}
             type="tel"
             inputMode="tel"
             placeholder="(555) 123-4567"

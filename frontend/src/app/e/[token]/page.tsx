@@ -12,6 +12,7 @@ import { PdfButton } from "@/components/pdf-button";
 import { approveEstimate, balanceDue, firstName, fmtDate, paidSoFar, getJobByToken, money, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { approveRemote, fetchEstimate, type RelayEntry } from "@/lib/relay";
+import { formatPhone } from "@/lib/phone";
 
 // relay entry → the job as this page shows it (approval lives next to the snapshot)
 const withApproval = (r: RelayEntry): Job =>
@@ -272,7 +273,7 @@ export default function CustomerEstimate() {
                     <p className="mt-1 text-sm leading-5 text-charcoal/70">{c.howToPayBody(bizName)}</p>
                   </>
                 )}
-                {biz.phone && <p className="mt-2 font-mono text-sm">{biz.phone}</p>}
+                {biz.phone && <p className="mt-2 font-mono text-sm">{formatPhone(biz.phone)}</p>}
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <a
                     href={biz.phone ? `tel:${biz.phone}` : undefined}

@@ -7,6 +7,7 @@ import { PageHeader, Screen, Sheet, StatusBadge, Title, btnPrimary, input } from
 import { getJobs, money, onJobsChange, phoneDigits, type Job, isInvoiceJob } from "@/lib/api";
 import { groupClients, loadSavedClients, newJobHref, saveClient, type Client } from "@/lib/clients";
 import { useLang } from "@/lib/i18n";
+import { formatPhone, nextPhone } from "@/lib/phone";
 
 export default function Clientes() {
   const { t } = useLang();
@@ -74,7 +75,7 @@ export default function Clientes() {
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
                   {c.phone && tel && (
                     <a href={`tel:+${tel}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-forest">
-                      <Phone className="size-3.5" /> {c.phone}
+                      <Phone className="size-3.5" /> {formatPhone(c.phone)}
                     </a>
                   )}
                   {c.email && (
@@ -127,7 +128,7 @@ export default function Clientes() {
             <input
               className={input}
               value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              onChange={(e) => setForm({ ...form, phone: nextPhone(form.phone, e.target.value) })}
               type="tel"
               inputMode="tel"
               placeholder="(555) 123-4567"

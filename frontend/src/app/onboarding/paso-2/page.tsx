@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { OnboardingHeader } from "@/components/onboarding-header";
 import { loadBusiness, saveBusiness } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
+import { formatPhone, isFullPhone, nextPhone } from "@/lib/phone";
 
 const inputClass =
   "h-[52px] w-full rounded-[20px] glass-field px-5 text-base outline-none ring-forest/60 placeholder:text-muted focus:ring-2";
@@ -24,13 +25,13 @@ export default function TuNegocio() {
     if (!b?.businessName) return;
     setOwnerName(b.ownerName ?? "");
     setBusinessName(b.businessName ?? "");
-    setPhone(b.phone ?? "");
+    setPhone(formatPhone(b.phone));
     setEmail(b.email ?? "");
     setAddress(b.address ?? "");
   }, []);
   // money is on the line: a real name (first + last) on the invoices, and a phone the client can call
   const fullName = /\S+\s+\S+/.test(ownerName.trim());
-  const canContinue = fullName && businessName.trim() !== "" && phone.replace(/\D/g, "").length >= 7;
+  const canContinue = fullName && businessName.trim() !== "" && isFullPhone(phone);
 
   const next = () => {
     saveBusiness({ ownerName: ownerName.trim(), businessName: businessName.trim(), phone: phone.trim(), email: email.trim(), address: address.trim() });
@@ -54,7 +55,8 @@ export default function TuNegocio() {
             <input className={inputClass} value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Carlos Painting" autoComplete="organization" />
           </Field>
           <Field label={t.phone}>
-            <input className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" type="tel" inputMode="tel" autoComplete="tel" />
+            <input className={inputClass} value={phone} onChange={(e) => setPhone(nextPhone(phone, e.target.value))} placeholder="(555) 123-4567" type="tel" inputMode="tel" autoComplete="tel" />
+            {phone.trim() && !isFullPhone(phone) && <span className="mt-1.5 block text-xs font-semibold text-ojo-ink">{t.phoneNeedsArea}</span>}
           </Field>
           <Field label={t.bizEmail} hint={t.optional}>
             <input className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="carlos@email.com" type="email" inputMode="email" autoComplete="email" />

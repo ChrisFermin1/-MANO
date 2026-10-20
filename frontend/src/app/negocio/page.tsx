@@ -8,6 +8,7 @@ import { DEMO_BUSINESS, DUE_OPTIONS, loadBusiness, saveBusiness, type Business }
 import { checklistItemByKey } from "@/lib/checklists";
 import { useLang, type TradeId } from "@/lib/i18n";
 import { TRADES } from "@/lib/trades";
+import { isFullPhone, nextPhone } from "@/lib/phone";
 
 // "Tu negocio": everything onboarding asked, editable later (the "C" on the dashboard opens it)
 export default function Negocio() {
@@ -36,7 +37,11 @@ export default function Negocio() {
     label: checklistItemByKey(key)?.label[lang] ?? biz.ojoIgnoreLabels?.[key]?.[lang] ?? key,
   }));
   const canSave =
-    biz.ownerName.trim() !== "" && biz.businessName.trim() !== "" && biz.trades.length > 0 && (!otherOn || !!biz.otherTrade?.name.trim());
+    biz.ownerName.trim() !== "" &&
+    biz.businessName.trim() !== "" &&
+    isFullPhone(biz.phone) && // it's on every estimate and invoice: a number the client can call
+    biz.trades.length > 0 &&
+    (!otherOn || !!biz.otherTrade?.name.trim());
 
   const save = () => {
     saveBusiness({
@@ -117,12 +122,13 @@ export default function Negocio() {
             id="f-phone"
             className={input}
             value={biz.phone}
-            onChange={(e) => change({ phone: e.target.value })}
+            onChange={(e) => change({ phone: nextPhone(biz.phone, e.target.value) })}
             type="tel"
             inputMode="tel"
             autoComplete="tel"
             placeholder="(555) 123-4567"
           />
+          {biz.phone.trim() && !isFullPhone(biz.phone) && <span className="mt-1.5 block text-xs font-semibold text-ojo-ink">{t.phoneNeedsArea}</span>}
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm text-charcoal/70">
