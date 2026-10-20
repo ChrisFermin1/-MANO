@@ -58,7 +58,7 @@ Update this table (status + commit) after each task.
 - **Build:** in `src/app/trabajos/[id]/estimado/page.tsx` and `src/app/trabajos/[id]/factura/page.tsx`,
   when the page is view-only (no "Preparar para enviar" button showing), add a button at the bottom:
   **"Volver al trabajo"** / "Back to the job" → `/trabajos/[id]`.
-- "Descargar PDF" comes later with the PDF feature; leave room for it, don't fake it.
+- "Descargar PDF": done later (see Extra changes).
 - **Done when:** a sent estimate and a sent invoice both show the button, it goes to the job page, and the
   draft/prepare screens are unchanged.
 
@@ -136,6 +136,7 @@ Update this table (status + commit) after each task.
 | UX fixes: undo a payment; customer invoice wording when overdue or partly paid; no "due in 15 days" on paid invoices; "Cómo te pagan" (Zelle, checks…) on invoices; paid job shows a sage box; no "$0" on clients | `2ceefb6` | Josh: `pay_info` text on the business, and `DELETE /jobs/{id}/payments/{pid}` (job back to PAYMENT_PENDING if it drops below the total) |
 | Payment reminder says the due date ("was due on October 13" when overdue); optional "Cómo te pagan" in onboarding step 2. Paid message sits under the approval line | `7966f05`, `490e886` | — |
 | Invoice due dates: default terms in Tu negocio (on receipt / 7 / 15 / 30 days) and a date picker per invoice; due dates run to the end of the day | `3da1ed4` | Josh: `invoice_due_days` on the business (default 15); invoices already have `invoice_due_at`, and it should be settable on the invoice |
+| PDF download: real PDF of the estimate/invoice (Carlos's pages: English customer version; customer link: their language). Phone opens the share sheet, computer downloads. New dependency `@react-pdf/renderer` → run `npm ci` after pulling | `1ea4ded` | — (made on the phone, no backend). Later, for email: the backend could make the same PDF |
 
 
 ## After this list
