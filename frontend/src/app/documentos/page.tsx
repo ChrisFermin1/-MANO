@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, Plus } from "lucide-react";
 import { DocStateBadge, PageHeader, Screen, Title, type DocState } from "@/components/ui";
 import { estimateNo, fmtDate, getJobs, onJobsChange, invoiceNo, invoiceState, jobTotal, money, paidSoFar, STATUS_FLOW, type Job, balanceDue } from "@/lib/api";
@@ -40,14 +41,32 @@ function invoiceRows(jobs: Job[]): Row[] {
     }));
 }
 
-export default function Documentos() {
+// the tab follows ?tab= (the desktop sidebar has Estimados and Facturas as separate links)
+export default function DocumentosPage() {
+  return (
+    <Suspense>
+      <Documentos />
+    </Suspense>
+  );
+}
+
+function Documentos() {
   const { t, lang } = useLang();
+  const router = useRouter();
+  const params = useSearchParams();
   const [jobs, setJobs] = useState<Job[] | null>(null);
-  const [tab, setTab] = useState<Tab>("estimates");
+  const [tab, setTabState] = useState<Tab>("estimates");
+  const setTab = (k: Tab) => {
+    setTabState(k);
+    router.replace(`/documentos?tab=${k}`, { scroll: false });
+  };
 
   useEffect(() => {
-    // the dashboard's money card links here with ?tab=invoices
-    if (new URLSearchParams(window.location.search).get("tab") === "invoices") setTab("invoices");
+    // ?tab=invoices: the dashboard's money card and the sidebar's "Facturas"
+    setTabState(params?.get("tab") === "invoices" ? "invoices" : "estimates");
+  }, [params]);
+
+  useEffect(() => {
     getJobs().then(setJobs);
     return onJobsChange(() => void getJobs().then(setJobs));
   }, []);

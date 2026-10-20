@@ -25,7 +25,7 @@ export const input =
 export function Screen({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <main className="min-h-dvh bg-mano-light text-charcoal">
-      <div className={`mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] ${className}`}>{children}</div>
+      <div className={`mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[max(32px,env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] lg:max-w-[760px] lg:px-10 lg:pt-10 ${className}`}>{children}</div>
     </main>
   );
 }

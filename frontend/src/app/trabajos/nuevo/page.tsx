@@ -330,7 +330,7 @@ export default function NuevoTrabajo() {
           onClick={toggleMic}
           disabled={transcribing}
           aria-pressed={isRecording}
-          className="mt-8 flex flex-col items-center gap-3 self-center"
+          className="mt-8 flex flex-col items-center gap-3 self-center lg:hidden"
         >
           <span
             className={`flex size-[88px] items-center justify-center rounded-full transition ${
@@ -360,7 +360,22 @@ export default function NuevoTrabajo() {
         disabled={reading}
       />
       {/* a note on paper → the camera; a photo he already has (note, WhatsApp screenshot) → his photos */}
-      <div className="mt-4 flex justify-center gap-2">
+      {/* desktop: typing first; these tools sit under the text box, the mic is a small button */}
+      <div className="mt-4 flex justify-center gap-2 lg:order-2 lg:mt-3 lg:justify-start">
+        {canListen && (
+          <button
+            type="button"
+            onClick={toggleMic}
+            disabled={transcribing}
+            aria-pressed={isRecording}
+            className={`hidden h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition active:scale-[0.97] disabled:opacity-50 lg:flex ${
+              isRecording ? "bg-forest text-white" : "glass text-forest"
+            }`}
+          >
+            {transcribing ? <Loader2 className="size-4 animate-spin" /> : <Mic className={`size-4 ${isRecording ? "animate-pulse" : ""}`} strokeWidth={2.25} />}
+            {transcribing ? t.thinking : isRecording ? t.listening : t.dictate}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => (canUseLiveCamera() ? setScanning(true) : photoInput.current?.click())}
@@ -398,19 +413,19 @@ export default function NuevoTrabajo() {
       {scanMessage && (
         <p
           role={scanMessage.kind === "error" ? "alert" : "status"}
-          className={`mt-2 text-center text-sm font-semibold ${scanMessage.kind === "error" ? "text-overdue-ink" : "text-forest"}`}
+          className={`mt-2 text-center text-sm font-semibold lg:order-2 lg:text-left ${scanMessage.kind === "error" ? "text-overdue-ink" : "text-forest"}`}
         >
           {scanMessage.text}
         </p>
       )}
 
       {voiceError && (
-        <p role="alert" className="mt-3 text-center text-sm font-semibold text-overdue-ink">
+        <p role="alert" className="mt-3 text-center text-sm font-semibold text-overdue-ink lg:order-2 lg:text-left">
           {voiceError}
         </p>
       )}
 
-      <div className="relative mt-6">
+      <div className="relative mt-6 lg:order-1 lg:mt-5">
         <textarea
           value={interim ? `${text} ${interim}` : text}
           onChange={(e) => {
@@ -419,12 +434,12 @@ export default function NuevoTrabajo() {
           }}
           placeholder={t.newJobPlaceholder}
           rows={5}
-          className="block min-h-[148px] w-full resize-none rounded-[16px] glass-field px-4 py-3.5 text-base leading-6 outline-none ring-forest/60 placeholder:text-muted focus:ring-2"
+          className="block min-h-[148px] w-full resize-none rounded-[16px] glass-field lg:min-h-[240px] px-4 py-3.5 text-base leading-6 outline-none ring-forest/60 placeholder:text-muted focus:ring-2"
         />
       </div>
 
       {text && !isRecording && !transcribing && (
-        <div className="mt-3 grid auto-cols-fr grid-flow-col gap-2">
+        <div className="lg:order-3 mt-3 grid auto-cols-fr grid-flow-col gap-2">
           {history.length > 0 && (
             <button type="button" onClick={removeLast} className={`${chip} text-forest`}>
               <Undo2 className="size-[18px]" strokeWidth={2.25} />
@@ -445,7 +460,7 @@ export default function NuevoTrabajo() {
       )}
 
       {justCleared && !text && (
-        <div role="status" className="mt-3 flex items-center justify-between rounded-[14px] glass-forest px-4 py-3 text-sm text-white">
+        <div role="status" className="lg:order-3 mt-3 flex items-center justify-between rounded-[14px] glass-forest px-4 py-3 text-sm text-white">
           {t.cleared}
           <button type="button" onClick={undoClear} className="font-bold text-white">
             {t.undo}
@@ -461,19 +476,19 @@ export default function NuevoTrabajo() {
             setHistory((items) => [...items, text]);
             setText(EXAMPLE);
           }}
-          className="mt-3 self-start text-sm font-semibold text-forest underline underline-offset-4"
+          className="lg:order-3 mt-3 self-start text-sm font-semibold text-forest underline underline-offset-4"
         >
           {t.tryExample}
         </button>
       )}
 
       {submitError && (
-        <p role="alert" className="mt-4 rounded-[14px] bg-overdue px-4 py-3 text-sm font-semibold text-overdue-ink">
+        <p role="alert" className="lg:order-3 mt-4 rounded-[14px] bg-overdue px-4 py-3 text-sm font-semibold text-overdue-ink">
           {submitError}
         </p>
       )}
 
-      <div className="mt-auto pt-8">
+      <div className="lg:order-3 mt-auto pt-8">
         <button
           type="button"
           onClick={submit}

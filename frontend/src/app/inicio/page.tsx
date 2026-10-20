@@ -102,8 +102,9 @@ export default function Inicio() {
 
   return (
     <main className="min-h-dvh bg-mano-light text-charcoal">
-      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[calc(120px+env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))]">
-        <header className="flex items-center justify-between">
+      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[calc(120px+env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] lg:max-w-[880px] lg:px-10 lg:pb-12 lg:pt-10">
+        {/* desktop: the sidebar has the logo and Tu negocio */}
+        <header className="flex items-center justify-between lg:hidden">
           <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest">mano</span>
           <Link
             href="/negocio"
@@ -114,12 +115,15 @@ export default function Inicio() {
           </Link>
         </header>
 
-        <h1 className="mt-10 font-serif text-[36px] leading-10 tracking-[-0.72px]">
+        <h1 className="mt-10 lg:mt-0 font-serif text-[36px] leading-10 tracking-[-0.72px]">
           {hour !== null && <>{t.greeting(hour)},</>}
           <br />
           <span className="text-forest">{name}!</span>
         </h1>
 
+        {/* desktop: next step on the left, money on the right */}
+        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-5">
+        <div>
         {/* Next action — the ONE thing to do now. Turns into good news when a customer approved. */}
         {next && copy &&
           (approval ? (
@@ -186,9 +190,11 @@ export default function Inicio() {
           </section>
         )}
 
+        </div>
+        <div>
         {/* Money — how much Carlos is owed. Hidden until his first invoice (no wall of $0s for new users). */}
         {cash?.hasInvoices && (
-          <Link href="/documentos?tab=invoices" className={`mt-4 block rounded-[20px] glass p-5 transition active:scale-[0.99]`}>
+          <Link href="/documentos?tab=invoices" className={`mt-4 block rounded-[20px] glass p-5 transition active:scale-[0.99] lg:mt-7`}>
             <span className="flex items-center justify-between text-sm font-medium text-muted">
               {t.owedTitle}
               <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
@@ -206,6 +212,9 @@ export default function Inicio() {
             </span>
           </Link>
         )}
+
+        </div>
+        </div>
 
         {/* Recent jobs — what's going on with the latest work */}
         {recent.length > 0 && (
@@ -241,14 +250,14 @@ export default function Inicio() {
         )}
 
         {jobs && (
-          <Link href="/documentos" className="mt-3 flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99]">
+          <Link href="/documentos" className="mt-3 flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99] lg:hidden">
             <FileText className="size-5 text-forest" strokeWidth={2} />
             <span className="flex-1 text-base font-semibold">{t.docsTitle}</span>
             <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
           </Link>
         )}
         {jobs && (
-          <Link href="/clientes" className="mt-3 flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99]">
+          <Link href="/clientes" className="mt-3 flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99] lg:hidden">
             <Users className="size-5 text-forest" strokeWidth={2} />
             <span className="flex-1 text-base font-semibold">{t.clientsTitle}</span>
             <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
@@ -256,8 +265,8 @@ export default function Inicio() {
         )}
       </div>
 
-      {/* Primary action, always reachable */}
-      <div className="fixed inset-x-0 bottom-0 bg-gradient-to-t from-ivory from-55% to-transparent pb-[max(24px,env(safe-area-inset-bottom))] pt-8">
+      {/* Primary action, always reachable (desktop: it's in the sidebar) */}
+      <div className="fixed inset-x-0 bottom-0 lg:hidden bg-gradient-to-t from-ivory from-55% to-transparent pb-[max(24px,env(safe-area-inset-bottom))] pt-8">
         <div className="mx-auto max-w-[430px] px-[25px]">
           {/* one button; the next screen asks "Estimado o Factura?" with nothing pre-selected, so it can't be forgotten */}
           <Link

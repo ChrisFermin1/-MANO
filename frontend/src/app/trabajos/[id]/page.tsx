@@ -45,7 +45,8 @@ import {
   linesBySite,
 } from "@/lib/api";
 import { ShareEstimate } from "@/components/share-estimate";
-import { loadBusiness, rememberNameFix, saveBusiness, type Business } from "@/lib/business";
+import { DocumentCard } from "@/components/document";
+import { DEMO_BUSINESS, loadBusiness, rememberNameFix, saveBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 import { toEnglish } from "@/lib/translate";
 import { serviceLabel } from "@/lib/services";
@@ -165,7 +166,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   };
 
   return (
-    <Screen>
+    <WithPreview job={job}>
       <PageHeader backHref="/inicio" right={<JobActions job={job} setJob={setJob} />} />
       <Title>{job.customer_name || t.newJob}</Title>
       <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang, job.service_es)}</p>
@@ -626,11 +627,29 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           </>
         )}
       </div>
-    </Screen>
+    </WithPreview>
   );
 }
 
 /* ───────── After the quote: follow the workflow ───────── */
+
+/** Desktop: the job on the left, what the client will get on the right (updates as he edits). Phone: unchanged. */
+function WithPreview({ job, children }: { job: Job; children: React.ReactNode }) {
+  const { t } = useLang();
+  const [biz, setBiz] = useState<Business>(DEMO_BUSINESS);
+  useEffect(() => setBiz({ ...DEMO_BUSINESS, ...loadBusiness() }), []);
+  return (
+    <Screen className="lg:max-w-[1180px]!">
+      <div className="flex flex-1 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_440px] lg:items-start lg:gap-10">
+        <div className="flex flex-1 flex-col">{children}</div>
+        <aside className="hidden lg:sticky lg:top-10 lg:block">
+          <p className="mb-2 text-sm font-semibold text-muted">{t.whatClientGets}</p>
+          <DocumentCard kind={isInvoiceJob(job) ? "invoice" : "estimate"} job={job} biz={biz} view="en" />
+        </aside>
+      </div>
+    </Screen>
+  );
+}
 
 function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   const { t, lang } = useLang();
@@ -654,7 +673,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   const [editing, setEditing] = useState(false);
 
   return (
-    <Screen>
+    <WithPreview job={job}>
       <PageHeader backHref="/trabajos" right={<JobActions job={job} setJob={setJob} />} />
       <Title>{job.customer_name}</Title>
       <p className="mt-1 text-sm text-muted">{serviceLabel(job.service, lang, job.service_es)}</p>
@@ -864,7 +883,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
 
       <ContactSheet open={editing} job={job} onClose={() => setEditing(false)} onSaved={(j) => (setEditing(false), setJob(j))} />
       <PaymentSheet open={paying} job={job} onClose={() => setPaying(false)} onSaved={(j) => (setPaying(false), setJob(j))} />
-    </Screen>
+    </WithPreview>
   );
 }
 

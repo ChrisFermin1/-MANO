@@ -209,3 +209,10 @@ html:has(.bg-mano-dark) body {
   .glass-sage { background-color: #dde7d8; }
   .bg-mano-light::before, .bg-mano-dark::before { background-image: none; }
 }
+
+/* Desktop: the app's sidebar is fixed on the left (components/app-sidebar.tsx); pages shift right to make room */
+@media (min-width: 1024px) {
+  body:has(.app-sidebar) {
+    padding-left: 240px;
+  }
+}
