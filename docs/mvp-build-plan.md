@@ -237,8 +237,8 @@ Open questions for Abe:
 - Optional P.O. number on invoices (company clients like ATL Homemaker)? Invoice numbers are decided: a plain `190`, like Wave (`914c1ab`).
 
 Next, in order:
-1. Payments the owner never marks (the person billing isn't the one getting paid): ideas in chat were a
-   client "Ya pagué" button on the link and a one-tap "Ya me pagó" on Home. Abe parked it.
+1. ~~Payments the owner never marks~~ — skipped (Abe). Was: client "Ya pagué" on the link + "Ya me pagó" on Home.
+2. Optional P.O. number on invoices (if yes) — or a pull request into `dev` when Abe says so.
 
 Rules that still apply: Spanish-first copy (es + en in `lib/i18n.tsx`), design for all trades (not just
 painting), phone + tablet + desktop each checked, no push / PR unless Abe says, never commit `.env.local`.
