@@ -50,7 +50,7 @@ ver un ejemplo" on the sign-in screen (or "Ver un ejemplo" on the desktop Welcom
 | 11 | Estimate or invoice: required choice, nothing pre-selected | ✅ Done | `7459e94`, `eb90662` |
 | 12 | Company clients + several sites on one invoice | ✅ Done (needs Josh later) | `b484aae` |
 | 13 | Recognize saved clients in a note + client email | ✅ Done (needs Josh later) | `0475105` |
-| 14 | Quantity × unit price per line | ✅ Done (needs Josh later) | `ef492be` |
+| 14 | Quantity × unit price per line | ✅ Done (needs Josh later) | `ef492be`, `631e818` |
 
 Update this table (status + commit) after each task.
 
