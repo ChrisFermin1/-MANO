@@ -63,7 +63,7 @@ export default function TuOficio() {
               >
                 <Icon className={`size-[34px] ${on ? "text-white" : ""}`} strokeWidth={1.75} />
                 {on && (
-                  <span className="absolute right-[14px] top-[18px] flex size-[25px] items-center justify-center rounded-full bg-sage glow-sage">
+                  <span className="absolute right-[14px] top-[18px] flex size-[25px] items-center justify-center rounded-full bg-sage">
                     <Check className="size-[15px] text-forest" strokeWidth={3} />
                   </span>
                 )}
