@@ -93,7 +93,7 @@ export default function Inicio() {
         type="button"
         onClick={() => setShowAll((v) => !v)}
         aria-expanded={showAll}
-        className={`mt-4 w-full py-1 text-center text-sm font-semibold underline-offset-4 hover:underline md:w-auto md:self-start md:text-left ${dark ? "text-white/80" : "text-forest"}`}
+        className={`mt-4 w-full py-1 text-center text-sm font-semibold short:mt-2 md:mt-4 underline-offset-4 hover:underline md:w-auto md:self-start md:text-left ${dark ? "text-white/80" : "text-forest"}`}
       >
         {showAll ? t.showLess : `+${t.nMore(ojoAlerts.length)}`}
       </button>
@@ -113,7 +113,7 @@ export default function Inicio() {
           Desktop: a 12-column grid, 24px gutters both ways. From 1280px: summary on 4 × 3 columns, then next step (5)
           and recent jobs (7), ≈ 1 : 1.4, as close to the golden split as four equal summary cards allow. Below 1280
           (a small laptop) the columns would be too narrow for the table, so it stays 2 × 2 and stacked. */}
-      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[calc(120px+env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] md:max-w-[720px] md:px-12 lg:mx-0 lg:min-h-0 lg:max-w-[1100px] lg:pb-16 lg:pt-8">
+      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[calc(120px+env(safe-area-inset-bottom))] short:pb-[calc(100px+env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] md:max-w-[720px] md:px-12 lg:mx-0 lg:min-h-0 lg:max-w-[1100px] lg:pb-16 lg:pt-8">
         {/* desktop: the sidebar has the logo and Tu negocio */}
         <header className="flex items-center justify-between lg:hidden">
           <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest">mano</span>
@@ -126,7 +126,7 @@ export default function Inicio() {
           </Link>
         </header>
 
-        <h1 className="mt-10 font-serif text-[36px] leading-10 tracking-[-0.72px] lg:mt-0">
+        <h1 className="mt-10 font-serif text-[36px] leading-10 tracking-[-0.72px] short:mt-6 lg:mt-0">
           {hour !== null && <>{t.greeting(hour)},</>}
           <br className="md:hidden" />
           <span className="hidden md:inline"> </span>
@@ -170,13 +170,13 @@ export default function Inicio() {
                   {moreToggle(false)}
                 </section>
               ) : (
-                <section key={`na-${next.job.id}`} className="mt-8 flex flex-col rounded-[24px] glass-forest p-6 text-white md:mt-6 md:[box-shadow:none] xl:mt-0">
+                <section key={`na-${next.job.id}`} className="mt-8 flex flex-col rounded-[24px] glass-forest p-6 text-white short:mt-6 short:p-5 md:mt-6 md:p-6 md:[box-shadow:none] xl:mt-0">
                   <span className="font-mono text-xs uppercase tracking-[1.44px] text-white/80">{t.nextAction}</span>
-                  <p className="mt-4 font-serif text-[28px] leading-8 tracking-[-0.56px]">{copy.title}</p>
+                  <p className="mt-4 font-serif text-[28px] leading-8 tracking-[-0.56px] short:mt-3 short:text-[24px] short:leading-7 md:mt-4 md:text-[28px] md:leading-8">{copy.title}</p>
                   <p className="mt-2 text-sm leading-5 text-white/80">{copy.detail}</p>
                   <Link
                     href={alertHref(next)}
-                    className={`mt-6 flex h-[53px] items-center justify-center gap-2 rounded-[20px] bg-white text-sm font-bold text-forest transition active:scale-[0.98] md:h-12 md:self-start md:rounded-[12px] md:px-6 ${ring} focus-visible:ring-white focus-visible:ring-offset-forest`}
+                    className={`mt-6 flex h-[53px] items-center justify-center gap-2 rounded-[20px] bg-white text-sm font-bold text-forest transition active:scale-[0.98] short:mt-4 short:h-12 md:mt-6 md:h-12 md:self-start md:rounded-[12px] md:px-6 ${ring} focus-visible:ring-white focus-visible:ring-offset-forest`}
                   >
                     {copy.mano && <Sparkles className="size-4" strokeWidth={2.5} />}
                     {copy.cta}
@@ -338,12 +338,12 @@ export default function Inicio() {
       </div>
 
       {/* Primary action, always reachable (desktop: it's in the sidebar) */}
-      <div className="fixed inset-x-0 bottom-0 bg-gradient-to-t from-ivory from-55% to-transparent pb-[max(24px,env(safe-area-inset-bottom))] pt-8 lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 bg-gradient-to-t from-ivory from-55% to-transparent pb-[max(24px,env(safe-area-inset-bottom))] pt-8 short:pb-[max(16px,env(safe-area-inset-bottom))] short:pt-6 lg:hidden">
         <div className="mx-auto max-w-[430px] px-[25px] md:max-w-[720px] md:px-12">
           {/* one button; the next screen asks "Estimado o Factura?" with nothing pre-selected, so it can't be forgotten */}
           <Link
             href="/trabajos/nuevo"
-            className={`flex h-[60px] items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-lg shadow-forest/20 transition active:scale-[0.98] ${ring}`}
+            className={`flex h-[60px] items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-lg shadow-forest/20 transition active:scale-[0.98] short:h-14 ${ring}`}
           >
             <Plus className="size-5" strokeWidth={2.75} />
             {t.newJob}
