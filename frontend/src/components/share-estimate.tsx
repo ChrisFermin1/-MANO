@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { Check, Copy, MessageCircle, QrCode, Share2, Smartphone } from "lucide-react";
-import { balanceDue, estimateLink, firstName, fmtDate, isUnsent, markSent, money, smsLink, whatsappLink, type Job } from "@/lib/api";
+import { estimateLink, firstName, isUnsent, markSent, shareCopy, smsLink, whatsappLink, type Job } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { PdfButton } from "@/components/pdf-button";
@@ -28,20 +28,10 @@ export function ShareEstimate({
   const [showQr, setShowQr] = useState(false);
   const [canShare, setCanShare] = useState(false);
   const [biz, setBiz] = useState<Business>(DEMO_BUSINESS);
-  const n = firstName(job.customer_name);
   // once there's an invoice, the same link shows the invoice
   const invoice = !!job.invoice_number;
-  const due = job.invoice_due_at ? fmtDate(job.invoice_due_at, "en") : "";
-  const dueEs = job.invoice_due_at ? fmtDate(job.invoice_due_at, "es") : "";
-  const msg = invoice
-    ? {
-        en: `Hi ${n}, here's your invoice for ${money(balanceDue(job))}${due ? `, due ${due}` : ""}. You can see it here:`,
-        es: `Hola ${n}, aquí está tu factura por ${money(balanceDue(job))}${dueEs ? `, vence el ${dueEs}` : ""}. La puedes ver aquí:`,
-      }
-    : {
-        en: `Hi ${n}, here's your estimate. You can review and approve it here:`,
-        es: `Hola ${n}, aquí está tu estimado. Lo puedes revisar y aprobar aquí:`,
-      };
+  const kind = invoice ? "invoice" : "estimate";
+  const msg = shareCopy(job, kind, "link", biz.businessName);
 
   useEffect(() => {
     // on "localhost" this swaps in the Mac's Wi-Fi address, so the QR/link opens on a phone
@@ -76,7 +66,7 @@ export function ShareEstimate({
 
   const share = async () => {
     try {
-      await navigator.share({ title: invoice ? "Invoice" : "Estimate", text: msg.en, url: link });
+      await navigator.share({ title: msg.title, text: msg.en, url: link });
       sharing();
     } catch {
       // user closed the share sheet — not sent

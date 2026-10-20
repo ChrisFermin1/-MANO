@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import type { Job } from "@/lib/api";
+import { shareCopy } from "@/lib/api";
 import type { Business } from "@/lib/business";
 import { pdfName } from "@/components/document";
 import { publicFiles, type PublicAttachment } from "@/lib/attachments";
@@ -34,7 +35,8 @@ function download(file: File) {
 }
 
 /** "Descargar PDF" downloads. In the send box (`share`), it sends the PDF itself: the phone's share sheet
- *  (WhatsApp, email…), or a download when there's no share sheet or the phone refuses it. */
+ *  (WhatsApp, email… with subject + message when the app supports it), or a download when there's no
+ *  share sheet or the phone refuses it. */
 export function PdfButton({
   kind,
   job,
@@ -71,11 +73,22 @@ export function PdfButton({
     try {
       const file = await makePdf(kind, job, biz, view, photos);
       const phone = window.matchMedia("(pointer: coarse)").matches;
-      if (share && phone && navigator.canShare?.({ files: [file] })) {
+      if (share && phone && typeof navigator.canShare === "function") {
+        const { title, en: text } = shareCopy(job, kind, "pdf", biz.businessName);
+        // Mail often uses title as subject and text as the body; file is the attachment
+        const withCopy = { files: [file], title, text };
+        const filesOnly = { files: [file] };
         try {
-          await navigator.share({ files: [file] });
-          onDone?.();
-          return;
+          if (navigator.canShare(withCopy)) {
+            await navigator.share(withCopy);
+            onDone?.();
+            return;
+          }
+          if (navigator.canShare(filesOnly)) {
+            await navigator.share(filesOnly);
+            onDone?.();
+            return;
+          }
         } catch (err) {
           if ((err as Error).name === "AbortError") return; // he closed the share sheet: not sent
           // the share sheet can refuse after the wait (no tap anymore): download instead

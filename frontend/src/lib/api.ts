@@ -822,6 +822,41 @@ export const smsLink = (phone: string | null | undefined, text: string) => {
   return d ? `sms:+${d}?&body=${encodeURIComponent(text)}` : null; // "?&body" works on iOS and Android
 };
 
+/** Subject + body when Carlos shares the link or the PDF. The customer always gets English (`en`).
+ *  `from` is the business name → email subject "Invoice from Visão". PDF omits "see it here" (the file is the doc). */
+export function shareCopy(job: Job, kind: "estimate" | "invoice", channel: "link" | "pdf" = "link", from?: string) {
+  const n = firstName(job.customer_name);
+  const due = job.invoice_due_at ? fmtDate(job.invoice_due_at, "en") : "";
+  const dueEs = job.invoice_due_at ? fmtDate(job.invoice_due_at, "es") : "";
+  const doc = kind === "invoice" ? "Invoice" : "Estimate";
+  const title = from?.trim() ? `${doc} from ${from.trim()}` : doc;
+  if (kind === "invoice") {
+    const amt = money(balanceDue(job));
+    return {
+      title,
+      en:
+        channel === "pdf"
+          ? `Hi ${n}, here's your invoice for ${amt}${due ? `, due ${due}` : ""}.`
+          : `Hi ${n}, here's your invoice for ${amt}${due ? `, due ${due}` : ""}. You can see it here:`,
+      es:
+        channel === "pdf"
+          ? `Hola ${n}, aquí está tu factura por ${amt}${dueEs ? `, vence el ${dueEs}` : ""}.`
+          : `Hola ${n}, aquí está tu factura por ${amt}${dueEs ? `, vence el ${dueEs}` : ""}. La puedes ver aquí:`,
+    };
+  }
+  return {
+    title,
+    en:
+      channel === "pdf"
+        ? `Hi ${n}, here's your estimate.`
+        : `Hi ${n}, here's your estimate. You can review and approve it here:`,
+    es:
+      channel === "pdf"
+        ? `Hola ${n}, aquí está tu estimado.`
+        : `Hola ${n}, aquí está tu estimado. Lo puedes revisar y aprobar aquí:`,
+  };
+}
+
 export const fmtDate = (iso: string, lang: "es" | "en" = "en") =>
   new Date(iso).toLocaleDateString(lang === "es" ? "es-US" : "en-US", { month: "short", day: "numeric", year: "numeric" });
 
