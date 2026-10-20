@@ -139,6 +139,7 @@ Update this table (status + commit) after each task.
 | PDF download: real PDF of the estimate/invoice (Carlos's pages: English customer version; customer link: their language). Phone opens the share sheet, computer downloads. New dependency `@react-pdf/renderer` → run `npm ci` after pulling | `1ea4ded` | — (made on the phone, no backend). Later, for email: the backend could make the same PDF |
 | PDF with the app's fonts; PDF in the send box ("Copiar · QR · PDF", counts as sending). Bug: "Facturar sin estimado" still showed "send the estimate" on Home until sent — fixed with `isInvoiceJob()` | `422dadd` | — |
 | PDF preview removed (the page already shows the document): "Descargar PDF" downloads; the send box's "PDF" opens the share sheet | `04daf45` | — |
+| Onboarding steps 1 and 2: Siguiente / Terminar pinned to the bottom, tighter spacing on phone screens (the button was below the screen in Safari) | `c719fc6` | — |
 
 
 ## After this list
