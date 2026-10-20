@@ -10,7 +10,8 @@ export function docData(kind: "estimate" | "invoice", job: Job, view: "en" | "es
   const es = view === "es";
   const L = (en: string, sp: string) => (es ? sp : en);
 
-  const num = isInvoice ? job.invoice_number : job.estimate_number;
+  // an invoice not made yet shows the number he picked for it (Número de factura on the job)
+  const num = isInvoice ? (job.invoice_number ?? job.invoice_number_planned ?? null) : job.estimate_number;
   const label = num ? (isInvoice ? invoiceNo(num) : estimateNo(num)) : L("NOT SENT", "SIN ENVIAR");
   const issued = (isInvoice ? job.invoice_sent_at : job.estimate_sent_at) ?? new Date().toISOString();
   const due = job.invoice_due_at ?? defaultDue();

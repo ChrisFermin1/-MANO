@@ -46,7 +46,7 @@ export default function Factura() {
       setJob(j);
       if (j) {
         setDue(dueDay(j.invoice_due_at ?? defaultDue()));
-        setNum(String(j.invoice_number ?? peekInvoiceNumber()));
+        setNum(String(j.invoice_number ?? j.invoice_number_planned ?? peekInvoiceNumber()));
       }
     });
     setBiz({ ...DEMO_BUSINESS, ...loadBusiness() });
@@ -83,14 +83,14 @@ export default function Factura() {
   const commitNumber = async () => {
     const n = Number(num);
     if (!num || !Number.isInteger(n) || n < 1) {
-      setNum(String(job.invoice_number ?? peekInvoiceNumber()));
+      setNum(String(job.invoice_number ?? job.invoice_number_planned ?? peekInvoiceNumber()));
       setNumError(null);
       return;
     }
-    if (n === job.invoice_number) return setNumError(null);
+    if (n === (job.invoice_number ?? job.invoice_number_planned)) return setNumError(null);
     if (invoiceNumberTaken(n, job.id)) return setNumError(t.invoiceNumberTaken(invoiceNo(n)));
     setNumError(null);
-    if (job.invoice_number) setJob(await setInvoiceNumber(job.id, n));
+    setJob(await setInvoiceNumber(job.id, n)); // made: changes it · not made yet: remembered for when it is
   };
   const shownNumber = Number(num) >= 1 && !numError ? Number(num) : job.invoice_number;
 

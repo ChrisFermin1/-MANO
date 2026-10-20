@@ -64,6 +64,7 @@ export type Job = {
   // One price for the whole job ("Total 1400$ only labor"): items list the work, no per-item prices.
   // Set → the job total is this; null/absent → the total is the sum of the items.
   job_total?: number | null;
+  invoice_number_planned?: number | null; // the number he picked before making the invoice (app only); used when it's made
   invoice_due_custom?: boolean; // Carlos picked this invoice's due date himself → sending doesn't reset it (app only)
   note_totals?: number[]; // "Total" amounts written on a scanned/typed note, to check against the item prices (app only)
   payments?: Payment[]; // money received on the invoice, full or partial (app only until the backend has payments)
@@ -528,13 +529,15 @@ export const peekInvoiceNumber = () => nextNumber("invoice_number");
 export const highestInvoiceNumber = () => Math.max(0, ...read().map((j) => j.invoice_number ?? 0));
 /** Another invoice already has this number. */
 export const invoiceNumberTaken = (n: number, exceptJobId?: number) =>
-  read().some((j) => j.id !== exceptJobId && j.invoice_number === n);
+  read().some((j) => j.id !== exceptJobId && (j.invoice_number === n || (!j.invoice_number && j.invoice_number_planned === n)));
 const validInvoiceNumber = (n: number) => Number.isInteger(n) && n >= 1 && n <= 999999;
 
-// PATCH /jobs/:id {invoice_number} — fix an invoice's number (e.g. to match what he used in Wave)
+// PATCH /jobs/:id {invoice_number} — fix an invoice's number (e.g. to match what he used in Wave).
+// Not made yet → it's remembered and used when the invoice is made.
 export async function setInvoiceNumber(id: number, n: number): Promise<Job> {
   if (!validInvoiceNumber(n) || invoiceNumberTaken(n, id)) throw new Error("taken");
-  const saved = await updateJob(id, { invoice_number: n });
+  const made = !!(await getJob(id))?.invoice_number;
+  const saved = await updateJob(id, made ? { invoice_number: n } : { invoice_number_planned: n });
   if (saved.public_token) void publishEstimate(saved, loadBusiness()); // the customer's link shows the new number
   return saved;
 }
@@ -602,7 +605,8 @@ export async function prepareInvoice(id: number, due?: string, number?: number):
   if (!canSendInvoice(job)) throw new Error("This job can't be invoiced yet");
   const now = new Date();
   // a number he typed (if it's free), else the next one
-  const picked = number && validInvoiceNumber(number) && !invoiceNumberTaken(number, id) ? number : null;
+  const free = (n?: number | null) => !!n && validInvoiceNumber(n) && !invoiceNumberTaken(n, id);
+  const picked = free(number) ? number! : free(job.invoice_number_planned) ? job.invoice_number_planned! : null;
   const ready = await updateJob(id, {
     invoice_number: job.invoice_number ?? picked ?? nextNumber("invoice_number"),
     // Carlos's date if he changed it; otherwise his terms, restarted by markSent() on the day it's really sent

@@ -43,6 +43,12 @@ import {
   isInvoiceJob,
   jobSites,
   linesBySite,
+  defaultDue,
+  dueDay,
+  invoiceNumberTaken,
+  peekInvoiceNumber,
+  setInvoiceDue,
+  setInvoiceNumber,
 } from "@/lib/api";
 import { ShareEstimate } from "@/components/share-estimate";
 import { JobFiles } from "@/components/job-files";
@@ -198,6 +204,9 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           <Check className="size-4" strokeWidth={3} /> {isInvoiceJob(job) ? t.ojoReadyInvoice : t.ojoReady}
         </p>
       )}
+
+      {/* Invoice: number and due date up front, like the top of an invoice (Wave puts them here too) */}
+      {isInvoiceJob(job) && <InvoiceDetails job={job} setJob={setJob} />}
 
       {/* Customer */}
       <section className="mt-6 space-y-3">
@@ -1225,6 +1234,72 @@ function JobActions({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </div>
       </Sheet>
     </div>
+  );
+}
+
+// Número de factura + Vence, before the invoice is made. Saved on the job and used when it's made.
+function InvoiceDetails({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
+  const { t } = useLang();
+  const current = job.invoice_number ?? job.invoice_number_planned ?? null;
+  const [num, setNum] = useState(() => String(current ?? peekInvoiceNumber()));
+  const [due, setDue] = useState(() => dueDay(job.invoice_due_at ?? defaultDue()));
+  const [error, setError] = useState<string | null>(null);
+  const box = "flex h-[48px] w-full items-center rounded-[14px] glass-field px-4 text-base ring-forest/60 focus-within:ring-2";
+
+  const commit = async () => {
+    const n = Number(num);
+    if (!num || !Number.isInteger(n) || n < 1) {
+      setNum(String(current ?? peekInvoiceNumber()));
+      return setError(null);
+    }
+    if (n === current) return setError(null);
+    if (invoiceNumberTaken(n, job.id)) return setError(t.invoiceNumberTaken(invoiceNo(n)));
+    setError(null);
+    setJob(await setInvoiceNumber(job.id, n));
+  };
+
+  return (
+    <section className="mt-6">
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block min-w-0">
+          <FieldLabel text={t.invoiceNumberLabel} missingTag={null} />
+          <span className={`${box} font-mono`}>
+            <span className="text-muted">INV-</span>
+            <input
+              value={num}
+              onChange={(e) => (setNum(e.target.value.replace(/\D/g, "").slice(0, 6)), setError(null))}
+              onBlur={() => void commit()}
+              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+              inputMode="numeric"
+              aria-invalid={!!error}
+              className="min-w-0 flex-1 bg-transparent outline-none"
+            />
+          </span>
+        </label>
+        <label className="block min-w-0">
+          <FieldLabel text={t.dueLabel} missingTag={null} />
+          <span className={box}>
+            <input
+              type="date"
+              value={due}
+              min={dueDay(new Date().toISOString())}
+              onChange={async (e) => {
+                const v = e.target.value;
+                if (!v) return;
+                setDue(v);
+                setJob(await setInvoiceDue(job.id, v));
+              }}
+              className="min-w-0 flex-1 bg-transparent outline-none"
+            />
+          </span>
+        </label>
+      </div>
+      {error && (
+        <p role="alert" className="mt-2 text-sm font-semibold text-overdue-ink">
+          {error}
+        </p>
+      )}
+    </section>
   );
 }
 
