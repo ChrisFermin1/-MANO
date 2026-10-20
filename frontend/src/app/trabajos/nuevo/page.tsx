@@ -155,7 +155,8 @@ export default function NuevoTrabajo() {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // the phone's own cleanup: less echo and room noise, steady volume (helps; the server keeps only Carlos's voice)
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -173,6 +174,7 @@ export default function NuevoTrabajo() {
           const audioBlob = new Blob(audioChunksRef.current, { type });
           const formData = new FormData();
           formData.append("file", audioBlob, type.includes("mp4") ? "audio.mp4" : "audio.webm");
+          formData.append("lang", lang); // the language he speaks: ElevenLabs stops guessing
 
           const response = await fetch(voiceUrl(), {
             method: "POST",
