@@ -93,7 +93,7 @@ export default function Inicio() {
         type="button"
         onClick={() => setShowAll((v) => !v)}
         aria-expanded={showAll}
-        className={`mt-3 w-full py-1 text-center text-sm font-semibold ${dark ? "text-white/80" : "text-forest"}`}
+        className={`mt-4 w-full py-1 text-center text-sm font-semibold underline-offset-4 hover:underline md:w-auto md:self-start md:text-left ${dark ? "text-white/80" : "text-forest"}`}
       >
         {showAll ? t.showLess : `+${t.nMore(ojoAlerts.length)}`}
       </button>
@@ -105,182 +105,191 @@ export default function Inicio() {
   const recent = recentRows.slice(0, 3);
   const waiting = (jobs ?? []).filter((j) => j.status === "QUOTE_SENT"); // estimates out, no answer yet
 
+  const ring = "outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 focus-visible:ring-offset-ivory";
+
   return (
     <main className="min-h-dvh bg-mano-light text-charcoal">
-      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[calc(120px+env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] lg:mx-0 lg:min-h-0 lg:max-w-[1100px] lg:px-12 lg:pb-16 lg:pt-8">
+      {/* Phone: one column. Tablet: a wider column with the summary as 2 × 2 and the jobs table.
+          Desktop: a 12-column grid, 24px gutters both ways. From 1280px: summary on 4 × 3 columns, then next step (5)
+          and recent jobs (7), ≈ 1 : 1.4, as close to the golden split as four equal summary cards allow. Below 1280
+          (a small laptop) the columns would be too narrow for the table, so it stays 2 × 2 and stacked. */}
+      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-[calc(120px+env(safe-area-inset-bottom))] pt-[calc(30px+env(safe-area-inset-top))] md:max-w-[720px] md:px-12 lg:mx-0 lg:min-h-0 lg:max-w-[1100px] lg:pb-16 lg:pt-8">
         {/* desktop: the sidebar has the logo and Tu negocio */}
         <header className="flex items-center justify-between lg:hidden">
           <span className="font-logo text-[32px] leading-none tracking-[-0.96px] text-forest">mano</span>
           <Link
             href="/negocio"
             aria-label={t.openSettings}
-            className="flex size-10 items-center justify-center rounded-full bg-forest text-base font-semibold text-white transition active:scale-95"
+            className={`flex size-10 items-center justify-center rounded-full bg-forest text-base font-semibold text-white transition active:scale-95 ${ring}`}
           >
             {name.charAt(0).toUpperCase()}
           </Link>
         </header>
 
-        <h1 className="mt-10 lg:mt-0 font-serif text-[36px] leading-10 tracking-[-0.72px]">
+        <h1 className="mt-10 font-serif text-[36px] leading-10 tracking-[-0.72px] lg:mt-0">
           {hour !== null && <>{t.greeting(hour)},</>}
-          <br className="lg:hidden" />
-          <span className="hidden lg:inline"> </span>
+          <br className="md:hidden" />
+          <span className="hidden md:inline"> </span>
           <span className="text-forest">{name}!</span>
         </h1>
 
-        {/* desktop: the numbers that matter, in one row */}
+        {/* tablet + desktop: the numbers that matter. Same card, same order, numbers on one baseline */}
         {jobs && (
-          <div className="mt-6 hidden grid-cols-4 gap-4 lg:grid">
-            <Link href="/documentos?tab=invoices" className="rounded-[16px] border border-black/5 bg-white p-4 transition hover:border-forest/30">
-              <span className="block text-sm text-muted">{t.owedTitle}</span>
-              <span className="mt-1 block text-[28px] font-bold leading-8">{money(cash?.owed ?? 0)}</span>
-            </Link>
-            <Link
-              href="/documentos?tab=invoices"
-              className={`rounded-[16px] border p-4 transition hover:border-forest/30 ${cash && cash.overdue > 0 ? "border-overdue bg-overdue" : "border-black/5 bg-white"}`}
-            >
-              <span className={`block text-sm ${cash && cash.overdue > 0 ? "text-overdue-ink" : "text-muted"}`}>{t.overdueLabel}</span>
-              <span className={`mt-1 block text-[28px] font-bold leading-8 ${cash && cash.overdue > 0 ? "text-overdue-ink" : ""}`}>{money(cash?.overdue ?? 0)}</span>
-            </Link>
-            <Link href="/documentos?tab=invoices" className="rounded-[16px] border border-sage bg-sage p-4 transition hover:border-forest/30">
-              <span className="block text-sm text-forest">{t.paidThisMonth}</span>
-              <span className="mt-1 block text-[28px] font-bold leading-8 text-forest">{money(cash?.paidThisMonth ?? 0)}</span>
-            </Link>
-            <Link href="/documentos?tab=estimates" className="rounded-[16px] border border-black/5 bg-white p-4 transition hover:border-forest/30">
-              <span className="block text-sm text-muted">{t.waitingAnswer}</span>
-              <span className="mt-1 block text-[28px] font-bold leading-8">{waiting.length}</span>
-              {waiting.length > 0 && <span className="text-xs text-muted">{money(waiting.reduce((sum, j) => sum + jobTotal(j), 0))}</span>}
-            </Link>
+          <div className="mt-8 hidden gap-6 md:grid md:grid-cols-2 xl:grid-cols-4">
+            <Stat href="/documentos?tab=invoices" label={t.owedTitle} value={money(cash?.owed ?? 0)} ring={ring} />
+            <Stat href="/documentos?tab=invoices" label={t.overdueLabel} value={money(cash?.overdue ?? 0)} tone={cash && cash.overdue > 0 ? "overdue" : undefined} ring={ring} />
+            <Stat href="/documentos?tab=invoices" label={t.paidThisMonth} value={money(cash?.paidThisMonth ?? 0)} tone="paid" ring={ring} />
+            <Stat
+              href="/documentos?tab=estimates"
+              label={t.waitingAnswer}
+              value={String(waiting.length)}
+              sub={waiting.length > 0 ? money(waiting.reduce((sum, j) => sum + jobTotal(j), 0)) : undefined}
+              ring={ring}
+            />
           </div>
         )}
 
-        {/* desktop: next step on the left, recent jobs on the right */}
-        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start lg:gap-5">
-        <div>
-        {/* Next action — the ONE thing to do now. Turns into good news when a customer approved. */}
-        {next && copy &&
-          (approval ? (
-            <section key={`ok-${approval.job.id}`} className="mt-7 rounded-[24px] glass-sage p-5 text-forest motion-safe:animate-[pop-in_300ms_ease-out]">
-              <span className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-[1.44px]">
-                <PartyPopper className="size-5" strokeWidth={2} /> {t.goodNews}
-              </span>
-              <p className="mt-3 font-serif text-[28px] leading-8 tracking-[-0.56px]">{t.approvedHero(firstName(approval.job.customer_name))}</p>
-              <p className="mt-1 text-2xl font-bold">{money(jobTotal(approval.job))}</p>
-              <p className="mt-2 text-sm font-semibold">{t.approvedNext}</p>
-              <Link
-                href={alertHref(approval)}
-                className="mt-5 flex h-[53px] items-center justify-center gap-2 rounded-[20px] bg-forest text-sm font-bold text-white transition active:scale-[0.98]"
-              >
-                {t.viewJob}
-              </Link>
-              {moreToggle(false)}
-            </section>
-          ) : (
-            <section key={`na-${next.job.id}`} className="mt-7 rounded-[20px] glass-forest p-5 text-white">
-              <span className="font-mono text-xs uppercase tracking-[1.44px] text-white">{t.nextAction}</span>
-              <p className="mt-2 font-serif text-[28px] leading-8 tracking-[-0.56px]">{copy.title}</p>
-              <p className="mt-1 text-sm leading-5 text-white/80">{copy.detail}</p>
-              <Link
-                href={alertHref(next)}
-                className="mt-5 flex h-[53px] items-center justify-center gap-2 rounded-[20px] bg-white text-sm font-bold text-forest transition active:scale-[0.98]"
-              >
-                {copy.mano && <Sparkles className="size-4" strokeWidth={2.5} />}
-                {copy.cta}
-              </Link>
-              {moreToggle(true)}
-            </section>
-          ))}
+        <div className="xl:mt-6 xl:grid xl:grid-cols-12 xl:items-start xl:gap-6">
+          <div className="xl:col-span-5">
+            {/* Next action — the ONE thing to do now. Turns into good news when a customer approved. */}
+            {next && copy &&
+              (approval ? (
+                <section key={`ok-${approval.job.id}`} className="mt-8 flex flex-col rounded-[24px] glass-sage p-6 text-forest motion-safe:animate-[pop-in_300ms_ease-out] md:mt-6 md:[box-shadow:none] xl:mt-0">
+                  <span className="flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-[1.44px]">
+                    <PartyPopper className="size-5" strokeWidth={2} /> {t.goodNews}
+                  </span>
+                  <p className="mt-4 font-serif text-[28px] leading-8 tracking-[-0.56px]">{t.approvedHero(firstName(approval.job.customer_name))}</p>
+                  <p className="mt-2 text-2xl font-bold tabular-nums">{money(jobTotal(approval.job))}</p>
+                  <p className="mt-2 text-sm font-semibold">{t.approvedNext}</p>
+                  <Link
+                    href={alertHref(approval)}
+                    className={`mt-6 flex h-[53px] items-center justify-center gap-2 rounded-[20px] bg-forest text-sm font-bold text-white transition active:scale-[0.98] md:h-12 md:self-start md:rounded-[12px] md:px-6 ${ring}`}
+                  >
+                    {t.viewJob}
+                  </Link>
+                  {moreToggle(false)}
+                </section>
+              ) : (
+                <section key={`na-${next.job.id}`} className="mt-8 flex flex-col rounded-[24px] glass-forest p-6 text-white md:mt-6 md:[box-shadow:none] xl:mt-0">
+                  <span className="font-mono text-xs uppercase tracking-[1.44px] text-white/80">{t.nextAction}</span>
+                  <p className="mt-4 font-serif text-[28px] leading-8 tracking-[-0.56px]">{copy.title}</p>
+                  <p className="mt-2 text-sm leading-5 text-white/80">{copy.detail}</p>
+                  <Link
+                    href={alertHref(next)}
+                    className={`mt-6 flex h-[53px] items-center justify-center gap-2 rounded-[20px] bg-white text-sm font-bold text-forest transition active:scale-[0.98] md:h-12 md:self-start md:rounded-[12px] md:px-6 ${ring} focus-visible:ring-white focus-visible:ring-offset-forest`}
+                  >
+                    {copy.mano && <Sparkles className="size-4" strokeWidth={2.5} />}
+                    {copy.cta}
+                  </Link>
+                  {moreToggle(true)}
+                </section>
+              ))}
 
-        {/* Ojo — the rest of the list, right under "+N más" when opened; "all clear" when nothing is pending */}
-        {jobs && ((showAll && ojoAlerts.length > 0) || !next) && (
-          <section className={`${next ? "mt-3" : "mt-7"} rounded-[20px] glass-peach p-4`}>
-            <div className="flex items-center gap-2">
-              <Eye className="size-6 text-[#b8803f]" strokeWidth={1.75} />
-              <span className="font-mono text-xs font-medium uppercase tracking-[1.44px]">Ojo</span>
-            </div>
-            <p className="mt-2 text-base font-semibold leading-5">
-              {ojoAlerts.length ? (next ? t.ojoAlso(ojoAlerts.length) : t.ojoAttention(ojoAlerts.length)) : t.allClear}
-            </p>
-            {ojoAlerts.length > 0 && (
-              <ul className="mt-3 space-y-2">
-                {ojoAlerts.map((a) => (
-                  <li key={a.job.id}>
-                    <Link href={alertHref(a)} className="flex items-center gap-3 rounded-[14px] bg-white/75 px-4 py-3 transition active:scale-[0.99]">
-                      <span className="flex-1">
-                        <span className="block text-base font-semibold leading-5">{a.job.customer_name || "—"}</span>
-                        <span className="block text-sm leading-5">{alertText(a, t)}</span>
-                        {a.kind === "no_response" && <span className="block text-xs text-muted">{t.daysAgo(a.days)}</span>}
-                      </span>
-                      <span className="flex items-center text-sm font-bold text-forest">
-                        {t.review}
-                        <ChevronRight className="size-4" strokeWidth={2.5} />
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            {/* Ojo — the rest of the list, right under "+N más" when opened; "all clear" when nothing is pending */}
+            {jobs && ((showAll && ojoAlerts.length > 0) || !next) && (
+              <section className={`${next ? "mt-4 md:mt-6" : "mt-8 md:mt-6 xl:mt-0"} rounded-[20px] glass-peach p-4 md:rounded-[24px] md:p-6 md:[box-shadow:none]`}>
+                <div className="flex items-center gap-2">
+                  <Eye className="size-6 text-[#b8803f]" strokeWidth={1.75} />
+                  <span className="font-mono text-xs font-medium uppercase tracking-[1.44px]">Ojo</span>
+                </div>
+                <p className="mt-2 text-base font-semibold leading-5">
+                  {ojoAlerts.length ? (next ? t.ojoAlso(ojoAlerts.length) : t.ojoAttention(ojoAlerts.length)) : t.allClear}
+                </p>
+                {ojoAlerts.length > 0 && (
+                  <ul className="mt-4 space-y-2">
+                    {ojoAlerts.map((a) => (
+                      <li key={a.job.id}>
+                        <Link href={alertHref(a)} className={`flex items-center gap-4 rounded-[14px] bg-white/75 px-4 py-3 transition active:scale-[0.99] ${ring}`}>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-base font-semibold leading-5">{a.job.customer_name || "—"}</span>
+                            <span className="block text-sm leading-5">{alertText(a, t)}</span>
+                            {a.kind === "no_response" && <span className="block text-xs text-muted">{t.daysAgo(a.days)}</span>}
+                          </span>
+                          <span className="flex shrink-0 items-center text-sm font-bold text-forest">
+                            {t.review}
+                            <ChevronRight className="size-4" strokeWidth={2.5} />
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
             )}
-          </section>
-        )}
+          </div>
 
-        </div>
-        <div>
-        {/* Money — how much Carlos is owed. Hidden until his first invoice (no wall of $0s for new users). */}
-        {cash?.hasInvoices && (
-          <Link href="/documentos?tab=invoices" className={`mt-4 block rounded-[20px] glass p-5 transition active:scale-[0.99] lg:hidden`}>
-            <span className="flex items-center justify-between text-sm font-medium text-muted">
-              {t.owedTitle}
-              <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
-            </span>
-            <span className="mt-0.5 block text-[40px] font-bold leading-[44px]">{money(cash.owed)}</span>
-            <span className="mt-3 flex flex-wrap gap-2 text-sm">
-              {cash.overdue > 0 && (
-                <span className="rounded-full bg-overdue px-3 py-1 font-semibold text-overdue-ink">
-                  {t.overdueLabel} {money(cash.overdue)}
+          <div className="xl:col-span-7">
+            {/* Money — how much Carlos is owed. Hidden until his first invoice (no wall of $0s for new users). */}
+            {cash?.hasInvoices && (
+              <Link href="/documentos?tab=invoices" className={`mt-4 block rounded-[20px] glass p-5 transition active:scale-[0.99] md:hidden ${ring}`}>
+                <span className="flex items-center justify-between text-sm font-medium text-muted">
+                  {t.owedTitle}
+                  <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
                 </span>
-              )}
-              <span className="rounded-full bg-sage px-3 py-1 font-semibold text-forest">
-                {t.paidThisMonth} {money(cash.paidThisMonth)}
-              </span>
-            </span>
-          </Link>
-        )}
-
-        {/* desktop: recent jobs as a table */}
-        {recentRows.length > 0 && (
-          <section className="mt-7 hidden overflow-hidden rounded-[20px] border border-black/5 bg-white lg:block">
-            <div className="flex items-center justify-between px-4 pb-2 pt-4">
-              <h2 className="text-base font-semibold">{t.recentJobs}</h2>
-              <Link href="/trabajos" className="flex items-center text-sm font-bold text-forest hover:underline">
-                {t.seeAll}
-                <ChevronRight className="size-4" strokeWidth={2.5} />
+                <span className="mt-0.5 block text-[40px] font-bold leading-[44px] tabular-nums">{money(cash.owed)}</span>
+                <span className="mt-3 flex flex-wrap gap-2 text-sm tabular-nums">
+                  {cash.overdue > 0 && (
+                    <span className="rounded-full bg-overdue px-3 py-1 font-semibold text-overdue-ink">
+                      {t.overdueLabel} {money(cash.overdue)}
+                    </span>
+                  )}
+                  <span className="rounded-full bg-sage px-3 py-1 font-semibold text-forest">
+                    {t.paidThisMonth} {money(cash.paidThisMonth)}
+                  </span>
+                </span>
               </Link>
-            </div>
-            <table className="w-full text-left text-sm">
-              <tbody>
-                {recentRows.map((r) => {
-                  const b = jobBadge(r.job);
-                  const total = r.total;
-                  return (
-                    <tr key={r.id} onClick={() => router.push(r.href)} className="cursor-pointer border-t border-black/5 transition hover:bg-ivory/70">
-                      <td className="max-w-[180px] truncate py-3 pl-4 pr-2 font-semibold">{r.client}</td>
-                      <td className="max-w-[200px] truncate px-2 py-3 text-charcoal/70">{r.subtitle}</td>
-                      <td className="px-2 py-3">
-                        <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold ${BADGE_STYLE[b]}`}>{t.badge[b]}</span>
-                      </td>
-                      <td className="whitespace-nowrap py-3 pl-2 pr-4 text-right font-bold">{total > 0 ? money(total) : "—"}</td>
+            )}
+
+            {/* tablet + desktop: recent jobs as a table (same columns as Trabajos, fewer of them) */}
+            {recentRows.length > 0 && (
+              <section className="mt-6 hidden overflow-hidden rounded-[16px] border border-black/[0.06] bg-white md:block xl:mt-0">
+                <div className="flex h-14 items-center justify-between px-6">
+                  <h2 className="text-base font-semibold">{t.recentJobs}</h2>
+                  <Link href="/trabajos" className={`-mr-2 flex items-center rounded-[8px] px-2 py-1 text-sm font-bold text-forest hover:underline ${ring}`}>
+                    {t.seeAll}
+                    <ChevronRight className="size-4" strokeWidth={2.5} />
+                  </Link>
+                </div>
+                <table className="w-full table-fixed text-left text-sm">
+                  <thead className="border-y border-black/5 bg-ivory/60 font-mono text-[11px] uppercase tracking-[1px] text-muted">
+                    <tr>
+                      <th scope="col" className="w-[34%] py-2 pl-6 pr-3 font-medium">{t.colClient}</th>
+                      <th scope="col" className="px-3 py-2 font-medium">{t.colJob}</th>
+                      <th scope="col" className="w-[18%] px-3 py-2 font-medium">{t.colStatus}</th>
+                      <th scope="col" className="w-[16%] py-2 pl-3 pr-6 text-right font-medium">{t.colTotal}</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </section>
-        )}
-        </div>
+                  </thead>
+                  <tbody>
+                    {recentRows.map((r) => {
+                      const b = jobBadge(r.job);
+                      const where = r.place ?? (r.sites > 1 ? t.nSites(r.sites) : null);
+                      return (
+                        <tr key={r.id} onClick={() => router.push(r.href)} className="h-16 cursor-pointer border-t border-black/5 transition first:border-t-0 hover:bg-ivory/70">
+                          <td className="py-3 pl-6 pr-3">
+                            {/* the name is the row's link, so the keyboard can open it too */}
+                            <Link href={r.href} onClick={(e) => e.stopPropagation()} className={`block truncate rounded-[4px] font-semibold ${ring}`}>
+                              {r.client}
+                            </Link>
+                            {where && <span title={where} className="block truncate text-[13px] leading-5 text-muted">{where}</span>}
+                          </td>
+                          <td title={r.service} className="truncate px-3 py-3 text-charcoal/75">{r.service}</td>
+                          <td className="px-3 py-3">
+                            <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold ${BADGE_STYLE[b]}`}>{t.badge[b]}</span>
+                          </td>
+                          <td className="whitespace-nowrap py-3 pl-3 pr-6 text-right font-bold tabular-nums">{r.total > 0 ? money(r.total) : "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </section>
+            )}
+          </div>
         </div>
 
         {/* Recent jobs — what's going on with the latest work */}
         {recent.length > 0 && (
-          <section className="mt-4 rounded-[20px] glass p-4 lg:hidden">
+          <section className="mt-4 rounded-[20px] glass p-4 md:hidden">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold">{t.recentJobs}</h2>
               <Link href="/trabajos" className="flex items-center text-sm font-bold text-forest">
@@ -297,7 +306,7 @@ export default function Inicio() {
                     <Link href={r.href} className="flex items-center gap-3 py-3">
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[15px] font-semibold leading-5">{r.client}</span>
-                        <span className="block truncate text-sm text-muted">
+                        <span className="block truncate text-sm text-muted tabular-nums">
                           {r.subtitle}
                           {total > 0 && ` · ${money(total)}`}
                         </span>
@@ -311,29 +320,30 @@ export default function Inicio() {
           </section>
         )}
 
+        {/* phone + tablet: the other lists (desktop: in the sidebar) */}
         {jobs && (
-          <Link href="/documentos" className="mt-3 flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99] lg:hidden">
-            <FileText className="size-5 text-forest" strokeWidth={2} />
-            <span className="flex-1 text-base font-semibold">{t.docsTitle}</span>
-            <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
-          </Link>
-        )}
-        {jobs && (
-          <Link href="/clientes" className="mt-3 flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99] lg:hidden">
-            <Users className="size-5 text-forest" strokeWidth={2} />
-            <span className="flex-1 text-base font-semibold">{t.clientsTitle}</span>
-            <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
-          </Link>
+          <div className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 md:gap-6 lg:hidden">
+            <Link href="/documentos" className={`flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99] ${ring}`}>
+              <FileText className="size-5 text-forest" strokeWidth={2} />
+              <span className="flex-1 text-base font-semibold">{t.docsTitle}</span>
+              <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
+            </Link>
+            <Link href="/clientes" className={`flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99] ${ring}`}>
+              <Users className="size-5 text-forest" strokeWidth={2} />
+              <span className="flex-1 text-base font-semibold">{t.clientsTitle}</span>
+              <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
+            </Link>
+          </div>
         )}
       </div>
 
       {/* Primary action, always reachable (desktop: it's in the sidebar) */}
-      <div className="fixed inset-x-0 bottom-0 lg:hidden bg-gradient-to-t from-ivory from-55% to-transparent pb-[max(24px,env(safe-area-inset-bottom))] pt-8">
-        <div className="mx-auto max-w-[430px] px-[25px]">
+      <div className="fixed inset-x-0 bottom-0 bg-gradient-to-t from-ivory from-55% to-transparent pb-[max(24px,env(safe-area-inset-bottom))] pt-8 lg:hidden">
+        <div className="mx-auto max-w-[430px] px-[25px] md:max-w-[720px] md:px-12">
           {/* one button; the next screen asks "Estimado o Factura?" with nothing pre-selected, so it can't be forgotten */}
           <Link
             href="/trabajos/nuevo"
-            className="flex h-[60px] items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-lg shadow-forest/20 transition active:scale-[0.98]"
+            className={`flex h-[60px] items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-lg shadow-forest/20 transition active:scale-[0.98] ${ring}`}
           >
             <Plus className="size-5" strokeWidth={2.75} />
             {t.newJob}
@@ -341,5 +351,22 @@ export default function Inicio() {
         </div>
       </div>
     </main>
+  );
+}
+
+// One summary number: label on top, value underneath. Color only means something: red = overdue, green = paid.
+function Stat({ href, label, value, sub, tone, ring }: { href: string; label: string; value: string; sub?: string; tone?: "overdue" | "paid"; ring: string }) {
+  const ink = tone === "overdue" ? "text-overdue-ink" : tone === "paid" ? "text-forest" : "";
+  return (
+    <Link href={href} className={`flex flex-col justify-between rounded-[16px] border border-black/[0.06] bg-white p-6 transition hover:border-forest/30 ${ring}`}>
+      <span className="flex items-center gap-2 text-sm leading-5 text-charcoal/60">
+        {tone && <span aria-hidden className={`size-2 rounded-full ${tone === "overdue" ? "bg-overdue-ink" : "bg-forest"}`} />}
+        {label}
+      </span>
+      <span className="mt-4 flex items-baseline gap-2">
+        <span className={`text-[28px] font-bold leading-8 tabular-nums ${ink}`}>{value}</span>
+        {sub && <span className="text-sm text-muted tabular-nums">{sub}</span>}
+      </span>
+    </Link>
   );
 }
