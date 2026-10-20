@@ -41,8 +41,10 @@ async function tx<T>(mode: IDBTransactionMode, run: (s: IDBObjectStore) => IDBRe
   return new Promise((resolve, reject) => {
     const t = db.transaction(STORE, mode);
     const req = run(t.objectStore(STORE));
-    t.oncomplete = () => resolve(req ? req.result : undefined);
-    t.onerror = () => reject(t.error);
+    // close every time: an open connection blocks deleteDatabase ("Borrar mi cuenta" would keep the photos)
+    t.oncomplete = () => (db.close(), resolve(req ? req.result : undefined));
+    t.onerror = () => (db.close(), reject(t.error));
+    t.onabort = () => (db.close(), reject(t.error));
   });
 }
 
