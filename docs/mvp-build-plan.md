@@ -46,7 +46,7 @@ Welcome screen loads sample jobs. The backend (port 8000) doesn't need to run; t
 | 8 | Mark as paid: method and partial payments | ✅ Done (needs Josh later) | `67d2a8a` |
 | 9 | Edit contact details after sending | ✅ Done | `8476b3c` |
 | 10 | Voice hears only Carlos (no TV, right language) | ✅ Done (test with a real TV on a phone) | `3dc2a52` |
-| 11 | Separate "+ Estimado" and "+ Factura" | ✅ Done | `7459e94` |
+| 11 | Estimate or invoice: required choice, nothing pre-selected | ✅ Done | `7459e94`, `eb90662` |
 | 12 | Company clients + several sites on one invoice | ✅ Done (needs Josh later) | `b484aae` |
 | 13 | Recognize saved clients in a note + client email | ✅ Done (needs Josh later) | `0475105` |
 
@@ -143,6 +143,8 @@ Update this table (status + commit) after each task.
   - Keep working: the "+" on the Documents tabs, "Nuevo trabajo para Maria" on client cards (needs a choice too).
 - **Done when:** you can't start a job without choosing; each starting point makes the right document, in
   Spanish and English.
+- **Changed (Abe):** Home went back to ONE "+ Nuevo trabajo" button. It opens "¿Qué vas a hacer?"
+  (Estimado / Factura, nothing pre-selected). The Documents "+" still goes straight to the right one.
 
 ### 12. Company clients + several sites on one invoice
 - **Problem (found with a real note):** some clients are companies, e.g. ATL Homemaker, a renovation company
