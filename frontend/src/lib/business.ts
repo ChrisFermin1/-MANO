@@ -18,6 +18,9 @@ export type Business = {
   invoiceDueDays?: number;
   trades: TradeId[];
   otherTrade?: OtherTrade | null;
+  // Ojo's "¿se te olvidó cobrar…?" questions. Off unless he turns them on in Tu negocio: contractors
+  // who price their own jobs rarely forget, and the questions were friction (Abe, testing with Edgar).
+  ojoQuestions?: boolean;
   // Ojo checklist items Carlos said he always includes in his price ("Ya lo incluyo siempre")
   ojoIgnore?: string[];
   // Labels for silenced questions that came from Gemini (built-in questions have their own labels)

@@ -6,24 +6,15 @@ import { useRouter } from "next/navigation";
 import { Check, Eye } from "lucide-react";
 import { OnboardingHeader } from "@/components/onboarding-header";
 import { loadBusiness, saveBusiness } from "@/lib/business";
-import { checklistFor } from "@/lib/checklists";
 import { useLang, type TradeId } from "@/lib/i18n";
 import { TRADES } from "@/lib/trades";
 
 export default function TuOficio() {
-  const { t, lang } = useLang();
+  const { t } = useLang();
   const router = useRouter();
   const [selected, setSelected] = useState<TradeId[]>([]);
   const [otherName, setOtherName] = useState("");
   const otherOn = selected.includes("other");
-  const checks = checklistFor(selected);
-  // 3 varied examples: the first item of each picked trade, then fill from the rest
-  const examples = [
-    ...new Set([
-      ...selected.flatMap((id) => checklistFor([id]).slice(0, 1)),
-      ...checks,
-    ].map((c) => c.label[lang])),
-  ].slice(0, 3);
 
   // "Otro" is exclusive: picking it clears the rest, picking any trade clears "Otro"
   const toggle = (id: TradeId) =>
@@ -87,24 +78,12 @@ export default function TuOficio() {
           </label>
         )}
 
-        {/* Paso 1's real job: picks which "forgot to charge" checklists Ojo watches */}
+        {/* Meet Ojo: missing info and what's next (its "forgot to charge?" questions are off by default) */}
         <div className="mt-5 flex gap-[7px] rounded-[14px] glass-peach py-3 pl-[23px] pr-[14px] text-xs leading-[15px]">
           <Eye className="-mt-[3px] size-6 shrink-0 text-[#b8803f]" strokeWidth={1.75} />
-          {selected.length === 0 ? (
-            <p>
-              <span className="font-bold">{t.meetOjo}</span> {t.meetOjoBody}
-            </p>
-          ) : (
-            <div aria-live="polite">
-              <p>
-                <span className="font-bold">{t.meetOjo}</span> {t.meetOjoShort}
-              </p>
-              {/* Always one sentence, no matter how many trades are picked */}
-              <p className="mt-1.5 font-semibold">
-                {checks.length > 0 ? t.ojoChecksSummary(checks.length, examples) : t.ojoLearnsOther}
-              </p>
-            </div>
-          )}
+          <p>
+            <span className="font-bold">{t.meetOjo}</span> {t.meetOjoBody}
+          </p>
         </div>
 
         {/* pinned to the bottom of the screen (fixed, not height-based): "Siguiente" is always on screen, the trades scroll behind it */}

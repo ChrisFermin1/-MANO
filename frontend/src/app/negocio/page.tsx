@@ -55,6 +55,7 @@ export default function Negocio() {
       trades: biz.trades,
       otherTrade: otherOn ? { name: biz.otherTrade?.name.trim() ?? "", unit: biz.otherTrade?.unit ?? "project" } : null,
       ojoIgnore: biz.ojoIgnore ?? [],
+      ojoQuestions: !!biz.ojoQuestions,
     });
     setSaved(true);
     setDirty(false);
@@ -188,6 +189,27 @@ export default function Negocio() {
       </section>
 
       <section className="mt-8">
+        {/* Ojo's "forgot to charge?" questions: off by default, one switch */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={!!biz.ojoQuestions}
+          onClick={() => change({ ojoQuestions: !biz.ojoQuestions })}
+          className="flex w-full items-center gap-3 rounded-[16px] glass px-4 py-3 text-left"
+        >
+          <Eye className="size-5 shrink-0 text-ojo" strokeWidth={1.75} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">{t.ojoQuestionsToggle}</span>
+            <span className="block text-xs text-muted">{t.ojoQuestionsHint}</span>
+          </span>
+          <span className={`flex h-7 w-12 shrink-0 items-center rounded-full p-0.5 transition ${biz.ojoQuestions ? "bg-forest" : "bg-black/15"}`}>
+            <span className={`size-6 rounded-full bg-white shadow transition ${biz.ojoQuestions ? "translate-x-5" : ""}`} />
+          </span>
+        </button>
+      </section>
+
+      {biz.ojoQuestions && (
+      <section className="mt-6">
         <h2 className="flex items-center gap-1.5 text-sm font-semibold">
           <Eye className="size-4 text-ojo" strokeWidth={1.75} /> {t.ojoSilenced}
         </h2>
@@ -210,6 +232,7 @@ export default function Negocio() {
           </ul>
         )}
       </section>
+      )}
 
       <div className="mt-auto pt-8">
         <button type="button" onClick={save} disabled={!canSave || !dirty} className={btnPrimary}>

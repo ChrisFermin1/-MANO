@@ -89,8 +89,10 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   useEffect(() => setBiz(loadBusiness()), []);
   // Trades without a built-in checklist: ask Gemini once for this job, then keep the answer on the job
   const askedAi = useRef(false);
+  // questions are off unless he turned them on (missing info and next steps always work)
+  const ojoOn = !!biz?.ojoQuestions;
   useEffect(() => {
-    if (!biz || askedAi.current || job.ojo_ai !== undefined || job.ojo_skipped || !needsAiQuestions(job, biz)) return;
+    if (!biz?.ojoQuestions || askedAi.current || job.ojo_ai !== undefined || job.ojo_skipped || !needsAiQuestions(job, biz)) return;
     if (!job.line_items.length && !job.description.trim()) return;
     askedAi.current = true;
     const trade = ojoTradeFor(job, biz, t.trades); // the job's own type, so a junk-removal or auto job gets its own questions
@@ -98,8 +100,8 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
       if (questions) updateJob(job.id, { ojo_ai: questions }).then(setJob);
     });
   }, [biz, job, setJob, t]);
-  const asks = suggestions(job, biz);
-  const silenced = silencedFor(job, biz);
+  const asks = ojoOn ? suggestions(job, biz) : [];
+  const silenced = ojoOn ? silencedFor(job, biz) : [];
   const ask = asks[0]; // one question at a time
   const skipped = !!job.ojo_skipped; // ✕ on the card: skip all of Ojo's questions for this job
   const spanish = lang === "es"; // Carlos edits in Spanish; the estimate is always English
@@ -437,7 +439,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
       )}
 
       {/* Ojo: "forgot to charge?" — one question at a time, from the checklists of Carlos's trades (Paso 1) */}
-      {!skipped && (ask || silenced.length > 0 || (job.ojo_dismissed?.length ?? 0) > 0) && (
+      {ojoOn && !skipped && (ask || silenced.length > 0 || (job.ojo_dismissed?.length ?? 0) > 0) && (
         <section className={`mt-6 rounded-[20px] p-4 ${ask ? "glass border-peach!" : "glass-sage"}`}>
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-sm font-semibold">
