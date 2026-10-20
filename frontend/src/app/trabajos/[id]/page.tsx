@@ -345,9 +345,11 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         <FieldLabel text={t.work} missingTag={missing.includes("price") || missing.includes("items") ? t.missingTag : null} />
         <div className="rounded-[20px] glass p-2">
           {job.line_items.map((item) => (
-            <div key={item.id} className="border-b border-black/5 py-1 last:border-0">
-            <div className="flex items-start gap-2">
-              {/* Left column: Carlos's text + what the customer will read. Never runs under the price box. */}
+            <div
+              key={item.id}
+              className={`border-b border-black/5 py-1 last:border-0 ${lump ? "flex items-start gap-2" : "grid grid-cols-[minmax(0,1fr)_96px_auto] items-start gap-x-2 gap-y-1.5"}`}
+            >
+              {/* Left column: Carlos's text. Same width on every line, so quantity sits under the description. */}
               <div className="min-w-0 flex-1">
                 <AutoTextarea
                   className="w-full rounded-[10px] bg-ivory px-2.5 py-2.5 text-[15px] leading-5 outline-none focus:ring-2 focus:ring-forest/60"
@@ -403,13 +405,13 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
               </div>
               {!lump &&
                 (measured(item) ? (
-                  // the line total is quantity × unit price; he edits those below, not this number
-                  <div className={`flex h-10 w-[96px] shrink-0 items-center rounded-[10px] bg-ivory px-2 ${flag(lineAmount(item) == null)}`}>
+                  // same price column as every other line; the number is quantity × unit price
+                  <div className={`flex h-10 items-center rounded-[10px] bg-ivory px-2 ${flag(lineAmount(item) == null)}`}>
                     <span className="text-sm font-bold text-muted">$</span>
                     <span className="w-full truncate text-right text-[15px] font-bold tabular-nums">{lineAmount(item) ?? ""}</span>
                   </div>
                 ) : (
-                  <label className={`flex h-10 w-[96px] shrink-0 items-center rounded-[10px] bg-ivory px-2 ${flag(lineAmount(item) == null)}`}>
+                  <label className={`flex h-10 items-center rounded-[10px] bg-ivory px-2 ${flag(lineAmount(item) == null)}`}>
                     <span className="text-sm font-bold text-muted">$</span>
                     <input
                       id={`f-price-${item.id}`}
@@ -425,45 +427,53 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
               <button type="button" onClick={() => removeItem(item.id)} aria-label={t.removeLine} className="mt-2.5 p-1 text-muted">
                 <X className="size-4" />
               </button>
-            </div>
-            {!lump && measured(item) && (
-              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                <input
-                  id={item.quantity == null ? `f-price-${item.id}` : undefined}
-                  className={`h-10 w-[4.75rem] rounded-[10px] bg-ivory px-2 text-right text-[15px] font-bold tabular-nums outline-none focus:ring-2 focus:ring-forest/60 ${flag(lineAmount(item) == null && item.quantity == null)}`}
-                  inputMode="decimal"
-                  aria-label={t.quantity}
-                  value={item.quantity ?? ""}
-                  onChange={(e) => setItem(item.id, { quantity: numFrom(e.target.value) })}
-                  placeholder="0"
-                />
-                <input
-                  className="h-10 w-[4.25rem] min-w-0 rounded-[10px] bg-ivory px-2 text-[15px] outline-none focus:ring-2 focus:ring-forest/60"
-                  aria-label={t.unit}
-                  value={item.unit ?? ""}
-                  onChange={(e) => setItem(item.id, { unit: e.target.value.slice(0, 16) || null })}
-                  placeholder={t.unitPlaceholder}
-                />
-                <span className="text-sm font-bold text-muted" aria-hidden>
-                  ×
-                </span>
-                <label className={`flex h-10 w-[5.5rem] items-center rounded-[10px] bg-ivory px-2 focus-within:ring-2 focus-within:ring-forest/60 ${flag(lineAmount(item) == null && item.unit_price == null)}`}>
-                  <span className="text-sm font-bold text-muted">$</span>
-                  <input
-                    id={item.quantity != null && item.unit_price == null ? `f-price-${item.id}` : undefined}
-                    className="w-full bg-transparent text-right text-[15px] font-bold tabular-nums outline-none"
-                    inputMode="decimal"
-                    aria-label={t.unitPrice}
-                    value={item.unit_price ?? ""}
-                    onChange={(e) => setItem(item.id, { unit_price: numFrom(e.target.value) })}
-                    placeholder="0"
-                  />
-                </label>
-                <button type="button" onClick={() => oneAmount(item)} className="min-h-10 px-1 text-sm font-semibold text-forest underline underline-offset-4">
-                  {t.oneAmount}
-                </button>
-              </div>
-            )}
+              {!lump && measured(item) && (
+                <>
+                  {/* quantity and unit fill the description column; × sits against the price column */}
+                  <div>
+                    <div className="flex h-10 items-center gap-1.5 md:justify-end">
+                      <input
+                        id={item.quantity == null ? `f-price-${item.id}` : undefined}
+                        className={`h-10 min-w-0 flex-1 rounded-[10px] bg-ivory px-2 text-right text-[15px] font-bold tabular-nums outline-none focus:ring-2 focus:ring-forest/60 md:w-[4.75rem] md:flex-none ${flag(lineAmount(item) == null && item.quantity == null)}`}
+                        inputMode="decimal"
+                        aria-label={t.quantity}
+                        value={item.quantity ?? ""}
+                        onChange={(e) => setItem(item.id, { quantity: numFrom(e.target.value) })}
+                        placeholder="0"
+                      />
+                      <input
+                        className="h-10 min-w-0 flex-1 rounded-[10px] bg-ivory px-2 text-[15px] outline-none focus:ring-2 focus:ring-forest/60 md:w-[4.25rem] md:flex-none"
+                        aria-label={t.unit}
+                        value={item.unit ?? ""}
+                        onChange={(e) => setItem(item.id, { unit: e.target.value.slice(0, 16) || null })}
+                        placeholder={t.unitPlaceholder}
+                      />
+                      <span className="shrink-0 text-sm font-bold text-muted" aria-hidden>
+                        ×
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => oneAmount(item)}
+                      className="mt-0.5 flex min-h-10 items-center px-2.5 text-left text-sm font-semibold text-forest"
+                    >
+                      {t.oneAmount}
+                    </button>
+                  </div>
+                  <label className={`flex h-10 items-center rounded-[10px] bg-ivory px-2 focus-within:ring-2 focus-within:ring-forest/60 ${flag(lineAmount(item) == null && item.unit_price == null)}`}>
+                    <span className="text-sm font-bold text-muted">$</span>
+                    <input
+                      id={item.quantity != null && item.unit_price == null ? `f-price-${item.id}` : undefined}
+                      className="w-full bg-transparent text-right text-[15px] font-bold tabular-nums outline-none"
+                      inputMode="decimal"
+                      aria-label={t.unitPrice}
+                      value={item.unit_price ?? ""}
+                      onChange={(e) => setItem(item.id, { unit_price: numFrom(e.target.value) })}
+                      placeholder="0"
+                    />
+                  </label>
+                </>
+              )}
             </div>
           ))}
           <button id="f-add-line" type="button" onClick={() => addItem()} className="flex w-full items-center gap-1 px-2 py-3 text-sm font-semibold text-forest">
