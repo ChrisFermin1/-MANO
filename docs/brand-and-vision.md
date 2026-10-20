@@ -59,7 +59,7 @@ mean doing everything alone.
 ## 3. Mission, vision, and purpose
 
 - **Proposed mission:** make running a business simpler and more accessible for Spanish-speaking
-  entrepreneurs through intuitive, bilingual, voice-first technology.
+  entrepreneurs through simple, bilingual technology built around how they work.
 - **Proposed vision:** become the business platform that Hispanic entrepreneurs trust to start, manage, and
   grow their businesses.
 - **Long-term ambition:** create a technology company founded by Latinos that becomes a major competitor in
@@ -269,7 +269,7 @@ shared workflows and expand carefully, after contractors work.
 - **Beauty and personal care:** barbershops, salons, nail, makeup and lash artists — appointments, deposits,
   reminders, client history.
 - **Food and beverage:** taco trucks, taquerías, panaderías, caterers — quotes and invoices for catering and
-  events, simple daily sales and expenses by voice.
+  events, simple daily sales and expenses.
 - **Others:** trucking, printing, tutoring, delivery, independent professionals.
 
 Mano does **not** plan to build point-of-sale systems, card readers, checkout, or inventory. Those are
@@ -289,7 +289,7 @@ A shared platform, not several disconnected products.
 
 ## 14. Mano Assistant — the bigger opportunity
 
-A bilingual, voice-first business assistant: instead of navigating complicated software, owners manage their
+A bilingual business assistant (talk or type): instead of navigating complicated software, owners manage their
 business in natural language.
 
 - Taco truck: "Mano, hoy vendimos 85 tacos de asada y 40 de pastor." → Mano records it in daily sales.
@@ -319,7 +319,7 @@ follow-up.**
 2. **Service businesses:** cleaners, landscapers, detailers and others with the same estimate/invoice flow.
 3. **Customer experience:** secure approval links, payment requests, job history, a light client portal.
 4. **Appointment businesses:** scheduling, reminders, deposits, client relationships.
-5. **Connected business assistant:** the workflows together through a bilingual voice-first interface.
+5. **Connected business assistant:** the workflows together in one simple, bilingual place.
 
 Sequencing depends on user research, adoption, technical feasibility and economics.
 
@@ -336,7 +336,7 @@ Goal: affordable, transparent pricing that creates measurable value.
 ## 18. Why Mano could be different (hypotheses to validate)
 
 - **Spanish-first design:** built around how users work and speak, not English software translated.
-- **Voice-first:** talk naturally instead of filling forms.
+- **Talk or type, whichever is easier:** talking is just one way in. The voice tech itself isn't the advantage (everyone has it); getting the paperwork right is.
 - **Simplicity:** business admin that feels approachable.
 - **Cultural understanding:** built with the community, not assumptions about it.
 - **Practical usefulness:** real tasks done, not just AI content.
@@ -346,7 +346,7 @@ Goal: affordable, transparent pricing that creates measurable value.
 ## 19. The five-year dream
 
 Imagine Atlanta five years from now. A contractor sends estimates through Mano. A barber books appointments
-with Mano. A taco truck logs its daily sales by voice. A property owner approves the work from a link, without downloading anything.
+with Mano. A taco truck keeps track of its daily sales. A property owner approves the work from a link, without downloading anything.
 Different businesses, different industries, one recognizable platform — and behind it, four Latino software
 engineering students who started with a hackathon project.
 
@@ -390,7 +390,7 @@ discipline, and years of learning.
 10. Keep the long-term ambition: a meaningful Hispanic-founded technology company that helps entrepreneurs
     succeed.
 
-**Central question:** how can Mano grow from a voice-first estimating tool for Spanish-speaking contractors
+**Central question:** how can Mano grow from a Spanish-first estimating tool for contractors
 into a trusted, bilingual business platform for many industries, without losing the simplicity, authenticity
 and human purpose that started it?
 
