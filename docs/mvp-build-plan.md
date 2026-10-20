@@ -211,6 +211,7 @@ Update this table (status + commit) after each task.
 | Landing page polish: one 12-column grid for the top bar, hero, demo and benefits; hero copy 7 columns / demo 5; benefits moved to their own band under the hero; calmer demo (no glass, Ojo note as wide as the estimate); tablet gets its own layout instead of the phone screen. Phone Welcome unchanged | `178e4db` | — |
 | Website top bar for launch: wordmark (home), ES/EN, "Iniciar sesión" link, "Crear cuenta →" button (`/entrar?crear=1` shows "Crea tu cuenta"). `components/site-nav.tsx` has an empty sections list for Product / Pricing / Resources once those pages exist. `<html lang>` now follows the language; keyboard focus rings | `639cead` | — |
 | Home dashboard polish: 12-column grid with 24px gutters; from 1280px summary 4 across, then next step (5 cols) + recent jobs (7 cols); 2 × 2 and stacked below that; tablet gets its own layout (summary + table). Summary cards all white with tabular numbers; recent jobs table with headers, address under the client, keyboard access. Sidebar spacing and focus rings | `65833da` | — |
+| Tablet layout (768–1023px) for every page: 720px column, tables for Trabajos and Documentos (fewer columns than desktop), two client cards per row, centered dialogs. No sidebar on tablet | `d712e12` | — |
 
 
 ## After this list
