@@ -241,7 +241,7 @@ not engagement.
 Joe owns several properties and hires Edgar and other workers to maintain them. He mostly calls and texts.
 
 - **Contractor side:** Edgar creates estimates, manages jobs, sends invoices.
-- **Property owner side:** Joe coordinates maintenance, reviews estimates, tracks work, manages expenses.
+- **Property owner side:** Joe reviews and approves estimates, sees invoices and pays — all from the link Edgar sends.
 
 Workflow: Joe texts Edgar about a problem → Edgar visits → Edgar describes the work in Spanish in Mano → Mano
 writes the English estimate → Edgar sends Joe a secure link → Joe approves → Edgar does the work → Joe gets
@@ -250,9 +250,10 @@ the invoice and pays with a supported method.
 **Key insight:** Joe shouldn't need to download Mano. He already texts and calls; Mano fits those habits.
 (The client link already works this way.)
 
-Possible future: a light **client portal** — review and approve estimates, request changes, view invoices, see
-job status and past work. A property owner with many contractors could eventually see all their properties
-in one place. A full property-management system is not a priority.
+Possible future: a light **client portal** for one contractor's clients — review and approve estimates, request
+changes, view invoices, see job status and past work with that contractor. Mano will **not** build a
+property-owner dashboard across many contractors or a property-management system: it only works if all of
+Joe's contractors use Mano, and the client link already serves Joe well.
 
 ## 12. Expanding beyond contractors (later)
 
@@ -282,8 +283,6 @@ configure the workspace:
 - **Mano Contractors:** estimates, jobs, invoices, payments.
 - **Mano Services:** quotes, customers, bookings, invoices.
 - **Mano Appointments:** appointments, deposits, reminders, customers.
-- **Mano Property:** maintenance requests, estimates, job tracking, property expenses (the client side of
-  Mano Contractors).
 - **Mano Assistant:** a conversational layer over the tools above.
 
 A shared platform, not several disconnected products.
@@ -347,7 +346,7 @@ Goal: affordable, transparent pricing that creates measurable value.
 ## 19. The five-year dream
 
 Imagine Atlanta five years from now. A contractor sends estimates through Mano. A barber books appointments
-with Mano. A taco truck logs its daily sales by voice. A property owner approves maintenance through Mano.
+with Mano. A taco truck logs its daily sales by voice. A property owner approves the work from a link, without downloading anything.
 Different businesses, different industries, one recognizable platform — and behind it, four Latino software
 engineering students who started with a hackathon project.
 
