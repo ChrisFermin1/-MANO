@@ -45,8 +45,8 @@ Welcome screen loads sample jobs. The backend (port 8000) doesn't need to run; t
 | 7 | Search | ✅ Done | `3009856` |
 | 8 | Mark as paid: method and partial payments | ✅ Done (needs Josh later) | `67d2a8a` |
 | 9 | Edit contact details after sending | ✅ Done | `8476b3c` |
-| 10 | Voice hears only Carlos (no TV, right language) | ⏭ Next | |
-| 11 | Separate "+ Estimado" and "+ Factura" | To do | |
+| 10 | Voice hears only Carlos (no TV, right language) | ✅ Done (test with a real TV on a phone) | `3dc2a52` |
+| 11 | Separate "+ Estimado" and "+ Factura" | ⏭ Next | |
 | 12 | Company clients + several sites on one invoice | To do (needs Josh later) | |
 
 Update this table (status + commit) after each task.
