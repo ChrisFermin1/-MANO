@@ -72,11 +72,13 @@ export function docData(kind: "estimate" | "invoice", job: Job, view: "en" | "es
   };
 }
 
-/** "190 Ana Garcia.pdf" */
+/** "190 Ana Garcia 2026.pdf" — the year of the date printed on the document. */
 export function pdfName(kind: "estimate" | "invoice", job: Job) {
   const d = docData(kind, job);
   const who = (job.customer_name ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/[^\w ]+/g, "").trim();
-  return `${d.num ? d.label : d.title}${who ? ` ${who}` : ""}.pdf`;
+  const issued = (kind === "invoice" ? job.invoice_sent_at : job.estimate_sent_at) ?? new Date().toISOString();
+  const year = new Date(issued).getFullYear();
+  return `${d.num ? d.label : d.title}${who ? ` ${who}` : ""} ${year}.pdf`;
 }
 
 export function DocumentCard({
