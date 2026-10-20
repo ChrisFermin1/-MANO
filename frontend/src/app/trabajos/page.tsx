@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Plus, Search, X } from "lucide-react";
 import { PageHeader, Screen, StatusBadge, Title, btnPrimary } from "@/components/ui";
-import { estimateNo, fmtDate, getJobs, onJobsChange, invoiceNo, jobTotal, money, type Job, isInvoiceJob } from "@/lib/api";
+import { estimateNo, fmtDate, getJobs, jobSites, onJobsChange, invoiceNo, jobTotal, money, type Job, isInvoiceJob } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
-import { jobSubtitle } from "@/lib/services";
+import { jobSubtitle, serviceLabel } from "@/lib/services";
 import { matchesJob } from "@/lib/search";
 
 export default function Trabajos() {
@@ -74,11 +74,21 @@ export default function Trabajos() {
       {/* desktop: a table; click a row to open the job */}
       {shown.length > 0 && (
         <div className="mt-5 hidden overflow-hidden rounded-[16px] border border-black/5 bg-white lg:block">
-          <table className="w-full text-left text-sm">
+          <table className="w-full table-fixed text-left text-sm">
+            <colgroup>
+              <col className="w-[17%]" />
+              <col className="w-[16%]" />
+              <col className="w-[19%]" />
+              <col className="w-[9%]" />
+              <col className="w-[19%]" />
+              <col className="w-[11%]" />
+              <col className="w-[9%]" />
+            </colgroup>
             <thead className="border-b border-black/5 bg-ivory/60 font-mono text-[11px] uppercase tracking-[1px] text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">{t.colClient}</th>
                 <th className="px-4 py-3 font-medium">{t.colJob}</th>
+                <th className="px-4 py-3 font-medium">{t.colAddress}</th>
                 <th className="px-4 py-3 font-medium">{t.colDoc}</th>
                 <th className="px-4 py-3 font-medium">{t.colStatus}</th>
                 <th className="px-4 py-3 font-medium">{t.colUpdated}</th>
@@ -92,12 +102,15 @@ export default function Trabajos() {
                   onClick={() => router.push(`/trabajos/${job.id}`)}
                   className={`cursor-pointer border-b border-black/5 transition last:border-0 hover:bg-ivory/70 ${job.status === "CANCELLED" ? "opacity-60" : ""}`}
                 >
-                  <td className="max-w-[220px] px-4 py-3">
+                  <td className="truncate px-4 py-3">
                     <Link href={`/trabajos/${job.id}`} className="block truncate font-semibold" onClick={(e) => e.stopPropagation()}>
                       {job.customer_name || "—"}
                     </Link>
                   </td>
-                  <td className="max-w-[280px] truncate px-4 py-3 text-charcoal/70">{jobSubtitle(job, lang)}</td>
+                  <td className="truncate px-4 py-3">{serviceLabel(job.service, lang, job.service_es) || "—"}</td>
+                  <td className="truncate px-4 py-3 text-charcoal/70">
+                    {job.address || (jobSites(job).length > 1 ? t.nSites(jobSites(job).length) : "—")}
+                  </td>
                   <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-charcoal/70">
                     {job.invoice_number ? invoiceNo(job.invoice_number) : job.estimate_number ? estimateNo(job.estimate_number) : "—"}
                   </td>

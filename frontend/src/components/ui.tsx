@@ -7,18 +7,18 @@ import type { JobStatus } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 
 export const btnPrimary =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40 disabled:shadow-none lg:inline-flex lg:h-11 lg:w-auto lg:self-start lg:rounded-[12px] lg:px-6 lg:text-[15px] lg:active:scale-100";
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40 disabled:shadow-none desk:inline-flex desk:h-11 desk:w-auto desk:self-start desk:rounded-[12px] desk:px-6 desk:text-[15px] desk:active:scale-100";
 export const btnSage =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-sage text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40 lg:inline-flex lg:h-11 lg:w-auto lg:self-start lg:rounded-[12px] lg:px-6 lg:text-[15px] lg:active:scale-100";
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-sage text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40 desk:inline-flex desk:h-11 desk:w-auto desk:self-start desk:rounded-[12px] desk:px-6 desk:text-[15px] desk:active:scale-100";
 // main button on dark green screens and cards
 export const btnWhite =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-white text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40 lg:inline-flex lg:h-11 lg:w-auto lg:self-start lg:rounded-[12px] lg:px-6 lg:text-[15px] lg:active:scale-100";
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-white text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40 desk:inline-flex desk:h-11 desk:w-auto desk:self-start desk:rounded-[12px] desk:px-6 desk:text-[15px] desk:active:scale-100";
 export const btnDanger =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-overdue-ink text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-40 lg:inline-flex lg:h-11 lg:w-auto lg:self-start lg:rounded-[12px] lg:px-6 lg:text-[15px] lg:active:scale-100";
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-overdue-ink text-base font-bold text-white transition active:scale-[0.98] disabled:opacity-40 desk:inline-flex desk:h-11 desk:w-auto desk:self-start desk:rounded-[12px] desk:px-6 desk:text-[15px] desk:active:scale-100";
 export const btnSecondary =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] border border-forest/25 bg-white/50 text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40 lg:inline-flex lg:h-11 lg:w-auto lg:self-start lg:rounded-[12px] lg:px-6 lg:text-[15px] lg:active:scale-100";
+  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] border border-forest/25 bg-white/50 text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40 desk:inline-flex desk:h-11 desk:w-auto desk:self-start desk:rounded-[12px] desk:px-6 desk:text-[15px] desk:active:scale-100";
 export const btnGhost =
-  "flex h-[48px] w-full items-center justify-center gap-2 rounded-[20px] text-sm font-semibold text-forest lg:inline-flex lg:h-11 lg:w-auto lg:self-start lg:px-3 lg:hover:underline";
+  "flex h-[48px] w-full items-center justify-center gap-2 rounded-[20px] text-sm font-semibold text-forest desk:inline-flex desk:h-11 desk:w-auto desk:self-start desk:px-3 desk:hover:underline";
 export const input =
   "h-[52px] w-full rounded-[14px] glass-field px-4 text-base outline-none ring-forest/60 placeholder:text-muted focus:ring-2";
 
@@ -41,11 +41,15 @@ export function PageHeader({ backHref, right }: { backHref: string; right?: Reac
       <Link href={backHref} aria-label={t.back} className="-ml-1 p-1 lg:hidden">
         <ArrowLeft className="size-7" strokeWidth={1.75} />
       </Link>
-      <Link href={backHref} className="hidden items-center gap-1 text-sm font-semibold text-muted transition hover:text-forest lg:flex">
+      {/* desktop: no "Inicio ›" — the sidebar already goes home */}
+      <Link
+        href={backHref}
+        className={`hidden items-center gap-1 text-sm font-semibold text-muted transition hover:text-forest ${backHref === "/inicio" ? "" : "lg:flex"}`}
+      >
         {parent}
         <ChevronRight className="size-4" strokeWidth={2.25} />
       </Link>
-      {right}
+      {right && <div className="ml-auto">{right}</div>}
     </header>
   );
 }
@@ -73,7 +77,7 @@ const STATUS_STYLE: Record<JobStatus, string> = {
 export function StatusBadge({ status, invoice = false }: { status: JobStatus; invoice?: boolean }) {
   const { t } = useLang();
   return (
-    <span className={`inline-flex items-center gap-1 rounded-[6px] px-2 py-1 font-mono text-[11px] uppercase leading-none tracking-[0.5px] ${STATUS_STYLE[status]}`}>
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-[6px] px-2 py-1 font-mono text-[11px] uppercase leading-none tracking-[0.5px] ${STATUS_STYLE[status]}`}>
       {(status === "ACCEPTED" || status === "PAID") && <Check className="size-3" strokeWidth={3.5} />}
       {invoice && status === "READY_FOR_QUOTE" ? t.readyToInvoice : t.status[status]}
     </span>
@@ -118,7 +122,7 @@ const DOC_STATE_STYLE: Record<DocState, string> = {
 
 export function DocStateBadge({ state, label }: { state: DocState; label: string }) {
   return (
-    <span className={`rounded-[6px] px-2 py-1 font-mono text-[10px] uppercase leading-none ${DOC_STATE_STYLE[state]}`}>{label}</span>
+    <span className={`whitespace-nowrap rounded-[6px] px-2 py-1 font-mono text-[10px] uppercase leading-none ${DOC_STATE_STYLE[state]}`}>{label}</span>
   );
 }
 

@@ -99,7 +99,7 @@ export default function Welcome() {
               </div>
             </div>
 
-            <div className="mt-2 flex h-8 tiny:h-7 border border-white/60 bg-peach/90 shadow-[0_10px_24px_-12px_rgba(0,0,0,0.5)] backdrop-blur-xl w-full max-w-[291px] items-center justify-center gap-2 rounded-full px-3 text-xs text-charcoal">
+            <div className="mt-2 flex min-h-8 py-1 tiny:min-h-7 border border-white/60 bg-peach/90 shadow-[0_10px_24px_-12px_rgba(0,0,0,0.5)] backdrop-blur-xl w-full max-w-[340px] items-center justify-center gap-2 rounded-full px-3 text-xs text-charcoal">
               <Eye className="size-6 shrink-0 text-[#b8803f]" strokeWidth={1.75} />
               <p className="leading-5">
                 <span className="font-bold">Ojo:</span> {t.ojoHint}

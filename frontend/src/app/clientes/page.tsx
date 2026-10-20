@@ -102,8 +102,8 @@ export default function Clientes() {
                     <td className="max-w-[240px] truncate px-4 py-3 text-charcoal/70">{c.address || "—"}</td>
                     <td className="px-4 py-3 text-right">{c.jobs.length}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-right font-bold">{c.billed > 0 ? money(c.billed) : "—"}</td>
-                    <td className="px-4 py-2 text-right">
-                      <Link href={newJobHref(c)} className={`${btnSecondary} lg:h-9! lg:px-3! lg:text-sm!`}>
+                    <td className="w-px whitespace-nowrap px-4 py-2 text-right">
+                      <Link href={newJobHref(c)} className={`${btnSecondary} whitespace-nowrap desk:h-9! desk:px-3! desk:text-sm!`}>
                         <FileText className="size-4" strokeWidth={2.25} />
                         {t.newJob}
                       </Link>

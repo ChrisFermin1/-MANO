@@ -30,7 +30,7 @@ export default function Factura() {
     setBiz({ ...DEMO_BUSINESS, ...loadBusiness() });
   }, [id]);
 
-  if (!job) return <Screen>{null}</Screen>;
+  if (!job) return <Screen className="lg:max-w-[760px]!">{null}</Screen>;
 
   if (sent) {
     return (
@@ -58,7 +58,7 @@ export default function Factura() {
   };
 
   return (
-    <Screen>
+    <Screen className="lg:max-w-[760px]!">
       <PageHeader backHref={`/trabajos/${job.id}`} />
       <Title>{t.invoiceTitle}</Title>
       <p className="mt-2 text-base leading-5">{t.invoiceBody}</p>

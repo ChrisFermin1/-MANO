@@ -4,6 +4,15 @@
    short: most phones in Safari · tiny: iPhone SE / small Androids in Safari */
 @custom-variant short (@media (max-height: 820px));
 @custom-variant tiny (@media (max-height: 620px));
+/* desk: a computer-sized screen INSIDE the app (the sidebar is showing). Welcome, onboarding and the client
+   link have no sidebar, so they keep the phone's full-width buttons even on a computer. */
+@custom-variant desk {
+  @media (min-width: 1024px) {
+    body:has(.app-sidebar) & {
+      @slot;
+    }
+  }
+}
 
 /* MANO design tokens (from Figma) */
 @theme inline {

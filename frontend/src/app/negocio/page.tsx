@@ -18,7 +18,7 @@ export default function Negocio() {
   const [dirty, setDirty] = useState(false); // nothing to save until something changes
 
   useEffect(() => setBiz({ ...DEMO_BUSINESS, ...loadBusiness() }), []);
-  if (!biz) return <Screen>{null}</Screen>;
+  if (!biz) return <Screen className="lg:max-w-[760px]!">{null}</Screen>;
 
   const change = (patch: Partial<Business>) => {
     setBiz({ ...biz, ...patch });
@@ -62,7 +62,7 @@ export default function Negocio() {
   };
 
   return (
-    <Screen>
+    <Screen className="lg:max-w-[760px]!">
       <PageHeader backHref="/inicio" right={<LangToggle light />} />
       <Title>{t.bizTitle}</Title>
       <p className="mt-2 text-base leading-5">{t.settingsBody}</p>

@@ -37,7 +37,7 @@ export default function Seguimiento() {
     });
   }, [id]);
 
-  if (!job) return <Screen>{null}</Screen>;
+  if (!job) return <Screen className="lg:max-w-[760px]!">{null}</Screen>;
 
   const name = firstName(job.customer_name);
 
@@ -89,7 +89,7 @@ export default function Seguimiento() {
   };
 
   return (
-    <Screen>
+    <Screen className="lg:max-w-[760px]!">
       <PageHeader backHref="/inicio" />
       <Title>{t.followTitle(name)}</Title>
       <p className="mt-2 flex items-start gap-2 text-base leading-5">
