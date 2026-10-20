@@ -15,7 +15,7 @@ export async function publishEstimate(job: Job, biz: Partial<Business> | null) {
       body: JSON.stringify({
         token: job.public_token,
         job,
-        biz: { businessName: biz?.businessName ?? "", phone: biz?.phone ?? "", ownerName: biz?.ownerName ?? "", payInfo: biz?.payInfo ?? "" },
+        biz: { businessName: biz?.businessName ?? "", phone: biz?.phone ?? "", ownerName: biz?.ownerName ?? "", payInfo: biz?.payInfo ?? "", email: biz?.email ?? "", address: biz?.address ?? "" },
       }),
     });
   } catch {}

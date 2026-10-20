@@ -41,6 +41,8 @@ export default function Negocio() {
   const save = () => {
     saveBusiness({
       ownerName: biz.ownerName.trim(),
+      email: biz.email?.trim() ?? "",
+      address: biz.address?.trim() ?? "",
       businessName: biz.businessName.trim(),
       phone: biz.phone.trim(),
       payInfo: biz.payInfo?.trim() ?? "",
@@ -102,17 +104,15 @@ export default function Negocio() {
       <section className="mt-8 space-y-3">
         <h2 className="text-sm font-semibold">{t.yourDetails}</h2>
         <label className="block">
-          <span className="mb-1.5 block text-sm text-charcoal/70">{t.yourName}</span>
-          <input id="f-owner" className={input} value={biz.ownerName} onChange={(e) => change({ ownerName: e.target.value })} autoComplete="given-name" />
+          <span className="mb-1.5 block text-sm text-charcoal/70">{t.fullName}</span>
+          <input id="f-owner" className={input} value={biz.ownerName} onChange={(e) => change({ ownerName: e.target.value })} autoComplete="name" placeholder="Carlos Méndez" />
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm text-charcoal/70">{t.bizName}</span>
           <input id="f-biz" className={input} value={biz.businessName} onChange={(e) => change({ businessName: e.target.value })} autoComplete="organization" />
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-sm text-charcoal/70">
-            {t.phone} <span className="text-muted">· {t.optional}</span>
-          </span>
+          <span className="mb-1.5 block text-sm text-charcoal/70">{t.phone}</span>
           <input
             id="f-phone"
             className={input}
@@ -123,6 +123,27 @@ export default function Negocio() {
             autoComplete="tel"
             placeholder="(555) 123-4567"
           />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm text-charcoal/70">
+            {t.bizEmail} <span className="text-muted">· {t.optional}</span>
+          </span>
+          <input
+            id="f-email"
+            className={input}
+            value={biz.email ?? ""}
+            onChange={(e) => change({ email: e.target.value })}
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm text-charcoal/70">
+            {t.bizAddress} <span className="text-muted">· {t.optional}</span>
+          </span>
+          <input id="f-address" className={input} value={biz.address ?? ""} onChange={(e) => change({ address: e.target.value })} autoComplete="street-address" />
+          <span className="mt-1.5 block text-xs text-muted">{t.bizAddressHint}</span>
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm text-charcoal/70">

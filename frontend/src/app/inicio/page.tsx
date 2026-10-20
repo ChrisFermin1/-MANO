@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Eye, FileText, PartyPopper, Plus, Sparkles, Users } from "lucide-react";
 import { firstName, getJobs, onJobsChange, invoiceNo, invoiceState, jobBadge, jobTotal, moneySummary, money, type Job, type JobBadge, isInvoiceJob } from "@/lib/api";
-import { DEMO_BUSINESS, loadBusiness } from "@/lib/business";
+import { DEMO_BUSINESS, loadBusiness, firstNameOf } from "@/lib/business";
 import { useLang, type Strings } from "@/lib/i18n";
 import { prioritized, type Alert } from "@/lib/ojo";
 import { jobSubtitle } from "@/lib/services";
@@ -73,7 +73,7 @@ export default function Inicio() {
   const [showAll, setShowAll] = useState(false); // the rest of Ojo's list stays folded under "+N más"
 
   useEffect(() => {
-    setName(loadBusiness()?.ownerName || DEMO_BUSINESS.ownerName);
+    setName(firstNameOf(loadBusiness()?.ownerName) || DEMO_BUSINESS.ownerName);
     setHour(new Date().getHours());
     getJobs().then(setJobs);
     // Live update when the customer approves in another tab (backend version: poll or websocket)

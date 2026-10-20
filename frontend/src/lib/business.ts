@@ -7,7 +7,9 @@ export type OtherTrade = { name: string; unit: PriceUnit };
 
 // Single-business MVP: no accounts. Stored locally until the backend has POST /business.
 export type Business = {
-  ownerName: string;
+  ownerName: string; // first and last name ("Carlos Méndez"); friendly messages use the first word
+  email?: string; // printed on estimates and invoices
+  address?: string; // printed on invoices: where clients mail checks
   businessName: string;
   phone: string;
   // How clients pay (e.g. "Zelle: (713) 555-0100"), printed on invoices and the customer's link
@@ -33,6 +35,9 @@ export const DEMO_BUSINESS: Business = {
   trades: ["painting", "drywall"],
   ojoIgnore: [],
 };
+
+/** "Carlos Méndez" → "Carlos", for friendly messages ("this is Carlos from…"). */
+export const firstNameOf = (full: string | null | undefined) => (full ?? "").trim().split(/\s+/)[0] ?? "";
 
 export const DUE_OPTIONS = [0, 7, 15, 30] as const;
 

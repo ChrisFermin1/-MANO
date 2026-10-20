@@ -92,6 +92,8 @@ export function DocumentCard({
         <div>
           <p className="font-logo text-lg leading-none text-forest">{biz.businessName || "MANO"}</p>
           {biz.phone && <p className="mt-1 text-xs text-muted">{biz.phone}</p>}
+          {biz.email && <p className="text-xs text-muted">{biz.email}</p>}
+          {isInvoice && biz.address && <p className="text-xs text-muted">{biz.address}</p>}
         </div>
         <div className="text-right">
           <p className="whitespace-nowrap font-mono text-xs font-bold uppercase tracking-[1.44px]">{d.title}</p>

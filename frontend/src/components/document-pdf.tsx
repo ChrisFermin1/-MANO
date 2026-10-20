@@ -54,6 +54,8 @@ export function DocumentPdf({ kind, job, biz, view = "en" }: { kind: "estimate" 
           <View>
             <Text style={s.biz}>{biz.businessName || "MANO"}</Text>
             {biz.phone ? <Text style={s.small}>{biz.phone}</Text> : null}
+            {biz.email ? <Text style={s.small}>{biz.email}</Text> : null}
+            {d.isInvoice && biz.address ? <Text style={s.small}>{biz.address}</Text> : null}
           </View>
           <View>
             <Text style={s.title}>{d.title}</Text>
