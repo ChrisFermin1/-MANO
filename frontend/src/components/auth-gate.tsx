@@ -5,19 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { resetJobs } from "@/lib/api";
 import { getSession, onAuthChange, signInDemo } from "@/lib/auth";
 import { DEMO_BUSINESS, loadBusiness, saveBusiness } from "@/lib/business";
-import { needsImport, skippedThisVisit } from "@/lib/import";
 
 // Open to everyone: Welcome, sign in, and the page a client opens from a link. Everything else needs a session.
 const isPublic = (path: string) => path === "/" || path === "/entrar" || path.startsWith("/e/");
 
 /** Where a signed-in person belongs: their Inicio, or onboarding if they never finished setting up the business. */
 export const homeFor = () => (loadBusiness()?.businessName ? "/inicio" : "/onboarding/oficio");
-
-/** Right after signing in: first offer to move this phone's data to the account (when the server holds data),
- *  otherwise Inicio / onboarding. */
-export async function afterSignIn(): Promise<string> {
-  return (await needsImport()) && !skippedThisVisit() ? "/importar" : homeFor();
-}
 
 /** "Ver un ejemplo": a sample business with sample jobs, signed into a throwaway demo account. */
 export function startDemo() {
@@ -46,11 +39,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     state === "out" && !open ? "/entrar" : state === "left" && !open ? "/" : state === "in" && (path === "/" || path === "/entrar") ? homeFor() : null;
 
   useEffect(() => {
-    if (!leave) return;
-    // signed in on Welcome / sign in: maybe the import screen first
-    if (state === "in") void afterSignIn().then((to) => router.replace(to));
-    else router.replace(leave);
-  }, [leave, state, router]);
+    if (leave) router.replace(leave);
+  }, [leave, router]);
 
   // public pages render right away (no flash on Welcome); app pages wait for the check
   if (open && !leave) return <>{children}</>;
