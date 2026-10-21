@@ -2,14 +2,12 @@
 
 import { useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, ChevronRight, Eye } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight } from "lucide-react";
 import { invoiceState, isInvoiceJob, type Job, type JobStatus } from "@/lib/api";
 import { useLang } from "@/lib/i18n";
 
 export const btnPrimary =
   "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-forest text-base font-bold text-white shadow-[0_6px_16px_-8px_rgba(7,61,45,0.45)] transition active:scale-[0.98] disabled:opacity-40 disabled:shadow-none desk:inline-flex desk:h-11 desk:w-auto desk:self-start desk:rounded-[12px] desk:px-6 desk:text-[15px] desk:active:scale-100";
-export const btnSage =
-  "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-sage text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40 desk:inline-flex desk:h-11 desk:w-auto desk:self-start desk:rounded-[12px] desk:px-6 desk:text-[15px] desk:active:scale-100";
 // main button on dark green screens and cards
 export const btnWhite =
   "flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-white text-base font-bold text-forest transition active:scale-[0.98] disabled:opacity-40 desk:inline-flex desk:h-11 desk:w-auto desk:self-start desk:rounded-[12px] desk:px-6 desk:text-[15px] desk:active:scale-100";
@@ -102,15 +100,6 @@ export function JobStatusTag({ job }: { job: Job }) {
       </span>
     );
   return <StatusBadge status={job.status} invoice={isInvoiceJob(job)} />;
-}
-
-export function OjoNote({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`flex gap-2 rounded-[14px] glass-peach px-4 py-3 text-sm leading-5 ${className}`}>
-      <Eye className="mt-[-1px] size-6 shrink-0 text-[#b8803f]" strokeWidth={1.75} />
-      <div className="flex-1">{children}</div>
-    </div>
-  );
 }
 
 export function SuccessScreen({ title, body, children }: { title: string; body: string; children: React.ReactNode }) {

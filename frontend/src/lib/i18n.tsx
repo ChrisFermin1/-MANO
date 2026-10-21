@@ -24,7 +24,6 @@ const strings = {
     meetOjo: "Conoce a Ojo.",
     ojoQuestionsToggle: "Ojo me pregunta qué se me olvidó cobrar",
     ojoQuestionsHint: "Antes de mandar un estimado: “¿incluir el trim?”. Apagado si ya sabes tus precios.",
-    meetOjoShort: "Mientras hablas, Ojo te avisa si se te olvida cobrar algo.",
     meetOjoBody:
       "Ojo te avisa qué le falta a un estimado y qué sigue: a quién darle seguimiento, qué factura venció, qué trabajo agendar.",
     next: "Siguiente",
@@ -70,7 +69,6 @@ const strings = {
     // Paso 2
     bizTitle: "Tu negocio",
     bizBody: "Mano pone esto en tus estimados y facturas.",
-    yourName: "Tu nombre",
     fullName: "Nombre y apellido",
     needLastName: "Agrega tu apellido: así sale en tus facturas.",
     bizEmail: "Correo del negocio",
@@ -193,7 +191,6 @@ const strings = {
     daysAgo: (n: number) => (n === 1 ? "hace 1 día" : `hace ${n} días`),
     nextAction: "Tu próxima acción",
     letManoHelp: "Deja que Mano ayude",
-    viewJobs: "Ver trabajos",
     newJob: "Nuevo trabajo",
     navHome: "Inicio",
     obStep1: "Tu trabajo",
@@ -344,7 +341,6 @@ const strings = {
     syncedDb: "Guardado en la base de datos",
     pickDay: "¿Qué día empiezas?",
     clientsTitle: "Clientes",
-    clientsEmpty: "Aquí verás a tus clientes. Agrega uno con + o crea un trabajo.",
     clientJobs: (n: number) => (n === 1 ? "1 trabajo" : `${n} trabajos`),
     searchJobs: "Buscar cliente, dirección o número",
     clearSearch: "Borrar búsqueda",
@@ -408,7 +404,6 @@ const strings = {
     phonePlaceholder: "(555) 123-4567",
     sendWhatsApp: "WhatsApp",
     sendSms: "Mensaje",
-    otherWays: "Otras formas",
     addPhoneHint: "Agrega el teléfono del cliente para mandarlo por WhatsApp o mensaje con un toque.",
 
     // Estimado
@@ -475,7 +470,6 @@ const strings = {
     docState: { ready: "Por enviar", sent: "Enviado", accepted: "Aceptado", declined: "Rechazado", unpaid: "Sin pagar", overdue: "Vencida", paid: "Pagada" },
     outstanding: "Por cobrar",
     collected: "Cobrado",
-    noDocs: "Todavía no hay nada aquí.",
     dueOn: (d: string) => `Vence ${d}`,
     alertOverdue: (n: string) => `Factura ${n} vencida`,
     alertUnpaid: (n: string) => `Factura ${n} sin pagar`,
@@ -514,9 +508,6 @@ const strings = {
     viewJob: "Ver trabajo",
 
     // Ojo checklists (Paso 1) + price memory
-    ojoChecksSummary: (n: number, ex: string[]) =>
-      `Ojo va a revisar ${n} cosas por ti, como ${ex.length > 1 ? `${ex.slice(0, -1).join(", ")} y ${ex[ex.length - 1]}` : ex[0]}.`,
-    ojoLearnsOther: "Para tu trabajo, Ojo usa IA para recordarte lo que se suele olvidar cobrar.",
     ojoIgnoredTitle: "Ya no pregunta por",
     yesAdd: "Sí, agregar",
     no: "No",
@@ -564,7 +555,6 @@ const strings = {
     meetOjo: "Meet Ojo.",
     ojoQuestionsToggle: "Ojo asks what I forgot to charge for",
     ojoQuestionsHint: "Before you send an estimate: “include the trim?”. Off if you know your prices.",
-    meetOjoShort: "While you talk, Ojo warns you if you forget to charge for something.",
     meetOjoBody:
       "Ojo tells you what an estimate is missing and what\'s next: who to follow up with, which invoice is overdue, which job to schedule.",
     next: "Next",
@@ -609,7 +599,6 @@ const strings = {
 
     bizTitle: "Your business",
     bizBody: "Mano puts this on your estimates and invoices.",
-    yourName: "Your name",
     fullName: "First and last name",
     needLastName: "Add your last name: it goes on your invoices.",
     bizEmail: "Business email",
@@ -731,7 +720,6 @@ const strings = {
     daysAgo: (n: number) => (n === 1 ? "1 day ago" : `${n} days ago`),
     nextAction: "Your next action",
     letManoHelp: "Let Mano help",
-    viewJobs: "View jobs",
     newJob: "New job",
     navHome: "Home",
     obStep1: "Your trade",
@@ -880,7 +868,6 @@ const strings = {
     syncedDb: "Saved in the database",
     pickDay: "What day do you start?",
     clientsTitle: "Clients",
-    clientsEmpty: "Your clients show up here. Add one with + or create a job.",
     clientJobs: (n: number) => (n === 1 ? "1 job" : `${n} jobs`),
     searchJobs: "Search client, address or number",
     clearSearch: "Clear search",
@@ -944,7 +931,6 @@ const strings = {
     phonePlaceholder: "(555) 123-4567",
     sendWhatsApp: "WhatsApp",
     sendSms: "Text",
-    otherWays: "Other ways",
     addPhoneHint: "Add the customer's phone to send it by WhatsApp or text in one tap.",
 
     quoteTitle: "Your estimate",
@@ -1007,7 +993,6 @@ const strings = {
     docState: { ready: "Not sent", sent: "Sent", accepted: "Accepted", declined: "Declined", unpaid: "Unpaid", overdue: "Overdue", paid: "Paid" },
     outstanding: "Outstanding",
     collected: "Collected",
-    noDocs: "Nothing here yet.",
     dueOn: (d: string) => `Due ${d}`,
     alertOverdue: (n: string) => `Invoice ${n} overdue`,
     alertUnpaid: (n: string) => `Invoice ${n} unpaid`,
@@ -1043,9 +1028,6 @@ const strings = {
     naScheduleDetail: (n: string) => `${n} approved the estimate. Pick a date.`,
     viewJob: "View job",
 
-    ojoChecksSummary: (n: number, ex: string[]) =>
-      `Ojo will check ${n} things for you, like ${ex.length > 1 ? `${ex.slice(0, -1).join(", ")} and ${ex[ex.length - 1]}` : ex[0]}.`,
-    ojoLearnsOther: "For your trade, Ojo uses AI to remind you of things people often forget to charge for.",
     ojoIgnoredTitle: "No longer asks about",
     yesAdd: "Yes, add it",
     no: "No",
