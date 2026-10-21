@@ -230,6 +230,7 @@ Update this table (status + commit) after each task.
 | UX audit 6, 7, 8: Tu negocio autosaves (+ desktop section menu); Jobs list two-line rows, red Vencida, filter chips; empty states for brand-new accounts (Home, Jobs, Documents, Clients) | `7847c67`, `bc335b7` | — |
 | Client page v1 (`/clientes/[id]`, free) + private notes (Solo) + `client_id` on jobs; Home desktop shows Ojo's queue under the next step | `1f5b77d` | Josh: `customers` gets notes (Solo) and jobs a `customer_id`; PATCH customer updates unsent jobs only |
 | Getting ready for Phase 0: front-end tests for the money math and numbering (`npm test`, Vitest, 28 tests); removed unused code and texts | `aaebc6f`, `4b0ef4a`, `7d52fd9` | Josh: leftover to remove in `backend/app/main.py`: the stub `POST /api/extract` that returns "Test User / 123 Main St" (the app uses the Next.js route) |
+| Sales tax (rate in Tu negocio, per job on/off, per-line "Sin impuesto"; Subtotal/Impuesto/Total on documents); scheduling with a time + "Cambiar fecha" + week Agenda (`/agenda`); Reports (`/reportes`: collected, billed, owed/overdue, estimate approval, by month, top clients, CSV for the accountant). 40 tests | `e7268a4`, `9aeb24b`, `e549e77` | Josh: `jobs.tax_rate`, `line_items.taxable`, `jobs.start_time`; reports can stay computed until there's a lot of data |
 
 
 ## Where we left off (2026-10-20, for the next tool picking this up)
