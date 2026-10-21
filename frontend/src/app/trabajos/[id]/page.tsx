@@ -52,6 +52,8 @@ import {
   peekInvoiceNumber,
   setInvoiceDue,
   setInvoiceNumber,
+  jobSubtotal,
+  jobTax,
 } from "@/lib/api";
 import { ShareEstimate } from "@/components/share-estimate";
 import { JobFiles } from "@/components/job-files";
@@ -187,7 +189,9 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   // The note's own "Total" lines vs. the item prices: fine if they match the grand total or one of the totals
   const noteTotals = lump ? [] : (job.note_totals ?? []);
   const noteSum = noteTotals.reduce((s, n) => s + n, 0);
-  const totalsOff = noteTotals.length > 0 && jobTotal(job) !== noteSum && !noteTotals.includes(jobTotal(job));
+  // a note's "Total" is before tax: compare it with the subtotal
+  const totalsOff = noteTotals.length > 0 && jobSubtotal(job) !== noteSum && !noteTotals.includes(jobSubtotal(job));
+  const taxRate = biz?.salesTaxRate || null; // he charges tax (Tu negocio) → each job can turn it on
   const jumpTo = (m: (typeof missing)[number]) => {
     const id = m === "price" ? (lump ? "f-job-total" : `f-price-${firstMissingPrice}`) : m === "items" ? "f-add-line" : `f-${m}`;
     const el = document.getElementById(id);
@@ -394,15 +398,31 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                     onDone={(description) => setItem(item.id, { description, translation_pending: !description.trim() })}
                   />
                 )}
-                {!lump && !measured(item) && (
-                  <button
-                    type="button"
-                    onClick={() => setQtyOn((m) => ({ ...m, [item.id]: true }))}
-                    className="mt-0.5 flex min-h-10 items-center px-2.5 text-left text-sm font-semibold text-forest"
-                  >
-                    {t.byQuantity}
-                  </button>
-                )}
+                {(!lump && !measured(item)) || (!lump && job.tax_rate) ? (
+                  <div className="flex flex-wrap items-center">
+                    {!measured(item) && (
+                      <button
+                        type="button"
+                        onClick={() => setQtyOn((m) => ({ ...m, [item.id]: true }))}
+                        className="mt-0.5 flex min-h-10 items-center px-2.5 text-left text-sm font-semibold text-forest"
+                      >
+                        {t.byQuantity}
+                      </button>
+                    )}
+                    {/* the job charges tax: labor can be left out line by line */}
+                    {job.tax_rate ? (
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={item.taxable !== false}
+                        onClick={() => setItem(item.id, { taxable: item.taxable === false })}
+                        className={`mt-0.5 flex min-h-10 items-center gap-1 px-2.5 text-sm font-semibold ${item.taxable === false ? "text-muted" : "text-forest"}`}
+                      >
+                        {item.taxable === false ? t.taxOff : t.taxOn}
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
               {!lump &&
                 (measured(item) ? (
@@ -506,9 +526,11 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
             <button type="button" onClick={() => patch({ job_total: null })} className="mt-2 text-sm font-semibold text-forest underline underline-offset-4">
               {t.pricePerLine}
             </button>
+            {taxRate && <TaxRows job={job} rate={taxRate} onToggle={(on) => patch({ tax_rate: on ? taxRate : null })} />}
           </div>
         ) : (
           <div className="mt-3 px-2">
+            {taxRate && <TaxRows job={job} rate={taxRate} onToggle={(on) => patch({ tax_rate: on ? taxRate : null })} />}
             <div className="flex items-center justify-between">
               <span className="text-base">{t.total}</span>
               <span className="text-2xl font-bold">{money(jobTotal(job))}</span>
@@ -520,7 +542,7 @@ function ReviewJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
               </p>
             )}
             {job.line_items.length > 1 && (
-              <button type="button" onClick={() => patch({ job_total: jobTotal(job) })} className="mt-2 text-sm font-semibold text-forest underline underline-offset-4">
+              <button type="button" onClick={() => patch({ job_total: jobSubtotal(job) })} className="mt-2 text-sm font-semibold text-forest underline underline-offset-4">
                 {t.useOneTotal}
               </button>
             )}
@@ -1355,6 +1377,34 @@ function JobActions({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
           </button>
         </div>
       </Sheet>
+    </div>
+  );
+}
+
+// Sales tax on this job: a switch, and Subtotal + Tax when it's on (the total below includes it)
+function TaxRows({ job, rate, onToggle }: { job: Job; rate: number; onToggle: (on: boolean) => void }) {
+  const { t } = useLang();
+  const on = !!job.tax_rate;
+  return (
+    <div className="mb-3 space-y-2 border-b border-black/5 pb-3">
+      <button type="button" role="switch" aria-checked={on} onClick={() => onToggle(!on)} className="flex w-full items-center justify-between gap-3 text-left">
+        <span className="text-sm font-semibold">{t.chargeTax(job.tax_rate ?? rate)}</span>
+        <span className={`flex h-7 w-12 shrink-0 items-center rounded-full p-0.5 transition ${on ? "bg-forest" : "bg-black/15"}`}>
+          <span className={`size-6 rounded-full bg-white shadow transition ${on ? "translate-x-5" : ""}`} />
+        </span>
+      </button>
+      {on && (
+        <>
+          <div className="flex justify-between text-sm text-charcoal/70">
+            <span>Subtotal</span>
+            <span className="tabular-nums">{money(jobSubtotal(job))}</span>
+          </div>
+          <div className="flex justify-between text-sm text-charcoal/70">
+            <span>{t.taxLine(job.tax_rate!)}</span>
+            <span className="tabular-nums">{money(jobTax(job))}</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

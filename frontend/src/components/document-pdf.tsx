@@ -125,6 +125,18 @@ export function DocumentPdf({
         <View style={s.hr} />
 
         {d.priceNote ? <Text style={[s.small, { marginBottom: 8 }]}>{d.priceNote}</Text> : null}
+        {d.tax ? (
+          <View wrap={false} style={{ marginBottom: 4 }}>
+            <View style={s.line}>
+              <Text>{d.tax.subtotalLabel}</Text>
+              <Text>{d.tax.subtotal}</Text>
+            </View>
+            <View style={s.line}>
+              <Text>{d.tax.label}</Text>
+              <Text>{d.tax.amount}</Text>
+            </View>
+          </View>
+        ) : null}
         {d.partial ? (
           <View wrap={false}>
             <View style={s.line}>

@@ -83,6 +83,7 @@ export default function Negocio() {
       payInfo: biz.payInfo?.trim() ?? "",
       invoiceDueDays: biz.invoiceDueDays ?? 15,
       nextInvoiceNumber: Number(nextInv),
+      salesTaxRate: biz.salesTaxRate && biz.salesTaxRate > 0 && biz.salesTaxRate < 30 ? biz.salesTaxRate : null,
       trades: biz.trades,
       otherTrade: otherOn ? { name: biz.otherTrade?.name.trim() ?? "", unit: biz.otherTrade?.unit ?? "project" } : null,
       ojoIgnore: biz.ojoIgnore ?? [],
@@ -264,6 +265,26 @@ export default function Negocio() {
           ) : (
             <span className="mt-1.5 block text-xs text-muted">{t.nextInvoiceHelp}</span>
           )}
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm text-charcoal/70">
+            {t.salesTax} <span className="text-muted">· {t.optional}</span>
+          </span>
+          <span className={`${input} flex items-center`}>
+            <input
+              value={biz.salesTaxRate ?? ""}
+              onChange={(e) => {
+                const v = e.target.value.replace(/[^\d.]/g, "").slice(0, 6);
+                change({ salesTaxRate: v === "" ? null : Number(v) });
+              }}
+              inputMode="decimal"
+              placeholder="8.9"
+              aria-label={t.salesTax}
+              className="min-w-0 flex-1 bg-transparent outline-none"
+            />
+            <span className="text-muted">%</span>
+          </span>
+          <span className="mt-1.5 block text-xs text-muted">{t.salesTaxHint}</span>
         </label>
       </section>
 

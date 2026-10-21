@@ -6,6 +6,8 @@ import {
   estimateNo,
   invoiceNo,
   invoiceState,
+  jobSubtotal,
+  jobTax,
   jobTotal,
   lineAmount,
   money,
@@ -173,5 +175,31 @@ describe("Home's money summary", () => {
     expect(s.overdue).toBe(950);
     expect(s.paidThisMonth).toBe(1230); // 80 + 1,150 this month; the $20 from September doesn't count
     expect(s.hasInvoices).toBe(true);
+  });
+});
+
+describe("sales tax", () => {
+  it("no rate → no tax, total = subtotal", () => {
+    const j = job({ line_items: [line({ amount: 100 })] });
+    expect(jobTax(j)).toBe(0);
+    expect(jobTotal(j)).toBe(100);
+  });
+  it("taxes every line unless it's marked untaxed (labor)", () => {
+    const j = job({ tax_rate: 8.9, line_items: [line({ amount: 400 }), line({ amount: 600, taxable: false })] });
+    expect(jobSubtotal(j)).toBe(1000);
+    expect(jobTax(j)).toBe(35.6); // 8.9% of the $400 of materials
+    expect(jobTotal(j)).toBe(1035.6);
+  });
+  it("taxes a one-total job on its total", () => {
+    const j = job({ tax_rate: 7, job_total: 1400, line_items: [line({ amount: null })] });
+    expect(jobTax(j)).toBe(98);
+    expect(jobTotal(j)).toBe(1498);
+  });
+  it("rounds tax to cents", () => {
+    expect(jobTax(job({ tax_rate: 8.9, line_items: [line({ quantity: 3, unit_price: 19.99 })] }))).toBe(5.34);
+  });
+  it("what's owed includes the tax", () => {
+    const j = job({ tax_rate: 10, line_items: [line({ amount: 500 })], invoice_number: 1, invoice_sent_at: "2026-10-01T12:00:00Z", payments: [pay(300)] });
+    expect(balanceDue(j)).toBe(250);
   });
 });

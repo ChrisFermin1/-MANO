@@ -51,6 +51,8 @@ export type LineItem = {
   quantity?: number | null;
   unit?: string | null; // what he typed: "ft²", "hr", "gal"
   unit_price?: number | null;
+  // Sales tax: when the job charges tax, a line is taxed unless this is false (e.g. labor) (app only)
+  taxable?: boolean;
 };
 
 // An Ojo question from Gemini, for trades without a built-in checklist (same shape as Ojo's Suggestion)
@@ -69,6 +71,8 @@ export type Job = {
   // One price for the whole job ("Total 1400$ only labor"): items list the work, no per-item prices.
   // Set → the job total is this; null/absent → the total is the sum of the items.
   job_total?: number | null;
+  // Sales tax rate in % for this job (copied from Tu negocio when he turns it on). null/absent = no tax. (app only)
+  tax_rate?: number | null;
   client_id?: string | null; // the saved client this job belongs to (app only until the backend's customers table)
   invoice_number_planned?: number | null; // the number he picked before making the invoice (app only); used when it's made
   invoice_due_custom?: boolean; // Carlos picked this invoice's due date himself → sending doesn't reset it (app only)
@@ -168,7 +172,16 @@ export function quantityLabel(item: Pick<LineItem, "quantity" | "unit" | "unit_p
   const unit = item.unit?.trim();
   return `${qty}${unit ? ` ${unit}` : ""} × ${money(item.unit_price)}`;
 }
-export const jobTotal = (job: Job) => (isLumpSum(job) ? job.job_total! : job.line_items.reduce((s, i) => s + (lineAmount(i) ?? 0), 0));
+/** Before tax: the one total, or the lines added up. */
+export const jobSubtotal = (job: Job) => (isLumpSum(job) ? job.job_total! : job.line_items.reduce((s, i) => s + (lineAmount(i) ?? 0), 0));
+/** Sales tax: the rate on the taxed lines (all of a one-total job). 0 when the job has no tax. */
+export const jobTax = (job: Job) => {
+  if (!job.tax_rate) return 0;
+  const base = isLumpSum(job) ? job.job_total! : job.line_items.reduce((s, i) => s + (i.taxable === false ? 0 : (lineAmount(i) ?? 0)), 0);
+  return roundMoney((base * job.tax_rate) / 100);
+};
+/** What the client pays: subtotal + tax. Everything that's owed, paid or shown as "Total" uses this. */
+export const jobTotal = (job: Job) => roundMoney(jobSubtotal(job) + jobTax(job));
 export const money = (n: number) => {
   const rounded = roundMoney(n);
   const cents = Math.round(Math.abs(rounded) * 100) % 100 !== 0;

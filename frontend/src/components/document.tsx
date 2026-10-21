@@ -1,4 +1,4 @@
-import { balanceDue, defaultDue, dueDay, estimateNo, fmtDate, lineAmount, linesBySite, invoiceNo, isLumpSum, jobTotal, money, paidSoFar, quantityLabel, type Job } from "@/lib/api";
+import { balanceDue, defaultDue, dueDay, estimateNo, fmtDate, lineAmount, linesBySite, invoiceNo, isLumpSum, jobSubtotal, jobTax, jobTotal, money, paidSoFar, quantityLabel, type Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
 import { formatPhone } from "@/lib/phone";
 
@@ -65,6 +65,10 @@ export function docData(kind: "estimate" | "invoice", job: Job, view: "en" | "es
     priceNote: isLumpSum(job) ? (es ? job.price_note_es || job.price_note : job.price_note) || null : null,
     // partial payment: total, what came in, what's left
     partial: partial ? { total: money(jobTotal(job)), paidLabel: L("Paid", "Pagado"), paid: money(paidSoFar(job)), dueLabel: L("Balance due", "Saldo pendiente"), due: money(balanceDue(job)) } : null,
+    // sales tax: Subtotal and Tax lines above the total (only when this job charges it)
+    tax: job.tax_rate
+      ? { subtotalLabel: "Subtotal", subtotal: money(jobSubtotal(job)), label: L(`Sales tax (${job.tax_rate}%)`, `Impuesto (${job.tax_rate}%)`), amount: money(jobTax(job)) }
+      : null,
     totalLabel: isInvoice ? (job.paid_at ? L("Total paid", "Total pagado") : L("Amount due", "Total a pagar")) : "Total",
     total: money(jobTotal(job)),
     howToPayLabel: L("How to pay", "Cómo pagar"),
@@ -162,6 +166,18 @@ export function DocumentCard({
       ))}
       <hr className="mt-5 border-black/10" />
       {d.priceNote && <p className="mt-3 text-sm text-muted">{d.priceNote}</p>}
+      {d.tax && (
+        <div className="mt-3 space-y-1 text-sm">
+          <div className="flex justify-between">
+            <span>{d.tax.subtotalLabel}</span>
+            <span className="tabular-nums">{d.tax.subtotal}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>{d.tax.label}</span>
+            <span className="tabular-nums">{d.tax.amount}</span>
+          </div>
+        </div>
+      )}
       {d.partial ? (
         <div className="mt-3 space-y-1">
           <div className="flex justify-between text-sm">

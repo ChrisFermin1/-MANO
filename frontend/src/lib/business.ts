@@ -19,6 +19,8 @@ export type Business = {
   // Where his invoice numbers continue from (coming from Wave at #189 → 190). Mano never goes below the
   // highest number it already used, so this can't create a duplicate.
   nextInvoiceNumber?: number;
+  // Sales tax rate in % (e.g. 8.9). Empty = he doesn't charge tax; when set, each job can turn it on.
+  salesTaxRate?: number | null;
   // Copied from his plan when an estimate is published, so the client's phone knows (never saved by Tu negocio)
   hideBranding?: boolean;
   trades: TradeId[];
