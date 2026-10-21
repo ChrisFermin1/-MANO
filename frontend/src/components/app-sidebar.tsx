@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Briefcase, CalendarDays, FileText, Home, LogOut, Plus, Receipt, Settings, Users } from "lucide-react";
+import { BarChart3, Briefcase, CalendarDays, FileText, Home, LogOut, Plus, Receipt, Settings, Users } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
 
@@ -23,6 +23,7 @@ export function AppSidebar() {
     { href: "/documentos?tab=estimates", label: t.navEstimates, icon: FileText, on: docs && tab !== "invoices" },
     { href: "/documentos?tab=invoices", label: t.navInvoices, icon: Receipt, on: docs && tab === "invoices" },
     { href: "/clientes", label: t.navClients, icon: Users, on: path.startsWith("/clientes") },
+    { href: "/reportes", label: t.navReports, icon: BarChart3, on: path.startsWith("/reportes") },
   ];
   const item = (i: (typeof items)[number]) => (
     <Link

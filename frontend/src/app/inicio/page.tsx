@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ChevronRight, Eye, FileText, PartyPopper, Plus, Receipt, Sparkles, Users } from "lucide-react";
+import { BarChart3, CalendarDays, ChevronRight, Eye, FileText, PartyPopper, Plus, Receipt, Sparkles, Users } from "lucide-react";
 import { dayKey, jobsOn, weekDays, weekStart } from "@/lib/schedule";
 import { EmptyState } from "@/components/empty-state";
 import { firstName, getJobs, onJobsChange, invoiceNo, invoiceState, jobBadge, jobTotal, moneySummary, money, type Job, type JobBadge, isInvoiceJob } from "@/lib/api";
@@ -341,7 +341,7 @@ export default function Inicio() {
 
         {/* phone + tablet: the other lists (desktop: in the sidebar) */}
         {jobs && (
-          <div className="mt-4 grid gap-4 md:mt-6 md:grid-cols-3 md:gap-6 lg:hidden">
+          <div className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 md:gap-6 lg:hidden">
             {/* this week's work, one tap away (desktop: Agenda in the sidebar) */}
             <Link href="/agenda" className={`flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99] ${ring}`}>
               <CalendarDays className="size-5 text-forest" strokeWidth={2} />
@@ -359,6 +359,11 @@ export default function Inicio() {
             <Link href="/clientes" className={`flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99] ${ring}`}>
               <Users className="size-5 text-forest" strokeWidth={2} />
               <span className="flex-1 text-base font-semibold">{t.clientsTitle}</span>
+              <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
+            </Link>
+            <Link href="/reportes" className={`flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99] ${ring}`}>
+              <BarChart3 className="size-5 text-forest" strokeWidth={2} />
+              <span className="flex-1 text-base font-semibold">{t.navReports}</span>
               <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
             </Link>
           </div>
