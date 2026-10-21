@@ -58,6 +58,7 @@ import {
 import { ShareEstimate } from "@/components/share-estimate";
 import { JobFiles } from "@/components/job-files";
 import { clientHrefForJob } from "@/lib/clients";
+import { whenLabel } from "@/lib/schedule";
 import { DocumentCard } from "@/components/document";
 import { DEMO_BUSINESS, loadBusiness, rememberNameFix, saveBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
@@ -792,11 +793,13 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   };
   // Accepted → pick the day, then it's scheduled
   const [day, setDay] = useState(job.scheduled_for ?? "");
+  const [time, setTime] = useState(job.scheduled_time ?? "");
   const schedule = async () => {
     if (!day) return;
-    await updateJob(job.id, { scheduled_for: day });
+    await updateJob(job.id, { scheduled_for: day, scheduled_time: time || null });
     setJob(await setStatus(job.id, "SCHEDULED"));
   };
+  const [rescheduling, setRescheduling] = useState(false);
   const [paying, setPaying] = useState(false);
   const [editing, setEditing] = useState(false);
 
@@ -904,7 +907,12 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
         </div>
         {job.scheduled_for && job.status !== "CANCELLED" && (
           <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-forest">
-            <CalendarDays className="size-4" strokeWidth={2} /> {t.scheduledFor(fmtDay(job.scheduled_for, lang))}
+            <CalendarDays className="size-4" strokeWidth={2} /> {t.scheduledFor(whenLabel(job, lang))}
+            {job.status !== "PAID" && job.status !== "PAYMENT_PENDING" && (
+              <button type="button" onClick={() => setRescheduling(true)} className="ml-1 font-semibold text-forest underline underline-offset-4">
+                {t.change}
+              </button>
+            )}
           </p>
         )}
         {linesBySite(job.line_items).map((g) => (
@@ -1022,17 +1030,27 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
                 <label htmlFor="f-schedule-day" className="block text-sm font-semibold">
                   {t.pickDay}
                 </label>
-                <input
-                  id="f-schedule-day"
-                  type="date"
-                  value={day}
-                  min={new Date().toISOString().slice(0, 10)}
-                  onChange={(e) => setDay(e.target.value)}
-                  className="h-[52px] w-full rounded-[14px] glass-field px-4 text-base outline-none ring-forest/60 focus:ring-2"
-                />
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                  <input
+                    id="f-schedule-day"
+                    type="date"
+                    value={day}
+                    min={new Date().toISOString().slice(0, 10)}
+                    onChange={(e) => setDay(e.target.value)}
+                    className="h-[52px] w-full rounded-[14px] glass-field px-4 text-base outline-none ring-forest/60 focus:ring-2"
+                  />
+                  {/* optional: "9:00" (many jobs are just "Saturday") */}
+                  <input
+                    type="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    aria-label={t.startTime}
+                    className="h-[52px] w-[8.5rem] rounded-[14px] glass-field px-3 text-base outline-none ring-forest/60 focus:ring-2"
+                  />
+                </div>
                 <button type="button" onClick={schedule} disabled={!day} className={btnPrimary}>
                   <CalendarDays className="size-5" strokeWidth={2.25} />
-                  {day ? t.scheduleOn(fmtDay(day, lang)) : t.nextStep.ACCEPTED} →
+                  {day ? t.scheduleOn(whenLabel({ scheduled_for: day, scheduled_time: time || null }, lang)) : t.nextStep.ACCEPTED} →
                 </button>
               </div>
             ) : (
@@ -1048,6 +1066,7 @@ function TrackJob({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
       </div>
 
       <ContactSheet open={editing} job={job} onClose={() => setEditing(false)} onSaved={(j) => (setEditing(false), setJob(j))} />
+      {rescheduling && <RescheduleSheet job={job} onClose={() => setRescheduling(false)} onSaved={(j) => (setRescheduling(false), setJob(j))} />}
       <PaymentSheet open={paying} job={job} onClose={() => setPaying(false)} onSaved={(j) => (setPaying(false), setJob(j))} />
     </WithPreview>
   );
@@ -1381,6 +1400,33 @@ function JobActions({ job, setJob }: { job: Job; setJob: (j: Job) => void }) {
   );
 }
 
+// Move the work to another day / time (the client asked, it rained…)
+function RescheduleSheet({ job, onClose, onSaved }: { job: Job; onClose: () => void; onSaved: (j: Job) => void }) {
+  const { t, lang } = useLang();
+  const [day, setDay] = useState(job.scheduled_for ?? "");
+  const [time, setTime] = useState(job.scheduled_time ?? "");
+  const field = "h-[52px] w-full rounded-[14px] glass-field px-4 text-base outline-none ring-forest/60 focus:ring-2";
+  return (
+    <Sheet open onClose={onClose} title={t.reschedule}>
+      <div className="mt-4 space-y-3">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+          <input type="date" value={day} onChange={(e) => setDay(e.target.value)} aria-label={t.pickDay} className={field} />
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label={t.startTime} className={`${field} w-[8.5rem] px-3`} />
+        </div>
+        <button
+          type="button"
+          disabled={!day}
+          onClick={async () => onSaved(await updateJob(job.id, { scheduled_for: day, scheduled_time: time || null }))}
+          className={btnPrimary}
+        >
+          <CalendarDays className="size-5" strokeWidth={2.25} />
+          {day ? t.scheduleOn(whenLabel({ scheduled_for: day, scheduled_time: time || null }, lang)) : t.save}
+        </button>
+      </div>
+    </Sheet>
+  );
+}
+
 // Sales tax on this job: a switch, and Subtotal + Tax when it's on (the total below includes it)
 function TaxRows({ job, rate, onToggle }: { job: Job; rate: number; onToggle: (on: boolean) => void }) {
   const { t } = useLang();
@@ -1553,7 +1599,3 @@ function SyncNote({ job }: { job: Job }) {
 }
 
 /** "2026-10-14" → "mar 14 oct" / "Tue, Oct 14" (a calendar day: no time zone shift) */
-function fmtDay(day: string, lang: "es" | "en") {
-  const [y, m, d] = day.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(lang === "es" ? "es-US" : "en-US", { weekday: "short", month: "short", day: "numeric" });
-}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Briefcase, FileText, Home, LogOut, Plus, Receipt, Settings, Users } from "lucide-react";
+import { Briefcase, CalendarDays, FileText, Home, LogOut, Plus, Receipt, Settings, Users } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
 
@@ -18,6 +18,7 @@ export function AppSidebar() {
   const docs = path.startsWith("/documentos");
   const items = [
     { href: "/inicio", label: t.navHome, icon: Home, on: path.startsWith("/inicio") },
+    { href: "/agenda", label: t.navAgenda, icon: CalendarDays, on: path.startsWith("/agenda") },
     { href: "/trabajos", label: t.navJobs, icon: Briefcase, on: path.startsWith("/trabajos") && !path.startsWith("/trabajos/nuevo") },
     { href: "/documentos?tab=estimates", label: t.navEstimates, icon: FileText, on: docs && tab !== "invoices" },
     { href: "/documentos?tab=invoices", label: t.navInvoices, icon: Receipt, on: docs && tab === "invoices" },

@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Eye, FileText, PartyPopper, Plus, Receipt, Sparkles, Users } from "lucide-react";
+import { CalendarDays, ChevronRight, Eye, FileText, PartyPopper, Plus, Receipt, Sparkles, Users } from "lucide-react";
+import { dayKey, jobsOn, weekDays, weekStart } from "@/lib/schedule";
 import { EmptyState } from "@/components/empty-state";
 import { firstName, getJobs, onJobsChange, invoiceNo, invoiceState, jobBadge, jobTotal, moneySummary, money, type Job, type JobBadge, isInvoiceJob } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, firstNameOf } from "@/lib/business";
@@ -105,6 +106,7 @@ export default function Inicio() {
   const recentRows = (jobs ?? []).filter((j) => j.status !== "CANCELLED").slice(0, 6).map((j) => jobRow(j, lang));
   const recent = recentRows.slice(0, 3);
   const waiting = (jobs ?? []).filter((j) => j.status === "QUOTE_SENT"); // estimates out, no answer yet
+  const weekCount = weekDays(weekStart(new Date())).reduce((n, d) => n + jobsOn(jobs ?? [], dayKey(d)).length, 0);
 
   const ring = "outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 focus-visible:ring-offset-ivory";
 
@@ -339,7 +341,16 @@ export default function Inicio() {
 
         {/* phone + tablet: the other lists (desktop: in the sidebar) */}
         {jobs && (
-          <div className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 md:gap-6 lg:hidden">
+          <div className="mt-4 grid gap-4 md:mt-6 md:grid-cols-3 md:gap-6 lg:hidden">
+            {/* this week's work, one tap away (desktop: Agenda in the sidebar) */}
+            <Link href="/agenda" className={`flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99] ${ring}`}>
+              <CalendarDays className="size-5 text-forest" strokeWidth={2} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-semibold">{t.navAgenda}</span>
+                <span className="block text-sm text-muted">{t.agendaWeekCount(weekCount)}</span>
+              </span>
+              <ChevronRight className="size-4 text-forest" strokeWidth={2.5} />
+            </Link>
             <Link href="/documentos" className={`flex items-center gap-3 rounded-[20px] glass px-5 py-4 transition active:scale-[0.99] ${ring}`}>
               <FileText className="size-5 text-forest" strokeWidth={2} />
               <span className="flex-1 text-base font-semibold">{t.docsTitle}</span>
