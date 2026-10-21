@@ -29,6 +29,9 @@ export default function Trabajos() {
   const [filter, setFilter] = useState<Filter>("all");
 
   useEffect(() => {
+    // Reportes links here already filtered (/trabajos?f=overdue)
+    const f = new URLSearchParams(window.location.search).get("f");
+    if (f && f in FILTERS) setFilter(f as Filter);
     getJobs().then(setJobs);
     return onJobsChange(() => void getJobs().then(setJobs));
   }, []);

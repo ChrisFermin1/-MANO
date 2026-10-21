@@ -1,28 +1,13 @@
 // The estimate / invoice as a real PDF (selectable text, prints clean). Same words as the screen card:
 // both read docData(). Loaded only when someone taps "Descargar PDF" (see downloadPdf), so the app stays light.
-import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { Job } from "@/lib/api";
 import type { Business } from "@/lib/business";
 import type { PublicAttachment } from "@/lib/attachments";
 import { docData } from "@/components/document";
 import { formatPhone } from "@/lib/phone";
 
-// The app's own fonts (public/fonts, same as the screen): Montserrat text, Righteous name, JetBrains Mono labels
-const font = (file: string) => `${window.location.origin}/fonts/${file}`;
-Font.register({
-  family: "Montserrat",
-  fonts: [
-    { src: font("Montserrat-Regular.ttf") },
-    { src: font("Montserrat-SemiBold.ttf"), fontWeight: 600 },
-    { src: font("Montserrat-Bold.ttf"), fontWeight: 700 },
-  ],
-});
-Font.register({ family: "Righteous", src: font("Righteous-Regular.ttf") });
-Font.register({
-  family: "JetBrains Mono",
-  fonts: [{ src: font("JetBrainsMono-Regular.ttf") }, { src: font("JetBrainsMono-Bold.ttf"), fontWeight: 700 }],
-});
-Font.registerHyphenationCallback((word) => [word]); // never split a word with a hyphen
+import "@/components/pdf-fonts";
 
 const C = { forest: "#073D2D", charcoal: "#202522", muted: "#7C817D", line: "#E3E4DE", ivory: "#F5F5ED", sage: "#DDE7D8", sand: "#F2E8D6", sandInk: "#815C2C" };
 
