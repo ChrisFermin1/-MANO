@@ -7,7 +7,7 @@ import { ArrowLeft, Loader2, Mail, Phone } from "lucide-react";
 import { LangToggle } from "@/components/lang-toggle";
 import { OnboardingAside } from "@/components/onboarding-aside";
 import { btnPrimary, input } from "@/components/ui";
-import { homeFor, startDemo } from "@/components/auth-gate";
+import { afterSignIn, startDemo } from "@/components/auth-gate";
 import { RESEND_AFTER_S, sendCode, signInWith, verifyCode, type CodeError } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
 import { formatPhone, isFullPhone, nextPhone } from "@/lib/phone";
@@ -52,7 +52,7 @@ function Entrar() {
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   // returning user (already has a business) → Inicio; new → the 3 onboarding steps
-  const done = () => router.replace(homeFor());
+  const done = () => void afterSignIn().then((to) => router.replace(to));
 
   const send = async () => {
     setBusy("send");

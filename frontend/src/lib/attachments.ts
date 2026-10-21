@@ -59,6 +59,15 @@ export async function listFiles(jobId: number): Promise<Attachment[]> {
   }
 }
 
+/** How many photos/files are on this device (all jobs) — for the import summary. */
+export async function countAllFiles(): Promise<number> {
+  try {
+    return (await tx<number>("readonly", (s) => s.count())) ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 export function onFilesChange(jobId: number, fn: () => void): () => void {
   const h = (e: Event) => (e as CustomEvent<{ jobId: number }>).detail.jobId === jobId && fn();
   window.addEventListener(EVENT, h);
