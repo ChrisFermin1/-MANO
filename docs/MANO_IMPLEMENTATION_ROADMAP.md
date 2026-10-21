@@ -35,7 +35,7 @@ source of truth. Without this, new features multiply the "only on this phone" pr
 | 0.7 | Estimates, invoices, payments tables + conversions | L | 0.6 | Numbers unique per org under concurrency; estimate→invoice in one transaction; partial payments sum correctly |
 | 0.8 | Files in object storage | M | 0.3 | Photos/PDFs upload from phone, show on the client link and PDF, private ones never public |
 | 0.9 | Hosted client link (replace demo relay) | M | 0.7, 0.8 | A client anywhere opens `mano.app/d/<token>`, approves; owner's phone updates within seconds |
-| 0.10 | One-time import from this browser | S | 0.5–0.8 | First real login uploads local jobs/clients/business/files with a summary |
+| 0.10 | One-time import from this browser | S | 0.5–0.8 | First real login uploads local jobs/clients/business/files with a summary. *Front end ready:* `/importar` + `lib/import.ts`; needs `POST /import` |
 | 0.11 | Hosting + monitoring + backups | M | 0.1 | Staging + production, daily DB backups, error alerts |
 
 **Milestone 0 — "Works across devices for one real business."** Edgar on his phone, Abe on a laptop, same data;
