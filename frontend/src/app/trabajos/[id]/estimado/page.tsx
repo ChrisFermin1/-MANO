@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Loader2, Pencil, Send } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, Pencil, Send } from "lucide-react";
 import { DocLangSwitch, DocumentCard } from "@/components/document";
 import { ShareEstimate } from "@/components/share-estimate";
-import { PageHeader, Screen, SuccessScreen, Title, btnGhost, btnPrimary } from "@/components/ui";
-import { estimateNo, firstName, getJob, sendEstimate, type Job } from "@/lib/api";
+import { PdfButton } from "@/components/pdf-button";
+import { ClientPreview } from "@/components/client-preview";
+import { PageHeader, Screen, SuccessScreen, Title, btnGhost, btnPrimary, btnSecondary } from "@/components/ui";
+import { estimateNo, firstName, getJob, isUnsent, prepareEstimate, type Job } from "@/lib/api";
 import { DEMO_BUSINESS, loadBusiness, type Business } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 import { validate } from "@/lib/ojo";
@@ -20,22 +22,25 @@ export default function Estimado() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [docView, setDocView] = useState<"es" | "en">("es");
+  const [previewing, setPreviewing] = useState(false);
 
   useEffect(() => {
     getJob(Number(id)).then(setJob);
     setBiz({ ...DEMO_BUSINESS, ...loadBusiness() });
   }, [id]);
 
-  if (!job) return <Screen>{null}</Screen>;
+  if (!job) return <Screen className="lg:max-w-[760px]!">{null}</Screen>;
 
   if (sent) {
     return (
       <SuccessScreen
-        title={t.sentTitle}
-        body={`${job.estimate_number ? `${estimateNo(job.estimate_number)} · ` : ""}${t.sentQuoteBody(firstName(job.customer_name))}`}
+        title={isUnsent(job) ? t.readyTitle : t.sentTitle}
+        body={`${job.estimate_number ? `${estimateNo(job.estimate_number)} · ` : ""}${
+          isUnsent(job) ? t.readyBody(firstName(job.customer_name)) : t.sentQuoteBody(firstName(job.customer_name))
+        }`}
       >
-        <ShareEstimate job={job} dark />
-        <Link href="/inicio" className="mt-4 flex h-[48px] w-full items-center justify-center rounded-[20px] text-sm font-semibold text-lime">
+        <ShareEstimate job={job} dark onSent={setJob} />
+        <Link href="/inicio" className="mt-4 flex h-[48px] w-full items-center justify-center rounded-[20px] text-sm font-semibold text-white">
           {t.backHome}
         </Link>
       </SuccessScreen>
@@ -47,12 +52,12 @@ export default function Estimado() {
 
   const approve = async () => {
     setSending(true);
-    setJob(await sendEstimate(job.id));
+    setJob(await prepareEstimate(job.id));
     setSent(true);
   };
 
   return (
-    <Screen>
+    <Screen className="lg:max-w-[760px]!">
       <PageHeader backHref={`/trabajos/${job.id}`} />
       <Title>{t.quoteTitle}</Title>
       <p className="mt-2 text-base leading-5">{t.quoteBody}</p>
@@ -61,16 +66,40 @@ export default function Estimado() {
         {/* Spanish-speaking owner: read it in Spanish, or flip to what the customer actually gets */}
         {lang === "es" && <DocLangSwitch view={docView} onChange={setDocView} labels={{ es: t.docViewEs, en: t.docViewEn }} />}
         <DocumentCard kind="estimate" job={job} biz={biz} view={lang === "es" ? docView : "en"} />
+        {/* the link page and the PDF, exactly as the client gets them */}
+        <button type="button" onClick={() => setPreviewing(true)} className="flex h-11 w-full items-center justify-center gap-2 text-sm font-semibold text-forest underline-offset-4 hover:underline">
+          <Eye className="size-4" strokeWidth={2.25} /> {t.previewOpen}
+        </button>
       </div>
+      {previewing && <ClientPreview kind="estimate" job={job} biz={biz} onClose={() => setPreviewing(false)} />}
 
       {draft && (
         <div className="mt-auto space-y-1 pt-8">
           <button type="button" onClick={approve} disabled={!ready || sending} className={btnPrimary}>
             {sending ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" strokeWidth={2.25} />}
-            {t.approveSend}
+            {t.prepareSend}
           </button>
           <Link href={`/trabajos/${job.id}`} className={btnGhost}>
             <Pencil className="size-4" /> {t.edit}
+          </Link>
+        </div>
+      )}
+      {/* Already sent: follow-up and the rest live on the job page — say so */}
+      {!draft && (
+        <div className="mt-auto space-y-1 pt-8">
+          {/* the customer's version (English): to print, save or send */}
+          <PdfButton
+            kind="estimate"
+            job={job}
+            biz={biz}
+            label={t.downloadPdf}
+            busyLabel={t.makingPdf}
+            errorLabel={t.pdfFailed}
+            className={btnSecondary}
+          />
+          <Link href={`/trabajos/${job.id}`} className={btnGhost}>
+            <ArrowLeft className="size-5" strokeWidth={2.25} />
+            {t.backToJob}
           </Link>
         </div>
       )}

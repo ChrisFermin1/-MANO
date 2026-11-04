@@ -1,7 +1,7 @@
 // Josh's backend (FastAPI + Postgres), reached through this app's server at /backend (see next.config.ts).
 // The app keeps reading from the browser; every job created with "Nuevo trabajo" is also saved here.
 
-import { jobTotal, isLumpSum, type Job } from "@/lib/api";
+import { jobTotal, isLumpSum, lineAmount, type Job } from "@/lib/api";
 
 // The demo business the backend creates on startup ("Carlos Painting & Drywall")
 export const BUSINESS_ID = process.env.NEXT_PUBLIC_MANO_BUSINESS_ID || "00000000-0000-4000-8000-00000000ca71";
@@ -37,11 +37,14 @@ export function backendFields(job: Job) {
     start_date: job.scheduled_for || null,
     line_items: job.line_items
       .filter((i) => (i.description || i.description_es || "").trim())
-      .map((i) => ({
-        description: (i.description || i.description_es || "").trim(),
-        description_es: i.description_es?.trim() || null,
-        amount: lump || i.amount == null ? null : i.amount.toFixed(2),
-      })),
+      .map((i) => {
+        const amount = lineAmount(i); // quantity × unit price when both are set; the columns themselves stay in the app
+        return {
+          description: (i.description || i.description_es || "").trim(),
+          description_es: i.description_es?.trim() || null,
+          amount: lump || amount == null ? null : amount.toFixed(2),
+        };
+      }),
   };
 }
 

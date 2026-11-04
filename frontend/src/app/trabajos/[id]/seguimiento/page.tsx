@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Eye, Loader2, MessageCircle, RotateCcw, Send, Smartphone, Sparkles } from "lucide-react";
-import { PageHeader, Screen, SuccessScreen, Title, btnLime, btnPrimary } from "@/components/ui";
-import { firstName, getJob, jobTotal, money, sendMessage, smsLink, whatsappLink, type Job } from "@/lib/api";
-import { DEMO_BUSINESS, loadBusiness } from "@/lib/business";
+import { PageHeader, Screen, SuccessScreen, Title, btnPrimary, btnWhite } from "@/components/ui";
+import { balanceDue, firstName, getJob, jobTotal, money, sendMessage, smsLink, whatsappLink, type Job } from "@/lib/api";
+import { DEMO_BUSINESS, loadBusiness, firstNameOf } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
 import { followUpMessage } from "@/lib/mano";
 import { translateToEnglish } from "@/lib/translate";
@@ -29,7 +29,7 @@ export default function Seguimiento() {
     getJob(Number(id)).then(async (j) => {
       if (!j) return;
       const biz = { ...DEMO_BUSINESS, ...loadBusiness() };
-      const msg = await followUpMessage(j, biz.ownerName || DEMO_BUSINESS.ownerName, biz.businessName || DEMO_BUSINESS.businessName, money(jobTotal(j)));
+      const msg = await followUpMessage(j, firstNameOf(biz.ownerName) || DEMO_BUSINESS.ownerName, biz.businessName || DEMO_BUSINESS.businessName, money(j.invoice_number ? balanceDue(j) : jobTotal(j)));
       mano.current = msg;
       setJob(j);
       setEs(msg.es);
@@ -37,14 +37,14 @@ export default function Seguimiento() {
     });
   }, [id]);
 
-  if (!job) return <Screen>{null}</Screen>;
+  if (!job) return <Screen className="lg:max-w-[760px]!">{null}</Screen>;
 
   const name = firstName(job.customer_name);
 
   if (sent) {
     return (
       <SuccessScreen title={t.sentTitle} body={t.sentFollowBody}>
-        <Link href="/inicio" className={btnLime}>
+        <Link href="/inicio" className={btnWhite}>
           {t.backHome}
         </Link>
       </SuccessScreen>
@@ -89,7 +89,7 @@ export default function Seguimiento() {
   };
 
   return (
-    <Screen>
+    <Screen className="lg:max-w-[760px]!">
       <PageHeader backHref="/inicio" />
       <Title>{t.followTitle(name)}</Title>
       <p className="mt-2 flex items-start gap-2 text-base leading-5">
@@ -129,7 +129,7 @@ export default function Seguimiento() {
               <p className="font-mono text-[11px] uppercase tracking-[1.2px] text-muted">
                 {enState === "translating" ? t.translatingMsg : t.customerGets}
               </p>
-              <p lang="en" className="mt-1.5 text-sm leading-5 text-black/75">
+              <p lang="en" className="mt-1.5 text-sm leading-5 text-charcoal/75">
                 {en}
               </p>
             </section>

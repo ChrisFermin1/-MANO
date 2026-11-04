@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { btnPrimary } from "@/components/ui";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OnboardingHeader } from "@/components/onboarding-header";
-import { resetJobs } from "@/lib/api";
-import { saveBusiness } from "@/lib/business";
+import { OnboardingAside } from "@/components/onboarding-aside";
+import { loadBusiness, saveBusiness } from "@/lib/business";
 import { useLang } from "@/lib/i18n";
+import { formatPhone, isFullPhone, nextPhone } from "@/lib/phone";
 
 const inputClass =
-  "h-[56px] w-full rounded-[20px] glass-field px-5 text-base outline-none ring-forest/60 placeholder:text-muted focus:ring-2";
+  "h-[52px] w-full rounded-[20px] glass-field px-5 text-base outline-none ring-forest/60 placeholder:text-muted focus:ring-2";
 
 export default function TuNegocio() {
   const { t } = useLang();
@@ -16,44 +18,71 @@ export default function TuNegocio() {
   const [ownerName, setOwnerName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [phone, setPhone] = useState("");
-  const canFinish = ownerName.trim() !== "" && businessName.trim() !== "";
+  const [email, setEmail] = useState("");
+  const [address, setAddress] = useState("");
+  // came back from step 3: what he already typed
+  useEffect(() => {
+    const b = loadBusiness();
+    if (!b?.businessName) return;
+    setOwnerName(b.ownerName ?? "");
+    setBusinessName(b.businessName ?? "");
+    setPhone(formatPhone(b.phone));
+    setEmail(b.email ?? "");
+    setAddress(b.address ?? "");
+  }, []);
+  // money is on the line: a real name (first + last) on the invoices, and a phone the client can call
+  const fullName = /\S+\s+\S+/.test(ownerName.trim());
+  const canContinue = fullName && businessName.trim() !== "" && isFullPhone(phone);
 
-  const finish = () => {
-    saveBusiness({ ownerName: ownerName.trim(), businessName: businessName.trim(), phone: phone.trim() });
-    resetJobs({ demo: false });
-    router.push("/inicio");
+  const next = () => {
+    saveBusiness({ ownerName: ownerName.trim(), businessName: businessName.trim(), phone: phone.trim(), email: email.trim(), address: address.trim() });
+    router.push("/onboarding/paso-3");
   };
 
   return (
-    <main className="min-h-dvh bg-mano-light text-black">
-      <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col px-[25px] pb-8 pt-[33px]">
-        <OnboardingHeader step={2} total={2} backHref="/onboarding/oficio" />
+    <main className="bg-mano-light text-charcoal lg:pl-[40%]">
+      <OnboardingAside step={2} />
+      <div className="mx-auto max-w-[430px] px-[25px] pb-[calc(116px+max(20px,env(safe-area-inset-bottom)))] pt-[calc(16px+env(safe-area-inset-top))] lg:max-w-[600px] lg:px-12 lg:pt-14 lg:pb-0">
+        <OnboardingHeader step={2} total={3} backHref="/onboarding/oficio" />
 
-        <h1 className="mt-[50px] font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.bizTitle}</h1>
+        <h1 className="mt-6 font-serif text-[36px] leading-10 tracking-[-0.72px]">{t.bizTitle}</h1>
         <p className="mt-2 text-base leading-5">{t.bizBody}</p>
 
-        <div className="mt-8 space-y-4">
-          <Field label={t.yourName}>
-            <input className={inputClass} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} placeholder="Carlos" autoComplete="given-name" />
+        <div className="mt-5 space-y-3">
+          <Field label={t.fullName}>
+            <input className={inputClass} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} placeholder="Carlos Méndez" autoComplete="name" />
+            {ownerName.trim() && !fullName && <span className="mt-1.5 block text-xs font-semibold text-ojo-ink">{t.needLastName}</span>}
           </Field>
           <Field label={t.bizName}>
             <input className={inputClass} value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Carlos Painting" autoComplete="organization" />
           </Field>
-          <Field label={t.phone} hint={t.optional}>
-            <input className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" type="tel" inputMode="tel" autoComplete="tel" />
+          <Field label={t.phone}>
+            <input className={inputClass} value={phone} onChange={(e) => setPhone(nextPhone(phone, e.target.value))} placeholder="(555) 123-4567" type="tel" inputMode="tel" autoComplete="tel" />
+            {phone.trim() && !isFullPhone(phone) && <span className="mt-1.5 block text-xs font-semibold text-ojo-ink">{t.phoneNeedsArea}</span>}
+          </Field>
+          <Field label={t.bizEmail} hint={t.optional}>
+            <input className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="carlos@email.com" type="email" inputMode="email" autoComplete="email" />
+          </Field>
+          <Field label={t.bizAddress} hint={t.optional}>
+            <input className={inputClass} value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Main St, Atlanta, GA" autoComplete="street-address" />
+            <span className="mt-1.5 block text-xs text-muted">{t.bizAddressHint}</span>
           </Field>
         </div>
 
-        <div className="mt-auto pt-10">
+        {/* pinned to the bottom of the screen (fixed, not height-based): "Siguiente" is always on screen, the form scrolls behind it */}
+        </div>
+      {/* desktop: right after the form, not pinned to the bottom of the screen */}
+      <div className="fixed inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ivory from-75% to-ivory/0 pt-8 lg:static lg:bg-none lg:pt-8">
+        <div className="mx-auto max-w-[430px] px-[25px] pb-[max(20px,env(safe-area-inset-bottom))] lg:max-w-[600px] lg:px-12 lg:pb-10">
           <button
             type="button"
-            onClick={finish}
-            disabled={!canFinish}
-            className="flex h-[53px] w-full items-center justify-center rounded-[20px] bg-forest text-sm font-bold text-lime shadow-[0_10px_24px_-10px_rgba(15,61,46,0.6)] transition active:scale-[0.98] disabled:opacity-40"
+            onClick={next}
+            disabled={!canContinue}
+            className={btnPrimary}
           >
-            {t.finish} →
+            {t.next} →
           </button>
-          <p className="mt-4 text-center text-sm font-medium leading-4 text-muted">{t.changeLater}</p>
+          <p className="mt-3 text-center text-sm font-medium leading-4 text-muted">{t.changeLater}</p>
         </div>
       </div>
     </main>

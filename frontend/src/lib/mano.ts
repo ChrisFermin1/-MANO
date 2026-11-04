@@ -8,7 +8,7 @@ import { toEnglish } from "@/lib/translate";
 
 type Interpreted = Pick<
   Job,
-  "customer_name" | "customer_name_suggested" | "customer_phone" | "address" | "service" | "service_es" | "job_total" | "price_note" | "price_note_es" | "line_items"
+  "customer_name" | "customer_name_suggested" | "customer_phone" | "address" | "service" | "service_es" | "job_total" | "note_totals" | "price_note" | "price_note_es" | "line_items"
 >;
 
 // Thrown only when Mano is busy (rate limit) — worth telling Carlos to wait a moment
@@ -64,6 +64,7 @@ export async function interpret(description: string, otherTrade?: OtherTrade | n
       service: d.service,
       service_es: d.service_es ?? null,
       job_total: d.job_total ?? null,
+      note_totals: d.note_totals ?? [],
       price_note: d.price_note ?? null,
       price_note_es: d.price_note_es ?? null,
       line_items: d.line_items.map((i) => ({ ...i, translation_pending: !i.description })),
@@ -232,9 +233,18 @@ export async function ojoQuestions(job: Job, trade: string): Promise<OjoAiQuesti
 export async function followUpMessage(job: Job, owner: string, business: string, total: string) {
   const name = (job.customer_name ?? "").split(" ")[0] || "there";
   if (job.status === "PAYMENT_PENDING" || job.status === "COMPLETED") {
+    const due = job.invoice_due_at ? new Date(job.invoice_due_at) : null;
+    const day = (lang: string) => due!.toLocaleDateString(lang, { month: "long", day: "numeric" });
+    // past due → say so plainly; not yet due → say when
+    const when =
+      due && due < new Date()
+        ? { en: `was due on ${day("en-US")}`, es: `venció el ${day("es-US")}` }
+        : due
+          ? { en: `is due on ${day("en-US")}`, es: `vence el ${day("es-US")}` }
+          : { en: "is due", es: "está pendiente" };
     return {
-      en: `Hi ${name}, this is ${owner} from ${business}. Thank you again for trusting us with your ${job.service.toLowerCase()}! Just a friendly reminder that the balance of ${total} is due. Let me know if you have any questions.`,
-      es: `Hola ${name}, soy ${owner} de ${business}. ¡Gracias otra vez por confiar en nosotros! Solo un recordatorio amable de que el saldo de ${total} está pendiente. Avísame si tienes preguntas.`,
+      en: `Hi ${name}, this is ${owner} from ${business}. Thank you again for trusting us with your ${job.service.toLowerCase()}! Just a friendly reminder that the balance of ${total} ${when.en}. Let me know if you have any questions.`,
+      es: `Hola ${name}, soy ${owner} de ${business}. ¡Gracias otra vez por confiar en nosotros! Solo un recordatorio amable de que el saldo de ${total} ${when.es}. Avísame si tienes preguntas.`,
     };
   }
   return {

@@ -5,6 +5,7 @@ import { loadBusiness, knownNameFix } from "@/lib/business";
 import { interpret } from "@/lib/mano";
 import { validate } from "@/lib/ojo";
 import { publishEstimate } from "@/lib/relay";
+import { matchClient } from "@/lib/match";
 
 export type JobStatus =
   | "NEW"
@@ -44,6 +45,14 @@ export type LineItem = {
   translation_pending?: boolean;
   amount: number | null;
   price_source?: PriceSource | null;
+  site?: string | null; // one invoice for several houses (a company client): the address this line is for (app only)
+  // Optional measured price (app only, until the backend has the columns): "450 ft² × $12".
+  // Both numbers set → `amount` is their product. Neither set → the line is one amount, as before.
+  quantity?: number | null;
+  unit?: string | null; // what he typed: "ft²", "hr", "gal"
+  unit_price?: number | null;
+  // Sales tax: when the job charges tax, a line is taxed unless this is false (e.g. labor) (app only)
+  taxable?: boolean;
 };
 
 // An Ojo question from Gemini, for trades without a built-in checklist (same shape as Ojo's Suggestion)
@@ -52,6 +61,9 @@ export type OjoAiQuestion = { key: string; es: string; en: string; item: string;
 export type Job = {
   id: number;
   customer_name: string | null;
+  customer_email?: string | null; // optional — printed under "Bill to"; later, where Mano emails the PDF (app only)
+  // Mano matched the note to a saved client: their spelling + the details it filled in (✕ puts it back)
+  client_match?: { name: string; heard: string | null; filled: ("address" | "customer_phone" | "customer_email")[] } | null;
   customer_phone?: string | null; // optional — never required by Ojo; enables one-tap WhatsApp / SMS
   address: string | null;
   service: string;
@@ -59,6 +71,13 @@ export type Job = {
   // One price for the whole job ("Total 1400$ only labor"): items list the work, no per-item prices.
   // Set → the job total is this; null/absent → the total is the sum of the items.
   job_total?: number | null;
+  // Sales tax rate in % for this job (copied from Tu negocio when he turns it on). null/absent = no tax. (app only)
+  tax_rate?: number | null;
+  client_id?: string | null; // the saved client this job belongs to (app only until the backend's customers table)
+  invoice_number_planned?: number | null; // the number he picked before making the invoice (app only); used when it's made
+  invoice_due_custom?: boolean; // Carlos picked this invoice's due date himself → sending doesn't reset it (app only)
+  note_totals?: number[]; // "Total" amounts written on a scanned/typed note, to check against the item prices (app only)
+  payments?: Payment[]; // money received on the invoice, full or partial (app only until the backend has payments)
   price_note?: string | null; // what the price covers, for the customer ("Labor only")
   price_note_es?: string | null; // same note, for Carlos ("Solo mano de obra")
   doc_intent?: "invoice" | null;
@@ -91,6 +110,7 @@ export type Job = {
   ojo_ai?: OjoAiQuestion[] | null;
   // Copy in Josh's backend (Postgres). Only jobs made with "Nuevo trabajo" are sent (not the samples).
   scheduled_for?: string | null; // "2026-10-14": the day the work is scheduled (set when Carlos taps "Agendar")
+  scheduled_time?: string | null; // "09:00", optional (app only until the backend has a start time)
   backend_sync?: "pending" | "ok" | "error";
   backend_id?: string; // the database's job_id
   backend_sent?: string; // what was last sent (to skip sending the same thing twice)
@@ -107,6 +127,17 @@ export const canDelete = (j: Job) =>
 export const canCancel = (j: Job) => !!j.estimate_number && !j.invoice_number && j.status !== "CANCELLED" && j.status !== "PAID";
 
 export const INVOICE_DUE_DAYS = 15;
+/** "2026-10-31" → the end of that day, so an invoice due today isn't overdue until tomorrow. */
+export const endOfDay = (day: string) => new Date(`${day}T23:59:59`).toISOString();
+const dayOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/** Due date from Carlos's terms (Tu negocio), counted from `from`. */
+export const defaultDue = (from = new Date()) => {
+  const d = new Date(from);
+  d.setDate(d.getDate() + (loadBusiness()?.invoiceDueDays ?? INVOICE_DUE_DAYS));
+  return endOfDay(dayOf(d));
+};
+/** "2026-10-31" from a stored due date, for a date input. */
+export const dueDay = (iso: string) => dayOf(new Date(iso));
 export const estimateNo = (n: number) => `EST-${String(n).padStart(4, "0")}`;
 export const invoiceNo = (n: number) => `INV-${String(n).padStart(4, "0")}`;
 
@@ -116,12 +147,52 @@ const DAY = 86_400_000;
 const ago = (days: number) => new Date(Date.now() - days * DAY).toISOString();
 export const uid = () => Math.random().toString(36).slice(2, 9);
 export const isLumpSum = (job: Pick<Job, "job_total">) => job.job_total != null;
-export const jobTotal = (job: Job) => (isLumpSum(job) ? job.job_total! : job.line_items.reduce((s, i) => s + (i.amount ?? 0), 0));
-export const money = (n: number) => `$${n.toLocaleString("en-US")}`;
+/** Cents, so 450 × $12.33 doesn't drift. */
+export const roundMoney = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+/** Line total: quantity × unit price when both are set; otherwise the single amount. */
+export function lineAmount(item: Pick<LineItem, "amount" | "quantity" | "unit_price">): number | null {
+  if (item.quantity != null && item.unit_price != null) return roundMoney(item.quantity * item.unit_price);
+  if (item.quantity != null || item.unit_price != null) return null; // started a measured price, not finished
+  return item.amount ?? null;
+}
+/** Keep `amount` in step with quantity × unit price. A description-only edit doesn't change the price. */
+export function priceLine(item: LineItem, patch: Partial<LineItem>): LineItem {
+  const next: LineItem = { ...item, ...patch };
+  if (next.quantity != null && next.unit_price != null) {
+    next.amount = roundMoney(next.quantity * next.unit_price);
+    if (patch.quantity !== undefined || patch.unit_price !== undefined) next.price_source = "manual";
+  } else if (next.quantity != null || next.unit_price != null) {
+    next.amount = null;
+  }
+  return next;
+}
+/** "450 ft² × $12", or null when the line is one amount. */
+export function quantityLabel(item: Pick<LineItem, "quantity" | "unit" | "unit_price">): string | null {
+  if (item.quantity == null || item.unit_price == null) return null;
+  const qty = item.quantity.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  const unit = item.unit?.trim();
+  return `${qty}${unit ? ` ${unit}` : ""} × ${money(item.unit_price)}`;
+}
+/** Before tax: the one total, or the lines added up. */
+export const jobSubtotal = (job: Job) => (isLumpSum(job) ? job.job_total! : job.line_items.reduce((s, i) => s + (lineAmount(i) ?? 0), 0));
+/** Sales tax: the rate on the taxed lines (all of a one-total job). 0 when the job has no tax. */
+export const jobTax = (job: Job) => {
+  if (!job.tax_rate) return 0;
+  const base = isLumpSum(job) ? job.job_total! : job.line_items.reduce((s, i) => s + (i.taxable === false ? 0 : (lineAmount(i) ?? 0)), 0);
+  return roundMoney((base * job.tax_rate) / 100);
+};
+/** What the client pays: subtotal + tax. Everything that's owed, paid or shown as "Total" uses this. */
+export const jobTotal = (job: Job) => roundMoney(jobSubtotal(job) + jobTax(job));
+export const money = (n: number) => {
+  const rounded = roundMoney(n);
+  const cents = Math.round(Math.abs(rounded) * 100) % 100 !== 0;
+  return `$${rounded.toLocaleString("en-US", { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: 2 })}`;
+};
 export const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / DAY);
 // "Maria Lopez" → "Maria". A company keeps its full name ("ATL Homeiker", not "ATL"):
-// an all-caps first word, or a business word in the name.
-const COMPANY = /\b(llc|inc|co|corp|company|group|homes?|builders?|construction|properties|property|realty|services|management|contractors?)\b\.?/i;
+// an all-caps first word, an "&", or a business word in the name.
+const COMPANY =
+  /\b(llc|inc|co|corp|company|group|homes?|homemakers?|homeiker|builders?|building|construction|properties|property|realty|services|management|contractors?|renovations?|remodel\w*|painting|roofing|plumbing|electric\w*|hvac|flooring|design|solutions|enterprises?|investments?|holdings|partners|ventures|development|studio)\b\.?|&/i;
 export const firstName = (name: string | null) => {
   const full = (name ?? "").trim();
   if (!full) return "—";
@@ -367,14 +438,52 @@ export async function getJob(id: number): Promise<Job | null> {
 }
 
 // POST /jobs  — backend runs Mano (interpret) then Ojo (validate)
-export async function createJob(description: string, opts: { docIntent?: "estimate" | "invoice" } = {}): Promise<Job> {
+export async function createJob(
+  description: string,
+  opts: {
+    docIntent?: "estimate" | "invoice";
+    client?: KnownClient | null; // started from a client card: theirs, whatever the note says
+    clients?: KnownClient[]; // otherwise: Carlos's saved and past clients, to recognize the name in the note
+  } = {},
+): Promise<Job> {
   const jobs = read();
   const now = new Date().toISOString();
   const parsed = await interpret(description, loadBusiness()?.otherTrade);
+  // Started from a client ("Nuevo estimado para Maria"): their details win over what Mano heard
+  if (opts.client?.name.trim()) {
+    Object.assign(parsed, {
+      customer_name: opts.client.name.trim(),
+      customer_name_suggested: null,
+      address: opts.client.address?.trim() || parsed.address,
+      customer_phone: opts.client.phone?.trim() || parsed.customer_phone,
+      customer_email: opts.client.email?.trim() || null,
+    });
+  }
   // Carlos already corrected this name on an earlier job → use his spelling
   const heard = parsed.customer_name ?? null;
   const fixed = knownNameFix(heard);
   if (fixed) Object.assign(parsed, { customer_name: fixed, customer_name_suggested: null });
+  // A client he already has ("Atlanta Homeiker" = his saved "ATL Homemaker"): their spelling, and the
+  // details the note didn't say (office address, phone, email). The note's own details always win.
+  let client_match: Job["client_match"] = null;
+  const known = !opts.client?.name.trim() ? matchClient([parsed.customer_name, parsed.customer_name_suggested], opts.clients ?? []) : null;
+  if (known) {
+    const filled: NonNullable<Job["client_match"]>["filled"] = [];
+    if (!parsed.address?.trim() && known.address?.trim()) {
+      parsed.address = known.address.trim();
+      filled.push("address");
+    }
+    if (!parsed.customer_phone?.trim() && known.phone?.trim()) {
+      parsed.customer_phone = known.phone.trim();
+      filled.push("customer_phone");
+    }
+    const customer_email = known.email?.trim() || null;
+    if (customer_email) filled.push("customer_email");
+    if (known.name !== parsed.customer_name || filled.length) {
+      client_match = { name: known.name, heard: parsed.customer_name ?? null, filled };
+      Object.assign(parsed, { customer_name: known.name, customer_name_suggested: null, customer_email });
+    }
+  }
   parsed.line_items = parsed.line_items.map((item) => ({
     ...item,
     ...(item.amount != null ? { price_source: "spoken" as const } : {}),
@@ -386,6 +495,7 @@ export async function createJob(description: string, opts: { docIntent?: "estima
     backend_sync: "pending",
     doc_intent: opts.docIntent === "invoice" ? "invoice" : null,
     customer_name_heard: heard,
+    client_match,
     status: "NEW",
     created_at: now,
     updated_at: now,
@@ -394,6 +504,41 @@ export async function createJob(description: string, opts: { docIntent?: "estima
   draft.status = validate(draft).length ? "NEEDS_INFORMATION" : "READY_FOR_QUOTE";
   write([...jobs, draft]);
   return draft;
+}
+
+// POST /jobs {blank} — "Llenarlo yo": no voice, no note, no Mano. An empty estimate / invoice with one
+// empty line, opened straight in the editor (client details already filled when started from a client).
+export async function createBlankJob(opts: { docIntent?: "estimate" | "invoice"; client?: KnownClient | null } = {}): Promise<Job> {
+  const jobs = read();
+  const now = new Date().toISOString();
+  const c = opts.client;
+  const draft: Job = {
+    id: Math.max(0, ...jobs.map((j) => j.id)) + 1,
+    customer_name: c?.name.trim() || null,
+    customer_phone: c?.phone?.trim() || null,
+    customer_email: c?.email?.trim() || null,
+    address: c?.address?.trim() || null,
+    service: "General Work",
+    description: "",
+    line_items: [{ id: crypto.randomUUID(), description: "", description_es: "", amount: null }],
+    backend_sync: "pending",
+    doc_intent: opts.docIntent === "invoice" ? "invoice" : null,
+    status: "NEEDS_INFORMATION",
+    created_at: now,
+    updated_at: now,
+    ...NO_DOCS,
+  };
+  write([...jobs, draft]);
+  return draft;
+}
+
+// Several jobs at once (a client's contact fix, linking a client's jobs to its id). `keepDates`: a link, not
+// an edit, so lists don't reorder.
+export function patchJobs(patches: { id: number; patch: Partial<Job> }[], { keepDates = false } = {}) {
+  if (!patches.length) return;
+  const now = new Date().toISOString();
+  const byId = new Map(patches.map((p) => [p.id, p.patch]));
+  write(read().map((j) => (byId.has(j.id) ? { ...j, ...byId.get(j.id), ...(keepDates ? {} : { updated_at: now }) } : j)));
 }
 
 // PATCH /jobs/:id  — Ojo re-validates whenever details change before the quote is sent
@@ -409,6 +554,17 @@ export async function updateJob(id: number, patch: Partial<Job>): Promise<Job> {
   return next;
 }
 
+// PATCH /jobs/:id — fix the client's name, phone or address after sending. Price and work stay locked.
+// Keeps updated_at: a spelling fix shouldn't restart the "no answer in 2 days" clock.
+export async function updateContact(id: number, contact: Pick<Job, "customer_name" | "customer_phone" | "customer_email" | "address">): Promise<Job> {
+  const jobs = read();
+  const i = jobs.findIndex((j) => j.id === id);
+  jobs[i] = { ...jobs[i], ...contact };
+  write(jobs);
+  if (jobs[i].public_token) void publishEstimate(jobs[i], loadBusiness()); // the customer's link shows the fix
+  return jobs[i];
+}
+
 export async function setStatus(id: number, status: JobStatus): Promise<Job> {
   return updateJob(id, { status });
 }
@@ -420,46 +576,119 @@ export async function sendMessage(id: number): Promise<Job> {
 }
 
 // Next number = highest used + 1. On the backend this should be a DB sequence per business.
+// Invoices can start higher: "Tu próxima factura" in Tu negocio (to continue from Wave).
+// Planned numbers on drafts count too — otherwise two jobs can both get "190".
 function nextNumber(field: "estimate_number" | "invoice_number") {
-  return Math.max(0, ...read().map((j) => j[field] ?? 0)) + 1;
+  const used =
+    field === "invoice_number"
+      ? read().flatMap((j) => [j.invoice_number ?? 0, j.invoice_number_planned ?? 0])
+      : read().map((j) => j.estimate_number ?? 0);
+  const next = Math.max(0, ...used) + 1;
+  return field === "invoice_number" ? Math.max(next, loadBusiness()?.nextInvoiceNumber ?? 1) : next;
 }
 
-// POST /jobs/:id/estimate/send
-export async function sendEstimate(id: number): Promise<Job> {
+/** The number the next invoice will get (shown before it's prepared, and in Tu negocio). */
+export const peekInvoiceNumber = () => nextNumber("invoice_number");
+/** Highest invoice number already used or reserved on a draft (0 = none). */
+export const highestInvoiceNumber = () =>
+  Math.max(0, ...read().flatMap((j) => [j.invoice_number ?? 0, j.invoice_number_planned ?? 0]));
+/** Another invoice already has this number. */
+export const invoiceNumberTaken = (n: number, exceptJobId?: number) =>
+  read().some((j) => j.id !== exceptJobId && (j.invoice_number === n || (!j.invoice_number && j.invoice_number_planned === n)));
+const validInvoiceNumber = (n: number) => Number.isInteger(n) && n >= 1 && n <= 999999;
+
+// PATCH /jobs/:id {invoice_number} — fix an invoice's number (e.g. to match what he used in Wave).
+// Not made yet → it's remembered and used when the invoice is made.
+export async function setInvoiceNumber(id: number, n: number): Promise<Job> {
+  if (!validInvoiceNumber(n) || invoiceNumberTaken(n, id)) throw new Error("taken");
+  const made = !!(await getJob(id))?.invoice_number;
+  const saved = await updateJob(id, made ? { invoice_number: n } : { invoice_number_planned: n });
+  if (saved.public_token) void publishEstimate(saved, loadBusiness()); // the customer's link shows the new number
+  return saved;
+}
+
+// Preparing ≠ sending: "Preparar" gives the document its number and the customer link, but the job only
+// counts as sent once Carlos actually shares it (WhatsApp, text, copy, QR) — see markSent().
+export const isUnsent = (j: Job) => (j.invoice_number ? !j.invoice_sent_at : !!j.estimate_number && !j.estimate_sent_at);
+
+export async function prepareEstimate(id: number): Promise<Job> {
   await wait(600);
   const job = (await getJob(id))!;
-  const now = new Date().toISOString();
-  const sent = await updateJob(id, {
-    status: "QUOTE_SENT",
+  const ready = await updateJob(id, {
     estimate_number: job.estimate_number ?? nextNumber("estimate_number"),
-    estimate_sent_at: now,
     public_token: job.public_token ?? newToken(),
   });
-  void publishEstimate(sent, loadBusiness()); // demo relay: lets a phone on the Wi-Fi open & approve it
+  void publishEstimate(ready, loadBusiness()); // demo relay: lets a phone on the Wi-Fi open & approve it
+  return ready;
+}
+
+// POST /jobs/:id/estimate/send · /invoice/send — the first time Carlos shares the link
+export async function markSent(id: number): Promise<Job> {
+  const job = (await getJob(id))!;
+  if (!isUnsent(job)) return job;
+  const now = new Date();
+  const sent = job.invoice_number
+    ? await updateJob(id, {
+        status: "PAYMENT_PENDING",
+        invoice_sent_at: now.toISOString(),
+        // counted from the day it's really sent, unless Carlos picked the date himself
+        invoice_due_at: job.invoice_due_custom && job.invoice_due_at ? job.invoice_due_at : defaultDue(now),
+      })
+    : await updateJob(id, { status: "QUOTE_SENT", estimate_sent_at: now.toISOString() });
+  void publishEstimate(sent, loadBusiness());
   return sent;
 }
 
 // POST /jobs/:id/invoice/send
 // Invoice without an estimate: a complete draft (e.g. small/already-done jobs) can be invoiced directly.
 // Skips QUOTE_SENT…COMPLETED — the backend must allow READY_FOR_QUOTE → PAYMENT_PENDING (see handoff §3).
+/** The houses on a job with several sites, in order ("700 Wilson", "2791 Midway"); [] for a normal job. */
+export const jobSites = (j: Job) => [...new Set(j.line_items.map((i) => i.site?.trim()).filter((s): s is string => !!s))];
+/** Lines grouped by site, in order. A normal job: one group with site null. */
+export function linesBySite<T extends { site?: string | null }>(lines: T[]): { site: string | null; lines: T[] }[] {
+  const groups: { site: string | null; lines: T[] }[] = [];
+  for (const l of lines) {
+    const site = l.site?.trim() || null;
+    const g = groups.find((x) => x.site === site);
+    if (g) g.lines.push(l);
+    else groups.push({ site, lines: [l] });
+  }
+  return groups;
+}
+
+/** A client Carlos already has (saved on Clientes, or from an earlier job). */
+export type KnownClient = { name: string; phone: string | null; email: string | null; address: string | null };
+
+/** An invoice job: Carlos picked "Factura" on New job, or he invoiced it directly ("Facturar sin estimado"). */
+export const isInvoiceJob = (j: Job) => j.doc_intent === "invoice" || !!j.invoice_number;
 export const canInvoiceDirectly = (j: Job) => canDelete(j) && validate(j).length === 0;
 export const canSendInvoice = (j: Job) => !j.invoice_number && (j.status === "COMPLETED" || canInvoiceDirectly(j));
 
-export async function sendInvoice(id: number): Promise<Job> {
+export async function prepareInvoice(id: number, due?: string, number?: number): Promise<Job> {
   await wait(600);
   const job = (await getJob(id))!;
   if (!canSendInvoice(job)) throw new Error("This job can't be invoiced yet");
   const now = new Date();
-  const sent = await updateJob(id, {
-    status: "PAYMENT_PENDING",
-    invoice_number: job.invoice_number ?? nextNumber("invoice_number"),
-    invoice_sent_at: now.toISOString(),
-    invoice_due_at: new Date(now.getTime() + INVOICE_DUE_DAYS * DAY).toISOString(),
+  // a number he typed (if it's free), else the next one
+  const free = (n?: number | null) => !!n && validInvoiceNumber(n) && !invoiceNumberTaken(n, id);
+  const picked = free(number) ? number! : free(job.invoice_number_planned) ? job.invoice_number_planned! : null;
+  const ready = await updateJob(id, {
+    invoice_number: job.invoice_number ?? picked ?? nextNumber("invoice_number"),
+    // Carlos's date if he changed it; otherwise his terms, restarted by markSent() on the day it's really sent
+    invoice_due_at: due && endOfDay(due) !== defaultDue(now) ? endOfDay(due) : defaultDue(now),
+    invoice_due_custom: !!due && endOfDay(due) !== defaultDue(now),
     // the same customer link shows the invoice now (a job invoiced without an estimate gets one here)
     public_token: job.public_token ?? newToken(),
   });
-  void publishEstimate(sent, loadBusiness());
-  return sent;
+  void publishEstimate(ready, loadBusiness());
+  return ready;
+}
+
+// PATCH /jobs/:id {invoice_due_at} — a client asked for more time
+export async function setInvoiceDue(id: number, day: string): Promise<Job> {
+  const saved = await updateJob(id, { invoice_due_at: endOfDay(day), invoice_due_custom: true });
+  if (saved.public_token) void publishEstimate(saved, loadBusiness()); // the customer's link shows the new date
+  return saved;
 }
 
 // POST /jobs/:id/invoice/paid
@@ -508,16 +737,43 @@ export async function reactivateJob(id: number): Promise<Job> {
   });
 }
 
-export async function markPaid(id: number): Promise<Job> {
-  const paid = await updateJob(id, { status: "PAID", paid_at: new Date().toISOString() });
-  if (paid.public_token && paid.invoice_number) void publishEstimate(paid, loadBusiness()); // customer link shows "Paid"
-  return paid;
+export type PaymentMethod = "zelle" | "bank" | "check" | "cash" | "card";
+export const PAYMENT_METHODS: PaymentMethod[] = ["zelle", "bank", "check", "cash", "card"];
+export type Payment = { id: string; amount: number; method: PaymentMethod; date: string; check_number?: string | null };
+
+/** Money received so far. A job marked paid before payments were recorded counts as fully paid. */
+export const paidSoFar = (job: Job) =>
+  job.payments?.length ? job.payments.reduce((s, p) => s + p.amount, 0) : job.paid_at ? jobTotal(job) : 0;
+/** What's still owed on the invoice. */
+export const balanceDue = (job: Job) => Math.max(0, Math.round((jobTotal(job) - paidSoFar(job)) * 100) / 100);
+
+// POST /jobs/:id/payments — Zelle, bank, check, cash or card; full or partial. Paid once it adds up to the total.
+// DELETE /jobs/:id/payments/:pid — undo a payment typed wrong. If it was the one that made it paid, it's unpaid again.
+export async function removePayment(id: number, paymentId: string): Promise<Job> {
+  const job = (await getJob(id))!;
+  const payments = (job.payments ?? []).filter((p) => p.id !== paymentId);
+  const total = payments.reduce((s, p) => s + p.amount, 0);
+  const stillPaid = total >= jobTotal(job) - 0.005;
+  const saved = await updateJob(id, stillPaid ? { payments } : { payments, status: job.status === "PAID" ? "PAYMENT_PENDING" : job.status, paid_at: null });
+  if (saved.public_token && saved.invoice_number) void publishEstimate(saved, loadBusiness());
+  return saved;
 }
 
-export type InvoiceState = "unpaid" | "overdue" | "paid";
+export async function addPayment(id: number, payment: Omit<Payment, "id">): Promise<Job> {
+  const job = (await getJob(id))!;
+  const payments = [...(job.payments ?? []), { ...payment, id: uid() }];
+  const total = payments.reduce((s, p) => s + p.amount, 0);
+  const full = total >= jobTotal(job) - 0.005;
+  const saved = await updateJob(id, full ? { payments, status: "PAID", paid_at: payment.date } : { payments });
+  if (saved.public_token && saved.invoice_number) void publishEstimate(saved, loadBusiness()); // customer link shows the balance or "Paid"
+  return saved;
+}
+
+export type InvoiceState = "ready" | "unpaid" | "overdue" | "paid";
 export function invoiceState(job: Job): InvoiceState | null {
   if (!job.invoice_number) return null;
   if (job.paid_at) return "paid";
+  if (!job.invoice_sent_at) return "ready"; // prepared, not shared with the customer yet
   return job.invoice_due_at && new Date(job.invoice_due_at) < new Date() ? "overdue" : "unpaid";
 }
 
@@ -525,19 +781,28 @@ export function invoiceState(job: Job): InvoiceState | null {
 // Dashboard money card: what Carlos is owed (sent invoices not paid), how much is late, and paid this month.
 export function moneySummary(jobs: Job[]) {
   const now = new Date();
-  const invoiced = jobs.filter((j) => j.invoice_number && j.status !== "CANCELLED");
+  // an invoice only counts once it was actually sent (a prepared one isn't owed yet)
+  const invoiced = jobs.filter((j) => j.invoice_number && j.invoice_sent_at && j.status !== "CANCELLED");
   const unpaid = invoiced.filter((j) => !j.paid_at);
-  const sum = (list: Job[]) => list.reduce((s, j) => s + jobTotal(j), 0);
+  const owedOn = (list: Job[]) => list.reduce((s, j) => s + balanceDue(j), 0);
+  const thisMonth = (iso: string) => {
+    const d = new Date(iso);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  };
   return {
     hasInvoices: invoiced.length > 0,
-    owed: sum(unpaid),
-    overdue: sum(unpaid.filter((j) => invoiceState(j) === "overdue")),
-    paidThisMonth: sum(
-      invoiced.filter((j) => {
-        if (!j.paid_at) return false;
-        const d = new Date(j.paid_at);
-        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-      }),
+    owed: owedOn(unpaid),
+    overdue: owedOn(unpaid.filter((j) => invoiceState(j) === "overdue")),
+    // money that came in this month: each payment by its date (older jobs without payments: by paid date)
+    paidThisMonth: invoiced.reduce(
+      (s, j) =>
+        s +
+        (j.payments?.length
+          ? j.payments.filter((p) => thisMonth(p.date)).reduce((a, p) => a + p.amount, 0)
+          : j.paid_at && thisMonth(j.paid_at)
+            ? jobTotal(j)
+            : 0),
+      0,
     ),
   };
 }
@@ -585,6 +850,41 @@ export const smsLink = (phone: string | null | undefined, text: string) => {
   const d = phoneDigits(phone);
   return d ? `sms:+${d}?&body=${encodeURIComponent(text)}` : null; // "?&body" works on iOS and Android
 };
+
+/** Subject + body when Carlos shares the link or the PDF. The customer always gets English (`en`).
+ *  `from` is the business name → email subject "Invoice from Visão". PDF omits "see it here" (the file is the doc). */
+export function shareCopy(job: Job, kind: "estimate" | "invoice", channel: "link" | "pdf" = "link", from?: string) {
+  const n = firstName(job.customer_name);
+  const due = job.invoice_due_at ? fmtDate(job.invoice_due_at, "en") : "";
+  const dueEs = job.invoice_due_at ? fmtDate(job.invoice_due_at, "es") : "";
+  const doc = kind === "invoice" ? "Invoice" : "Estimate";
+  const title = from?.trim() ? `${doc} from ${from.trim()}` : doc;
+  if (kind === "invoice") {
+    const amt = money(balanceDue(job));
+    return {
+      title,
+      en:
+        channel === "pdf"
+          ? `Hi ${n}, here's your invoice for ${amt}${due ? `, due ${due}` : ""}.`
+          : `Hi ${n}, here's your invoice for ${amt}${due ? `, due ${due}` : ""}. You can see it here:`,
+      es:
+        channel === "pdf"
+          ? `Hola ${n}, aquí está tu factura por ${amt}${dueEs ? `, vence el ${dueEs}` : ""}.`
+          : `Hola ${n}, aquí está tu factura por ${amt}${dueEs ? `, vence el ${dueEs}` : ""}. La puedes ver aquí:`,
+    };
+  }
+  return {
+    title,
+    en:
+      channel === "pdf"
+        ? `Hi ${n}, here's your estimate.`
+        : `Hi ${n}, here's your estimate. You can review and approve it here:`,
+    es:
+      channel === "pdf"
+        ? `Hola ${n}, aquí está tu estimado.`
+        : `Hola ${n}, aquí está tu estimado. Lo puedes revisar y aprobar aquí:`,
+  };
+}
 
 export const fmtDate = (iso: string, lang: "es" | "en" = "en") =>
   new Date(iso).toLocaleDateString(lang === "es" ? "es-US" : "en-US", { month: "short", day: "numeric", year: "numeric" });
